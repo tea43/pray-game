@@ -42,6 +42,7 @@ export class Projectile {
         e.hurtFlash = 1;
         e.knockX += this.vx * 0.32;
         e.knockY += this.vy * 0.32;
+        state.bloodStains.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), r: e.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
         for (let i = 0; i < 9; i++) {
           state.particles.push({
             x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),

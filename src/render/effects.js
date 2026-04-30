@@ -168,9 +168,21 @@ export function drawParticles() {
     if (p.additive) continue;
     const a = Math.min(1, p.life / 0.3);
     ctx.globalAlpha = a;
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = p.size;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    const speed = Math.hypot(p.vx, p.vy);
+    const stretch = Math.min(speed * 0.04, 12);
+    if (stretch > 1.5) {
+      ctx.lineTo(p.x - (p.vx / speed) * stretch, p.y - (p.vy / speed) * stretch);
+    } else {
+      ctx.lineTo(p.x - 0.1, p.y);
+    }
+    ctx.stroke();
   }
+  ctx.lineCap = 'butt';
   ctx.globalAlpha = 1;
 
   // Pass 2: additive glow particles — soft round bloom.
@@ -243,4 +255,36 @@ export function pushDamageNumber(x, y, dmg, opts) {
   const crit = !!o.crit;
   const rgb = o.rgb || (crit ? [255, 220, 90] : [255, 230, 200]);
   pushFloatingText(x, y, Math.round(dmg).toString(), rgb, { crit, life: crit ? 1.0 : 0.7 });
+}
+
+let crtPattern = null;
+
+export function drawCRTOverlay() {
+  const { ctx, W, PLAY_BOTTOM } = G;
+  
+  if (!crtPattern) {
+    const pCanvas = document.createElement('canvas');
+    pCanvas.width = 1;
+    pCanvas.height = 3;
+    const pCtx = pCanvas.getContext('2d');
+    pCtx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+    pCtx.fillRect(0, 0, 1, 1);
+    pCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    pCtx.fillRect(0, 1, 1, 1);
+    crtPattern = ctx.createPattern(pCanvas, 'repeat');
+  }
+
+  ctx.save();
+  ctx.fillStyle = crtPattern;
+  ctx.fillRect(0, 0, W, PLAY_BOTTOM);
+
+  if (state.shake > 3) {
+    const shift = Math.min(state.shake * 0.4, 6);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.06)';
+    ctx.fillRect(shift, 0, W, PLAY_BOTTOM);
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.06)';
+    ctx.fillRect(-shift, 0, W, PLAY_BOTTOM);
+  }
+  ctx.restore();
 }

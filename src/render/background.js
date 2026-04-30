@@ -151,10 +151,10 @@ export function drawBackground() {
   ctx.restore();
 
   // Vignette + warm tint.
-  const grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.78);
+  const grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.20, W / 2, H / 2, Math.max(W, H) * 0.82);
   grad.addColorStop(0, 'rgba(80, 55, 25, 0)');
-  grad.addColorStop(0.7, 'rgba(40, 20, 10, 0.42)');
-  grad.addColorStop(1, 'rgba(8, 4, 2, 0.85)');
+  grad.addColorStop(0.65, 'rgba(30, 15, 8, 0.5)');
+  grad.addColorStop(1, 'rgba(4, 2, 0, 0.92)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = 'rgba(140, 80, 30, 0.05)';

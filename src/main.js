@@ -12,7 +12,7 @@ import { initInput, setNewGameFn } from './systems/input.js';
 import { initMenu, setMenuCallbacks, showMainMenu } from './systems/menu.js';
 import { resetScore, addDeathPenalty, addWaveClearBonus, saveHighScore } from './systems/score.js';
 import { drawBackground } from './render/background.js';
-import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash } from './render/effects.js';
+import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from './render/effects.js';
 import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
 import { playMusic, playSfx } from './systems/audio.js';
 
@@ -234,7 +234,6 @@ function frame(now) {
     for (const e of state.enemies) {
       if (e.dead && e.deathTimer < 0.1 && e.deathTimer + gameDt >= 0.1) {
         state.bloodStains.push({ x: e.x, y: e.y + 2, r: e.r * 1.4, rot: rand(0, Math.PI), a: 0.55 });
-        if (state.bloodStains.length > 40) state.bloodStains.shift();
       }
     }
     state.enemies = state.enemies.filter(e => !(e.dead && e.deathTimer > 3));
@@ -257,6 +256,10 @@ function frame(now) {
         }
         state.shake = Math.max(state.shake, 7);
       }
+    }
+
+    if (state.bloodStains.length > 200) {
+      state.bloodStains.splice(0, state.bloodStains.length - 200);
     }
 
     state.spawnTimer -= gameDt;
@@ -407,6 +410,8 @@ function frame(now) {
 
   // Screen flash for explosions / boss deaths / abilities.
   drawScreenFlash();
+
+  drawCRTOverlay();
 
   // Wave announcements
   for (const m of state.moveMarkers) {

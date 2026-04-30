@@ -345,10 +345,19 @@ export class Enemy {
     }
 
     // Primitive fallback: Segmented Worm
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    const shadowScale = 1 + Math.sin(state.time * 3 + this.x * 0.1) * 0.05;
+    ctx.save();
+    ctx.translate(this.x, this.y + this.r - 1);
+    ctx.scale(1, 0.4);
+    const shadowR = this.r * 1.4 * shadowScale;
+    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, shadowR);
+    grd.addColorStop(0, 'rgba(15,10,5,0.7)');
+    grd.addColorStop(1, 'rgba(15,10,5,0)');
+    ctx.fillStyle = grd;
     ctx.beginPath();
-    ctx.ellipse(this.x, this.y + this.r - 1, this.r * 0.9, this.r * 0.35, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, shadowR, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
     if (this.kind === 'blinker' && this.blinkTelegraph > 0) {
       const t = this.blinkTelegraph / 0.7;
@@ -408,10 +417,12 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y + wobble);
 
-    ctx.fillStyle = this.hurtFlash > 0 ? '#d97060' : this.color;
+    if (this.hurtFlash > 0) ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = this.hurtFlash > 0 ? '#ffb0a0' : this.color;
     ctx.beginPath();
     ctx.arc(0, 0, this.r, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = '#0a0604';
     ctx.lineWidth = 0.8;
     ctx.stroke();
@@ -421,7 +432,7 @@ export class Enemy {
     ctx.lineTo(0, 0);
     ctx.fill();
 
-    ctx.fillStyle = this.hurtFlash > 0 ? '#ffb8a8' : this.skin;
+    ctx.fillStyle = this.hurtFlash > 0 ? '#ffffff' : this.skin;
     ctx.beginPath();
     ctx.arc(0, -this.r * 0.6, this.r * 0.5, 0, Math.PI * 2);
     ctx.fill();

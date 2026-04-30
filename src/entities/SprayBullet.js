@@ -29,6 +29,7 @@ export class SprayBullet {
         e.hurtFlash = 1;
         e.knockX += this.vx * 0.18;
         e.knockY += this.vy * 0.18;
+        state.bloodStains.push({ x: e.x + rand(-5, 5), y: e.y + rand(-5, 5), r: e.r * rand(0.4, 0.7), rot: rand(0, Math.PI), a: rand(0.2, 0.4) });
         for (let i = 0; i < 5; i++) {
           state.particles.push({
             x: e.x + rand(-2, 2), y: e.y + rand(-2, 2),

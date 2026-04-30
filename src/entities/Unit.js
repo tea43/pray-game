@@ -153,6 +153,7 @@ export class Unit {
         e.knockX += Math.cos(this.facing) * 120;
         e.knockY += Math.sin(this.facing) * 120;
         e.hurtFlash = 1;
+        state.bloodStains.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), r: e.r * rand(0.6, 1.0), rot: rand(0, Math.PI), a: rand(0.3, 0.6) });
         for (let i = 0; i < 6; i++) {
           state.particles.push({
             x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
@@ -208,6 +209,7 @@ export class Unit {
     enemy.knockX += Math.cos(this.facing) * kb;
     enemy.knockY += Math.sin(this.facing) * kb;
     enemy.hurtFlash = 1;
+    state.bloodStains.push({ x: enemy.x + rand(-6, 6), y: enemy.y + rand(-6, 6), r: enemy.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
     const hitCount = this.rageTimer > 0 ? 14 : 10;
     for (let i = 0; i < hitCount; i++) {
       state.particles.push({
@@ -404,10 +406,19 @@ export class Unit {
   }
 
   draw(ctx) {
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    const shadowScale = 1 + Math.sin(state.time * 4 + this.x * 0.1) * 0.05;
+    ctx.save();
+    ctx.translate(this.x, this.y + this.r - 1);
+    ctx.scale(1, 0.4);
+    const shadowR = this.r * 1.4 * shadowScale;
+    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, shadowR);
+    grd.addColorStop(0, 'rgba(15,10,5,0.7)');
+    grd.addColorStop(1, 'rgba(15,10,5,0)');
+    ctx.fillStyle = grd;
     ctx.beginPath();
-    ctx.ellipse(this.x, this.y + this.r - 1, this.r * 0.85, this.r * 0.35, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, shadowR, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
     if (this.blinkFlash > 0) {
       ctx.strokeStyle = `rgba(128, 200, 255, ${this.blinkFlash})`;
