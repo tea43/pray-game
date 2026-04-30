@@ -1,0 +1,14 @@
+{
+  "name": "pray-game",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:single": "vite build --mode single",
+    "check": "node scripts/check-game-data.js"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}
