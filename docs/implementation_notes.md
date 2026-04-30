@@ -12,6 +12,8 @@ The current HTML now has in-file definition tables near the top of the script:
 
 These are the first modularization boundary. They keep tuning and display metadata compact while the golden single-file build remains playable.
 
+Run `node scripts/check-game-data.js` after changing those definitions. It parses the embedded script and checks the core hero, enemy, loot, and wave configuration.
+
 ---
 
 ## 1. Active Pause

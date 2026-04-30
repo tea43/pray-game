@@ -77,6 +77,8 @@ Commit:
 
 ## Phase 2: Lightweight Test Harness
 
+Status: implemented with `node scripts/check-game-data.js`; browser boot test should still run after gameplay/rendering changes.
+
 Goal:
 
 - Validate data and spawn/drop behavior without needing a full playthrough.
@@ -90,6 +92,10 @@ Implementation:
   - loot drop tables
   - boss reward bundles
   - single-file script parse
+
+Command:
+
+- `node scripts/check-game-data.js`
 
 Manual test:
 
