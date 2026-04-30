@@ -18,12 +18,14 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 
 ## Time Flow
 
-- With all survivors stopped, confirm time pauses.
-- Move a survivor and confirm time resumes.
-- Press `+` with survivors stopped and confirm time runs at x1.
-- Press `+` two more times and confirm the HUD reaches x3.
-- Press `-` and confirm speed steps down.
-- Press `SPACE` and confirm time goes to x0.
+- With all survivors stopped, confirm time pauses (HUD shows TIME x0 — MOVE UNITS).
+- Move a survivor and confirm time resumes at x1.
+- Press `+` twice and confirm HUD shows TIME x3.
+- Press `-` and confirm speed steps down to x2, then x1. Confirm `-` does not go below x1.
+- Stop survivors, press `SPACE` tap (quick release), confirm HUD shows TIME x0 — SPACE TO RESUME.
+- Press `SPACE` tap again, confirm manual pause lifts and time flows when units move.
+- Stop survivors, hold `SPACE` for more than 1 second, confirm HUD shows TIME x3 — HOLDING and world advances.
+- Release `SPACE`, confirm time stops again (hold does not toggle pause).
 
 ## Abilities
 

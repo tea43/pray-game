@@ -6,6 +6,42 @@ Ultimate goals:
 - Keep the game eligible for Steam packaging.
 - Develop in small phases, separated by commits and manual testing.
 
+## Time Flow Mechanics
+
+The time system is a core design pillar and must be preserved across every phase.
+
+**Speed multiplier** (`+` / `-` keys):
+- Controls the rate at which game time runs: x1 (default), x2, or x3.
+- Does not pause or unpause. Purely a speed dial.
+
+**Manual pause** (`SPACE` tap, < 1 second hold):
+- Toggles an explicit freeze on/off.
+- While paused, the world is stopped even if survivors are moving.
+- Pressing Space again resumes.
+
+**Hold to advance** (`SPACE` hold, ≥ 1 second):
+- While physically held, drives time forward at the current speed multiplier.
+- Useful for advancing time from a paused state without fully unpausing.
+- Releasing returns to the state before the hold (paused or idle).
+
+**Activity-driven flow**:
+- If no survivors are moving and no other driver is active, time stops.
+- Movement drives time at the current speed multiplier.
+
+**Priority order** (highest first):
+1. Game over → always frozen.
+2. Space held ≥ 1s → run at speed multiplier.
+3. Manual pause active → frozen.
+4. Any survivor moving → run at speed multiplier.
+5. Otherwise → frozen.
+
+**State fields**:
+- `timeSpeed`: integer 1–3. Default 1.
+- `manualPause`: bool. Toggled by Space tap.
+- `spaceHeld`: bool. True while Space key is physically down.
+- `spaceHoldDuration`: float. Seconds the current Space press has been held.
+- `timeFlow`: float 0–3. Smoothly interpolated toward `targetFlow` each frame.
+
 ## Working Rules
 
 - Every phase ends with one focused commit.

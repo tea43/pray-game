@@ -1,32 +1,373 @@
-// P-RAY: The Game — modular entry point (skeleton)
-// Phase 3: boots the canvas shell. Full game logic is extracted in Phase 4.
+import { G } from './globals.js';
+import { rand, dist2 } from './utils/math.js';
+import { state, generateTerrain } from './state.js';
+import { Unit } from './entities/Unit.js';
+import { WAVE_DEFS } from './config/waves.js';
 import { DISPLAY_NAME_DEFS } from './config/assets.js';
+import { spawnEnemy, spawnBoss } from './systems/spawning.js';
+import { applyLoot } from './systems/loot.js';
+import { initInput, setNewGameFn } from './systems/input.js';
+import { drawBackground } from './render/background.js';
+import { drawBolts, drawExplosions, drawShockwaves, drawParticles } from './render/effects.js';
+import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// ==================== INIT ====================
+function initCanvas() {
+  G.canvas = document.getElementById('game');
+  G.ctx = G.canvas.getContext('2d');
+  resize();
+}
 
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-function drawPlaceholder() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#1a1008';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = '#f5d04a';
-  ctx.font = 'bold 36px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(DISPLAY_NAME_DEFS.gameTitle, canvas.width / 2, canvas.height / 2 - 20);
-
-  ctx.fillStyle = '#8a7a5a';
-  ctx.font = '16px monospace';
-  ctx.fillText('modular build skeleton — Phase 4 will wire the game', canvas.width / 2, canvas.height / 2 + 20);
-  ctx.fillText('open wasteland_survivors-v4.html to play', canvas.width / 2, canvas.height / 2 + 44);
+  G.canvas.width = window.innerWidth;
+  G.canvas.height = window.innerHeight;
+  G.W = G.canvas.width;
+  G.H = G.canvas.height;
+  G.PLAY_BOTTOM = G.H - G.PANEL_H - 22;
 }
 
-drawPlaceholder();
-window.addEventListener('resize', drawPlaceholder);
+// ==================== NEW GAME ====================
+function newGame() {
+  state.units = [];
+  state.enemies = [];
+  state.particles = [];
+  state.bolts = [];
+  state.projectiles = [];
+  state.loot = [];
+  state.explosions = [];
+  state.shockwaves = [];
+  state.bloodStains = [];
+  state.selected = [];
+  state.moveMarkers = [];
+  state.time = 0;
+  state.kills = 0;
+  state.wave = 1;
+  state.waveTimer = 0;
+  state.spawnTimer = 1.5;
+  state.spawnInterval = WAVE_DEFS.spawnIntervalStart;
+  state.gameOver = false;
+  state.victory = false;
+  state.timeFlow = 0;
+  state.manualPause = false;
+  state.timeSpeed = 1;
+  state.spaceHeld = false;
+  state.spaceHoldDuration = 0;
+  state.survivedSeconds = 0;
+
+  document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
+  document.getElementById('gameOverText').classList.remove('victory');
+
+  const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
+  state.units.push(new Unit(cx - 44, cy + 8, 'elliot'));
+  state.units.push(new Unit(cx, cy - 10, 'dick'));
+  state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
+
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('survCount').textContent = state.units.length;
+  updateHUD();
+}
+
+// ==================== GAME LOOP ====================
+let lastTime = performance.now();
+
+function frame(now) {
+  const realDt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+
+  if (state.spaceHeld) state.spaceHoldDuration += realDt;
+
+  const anyMoving = state.units.some(u => !u.dead && u.moving);
+  const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
+  const targetFlow = state.gameOver ? 0
+                   : spaceHoldDriving ? state.timeSpeed
+                   : state.manualPause ? 0
+                   : anyMoving ? state.timeSpeed
+                   : 0;
+  state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
+  const gameDt = realDt * state.timeFlow;
+
+  state.time += realDt;
+  updateDust(realDt);
+  if (state.shake > 0) state.shake = Math.max(0, state.shake - realDt * 18);
+
+  for (const m of state.moveMarkers) m.life -= realDt;
+  state.moveMarkers = state.moveMarkers.filter(m => m.life > 0);
+
+  for (const b of state.bolts) b.life -= realDt;
+  state.bolts = state.bolts.filter(b => b.life > 0);
+
+  // Loot visual update plays regardless of time freeze
+  for (const l of state.loot) l.update(realDt);
+
+  for (const p of state.particles) {
+    const d = p.realtime ? realDt : gameDt;
+    p.x += p.vx * d;
+    p.y += p.vy * d;
+    p.vy += 220 * d;
+    p.life -= d;
+  }
+  state.particles = state.particles.filter(p => p.life > 0);
+
+  if (gameDt > 0 && !state.gameOver) {
+    state.survivedSeconds += gameDt;
+    for (const u of state.units) u.update(gameDt);
+    for (const e of state.enemies) e.update(gameDt);
+
+    for (const pr of state.projectiles) pr.update(gameDt);
+    state.projectiles = state.projectiles.filter(pr => !pr.dead);
+
+    // Loot pickup
+    for (const l of state.loot) {
+      if (l.picked) continue;
+      for (const u of state.units) {
+        if (u.dead) continue;
+        if (dist2(u.x, u.y, l.x, l.y) < u.r + l.r + 2) {
+          l.picked = true;
+          applyLoot(l, u);
+          break;
+        }
+      }
+    }
+    state.loot = state.loot.filter(l => !l.picked);
+
+    // Explosions
+    for (const ex of state.explosions) {
+      ex.life -= gameDt;
+      ex.r += (ex.maxR - ex.r) * Math.min(1, gameDt * 8);
+    }
+    state.explosions = state.explosions.filter(ex => ex.life > 0);
+
+    // Boss shockwaves
+    for (const sw of state.shockwaves) {
+      const prevR = sw.r;
+      sw.r += sw.speed * gameDt;
+      sw.life -= gameDt;
+      for (const u of state.units) {
+        if (u.dead || sw.hit.has(u)) continue;
+        const d = dist2(sw.x, sw.y, u.x, u.y);
+        if (d > prevR - 8 && d < sw.r + 8) {
+          u.hp -= sw.dmg;
+          u.hurtFlash = 1;
+          sw.hit.add(u);
+          const ang = Math.atan2(u.y - sw.y, u.x - sw.x);
+          for (let i = 0; i < 10; i++) {
+            state.particles.push({
+              x: u.x + rand(-3, 3), y: u.y + rand(-3, 3),
+              vx: Math.cos(ang) * rand(80, 160) + rand(-40, 40),
+              vy: Math.sin(ang) * rand(80, 160) + rand(-80, -10),
+              life: rand(0.3, 0.7), maxLife: 0.7,
+              color: '#a83a2a', size: rand(1.2, 2.5), realtime: true,
+            });
+          }
+          state.shake = Math.max(state.shake, 5);
+        }
+      }
+      if (sw.r > sw.maxR) sw.life = 0;
+    }
+    state.shockwaves = state.shockwaves.filter(sw => sw.life > 0);
+
+    for (const e of state.enemies) {
+      if (e.dead && e.deathTimer < 0.1 && e.deathTimer + gameDt >= 0.1) {
+        state.bloodStains.push({ x: e.x, y: e.y + 2, r: e.r * 1.4, rot: rand(0, Math.PI), a: 0.55 });
+        if (state.bloodStains.length > 40) state.bloodStains.shift();
+      }
+    }
+    state.enemies = state.enemies.filter(e => !(e.dead && e.deathTimer > 3));
+
+    for (const u of state.units) {
+      if (u.hp <= 0 && !u.dead) {
+        u.dead = true;
+        const idx = state.selected.indexOf(u);
+        if (idx >= 0) state.selected.splice(idx, 1);
+        u.selected = false;
+        state.bloodStains.push({ x: u.x, y: u.y + 2, r: u.r * 1.8, rot: rand(0, Math.PI), a: 0.6 });
+        for (let i = 0; i < 25; i++) {
+          state.particles.push({
+            x: u.x, y: u.y,
+            vx: rand(-130, 130), vy: rand(-160, -20),
+            life: rand(0.7, 1.5), maxLife: 1.5,
+            color: '#8a2a1a', size: rand(1.5, 3), realtime: true,
+          });
+        }
+        state.shake = Math.max(state.shake, 7);
+      }
+    }
+
+    state.spawnTimer -= gameDt;
+    if (state.spawnTimer <= 0) {
+      spawnEnemy();
+      if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
+      if (state.wave >= WAVE_DEFS.thirdSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
+      state.spawnTimer = state.spawnInterval * rand(0.7, 1.3);
+    }
+
+    state.waveTimer += gameDt;
+    if (state.waveTimer > WAVE_DEFS.duration) {
+      state.waveTimer = 0;
+      if (state.wave < WAVE_DEFS.maxWave) {
+        state.wave++;
+        state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
+        let bossLabel = null;
+        if (state.wave % WAVE_DEFS.bigbossEvery === 0) {
+          spawnBoss('bigboss');
+          bossLabel = DISPLAY_NAME_DEFS.bigbossLabel;
+        } else if (state.wave % WAVE_DEFS.minibossEvery === 0) {
+          spawnBoss('miniboss');
+          bossLabel = DISPLAY_NAME_DEFS.minibossLabel;
+        }
+        state.moveMarkers.push({
+          x: G.W / 2, y: G.PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
+          type: 'wave', bossLabel,
+        });
+      } else {
+        state.gameOver = true;
+        state.victory = true;
+        const total = Math.floor(state.survivedSeconds);
+        document.getElementById('gameOverText').textContent = 'YOU SURVIVED';
+        document.getElementById('gameOverText').classList.add('victory');
+        document.getElementById('finalStats').textContent =
+          `ALL ${WAVE_DEFS.maxWave} WAVES CLEARED · KILLS ${state.kills} · TIME ${total}s`;
+        document.getElementById('overlay').classList.add('show');
+      }
+    }
+
+    if (state.units.every(u => u.dead)) {
+      state.gameOver = true;
+      const total = Math.floor(state.survivedSeconds);
+      document.getElementById('finalStats').textContent =
+        `SURVIVED ${total}s · KILLS ${state.kills} · WAVE ${state.wave}`;
+      document.getElementById('overlay').classList.add('show');
+    }
+  }
+
+  // ==== DRAW ====
+  const { ctx, W, H, PLAY_BOTTOM } = G;
+  ctx.save();
+  if (state.shake > 0) ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
+
+  drawBackground();
+
+  // Move markers (non-wave)
+  for (const m of state.moveMarkers) {
+    if (m.type === 'wave') continue;
+    const t = 1 - m.life / m.maxLife;
+    if (m.type === 'heal' || m.type === 'stim') {
+      const alpha = Math.min(1, m.life / m.maxLife * 1.4);
+      const yFloat = m.y - t * 20;
+      ctx.font = 'bold 13px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = m.type === 'heal'
+        ? `rgba(120, 230, 140, ${alpha})`
+        : `rgba(255, 130, 90, ${alpha})`;
+      ctx.fillText(m.text || '', m.x, yFloat);
+      ctx.textAlign = 'left';
+      continue;
+    }
+    ctx.strokeStyle = m.type === 'attack'
+      ? `rgba(220, 80, 60, ${1 - t})`
+      : `rgba(180, 220, 130, ${1 - t})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 4 + t * 14, 0, Math.PI * 2);
+    ctx.stroke();
+    if (m.type === 'attack') {
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(m.x - 8, m.y); ctx.lineTo(m.x + 8, m.y);
+      ctx.moveTo(m.x, m.y - 8); ctx.lineTo(m.x, m.y + 8);
+      ctx.stroke();
+    }
+  }
+
+  // Sort and draw entities by Y
+  const drawables = [];
+  for (const u of state.units) if (!u.dead) drawables.push(u);
+  for (const e of state.enemies) if (!e.dead) drawables.push(e);
+  drawables.sort((a, b) => a.y - b.y);
+
+  for (const e of state.enemies) if (e.dead) e.draw(ctx);
+  for (const l of state.loot) l.draw(ctx);
+  for (const ent of drawables) ent.draw(ctx);
+  for (const pr of state.projectiles) pr.draw(ctx);
+
+  drawBolts();
+  drawExplosions();
+  drawShockwaves();
+  drawParticles();
+
+  // Selection box
+  if (state.selectionBox) {
+    const b = state.selectionBox;
+    const x = Math.min(b.x1, b.x2), y = Math.min(b.y1, b.y2);
+    const w = Math.abs(b.x2 - b.x1), h = Math.abs(b.y2 - b.y1);
+    ctx.fillStyle = 'rgba(180, 220, 130, 0.14)';
+    ctx.strokeStyle = 'rgba(180, 220, 130, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  ctx.restore();
+
+  // Time freeze overlay
+  if (state.timeFlow < 1) {
+    const pauseAmount = 1 - state.timeFlow;
+    ctx.fillStyle = `rgba(60, 40, 90, ${pauseAmount * 0.18})`;
+    ctx.fillRect(0, 0, W, PLAY_BOTTOM + 8);
+    if (pauseAmount > 0.5) {
+      ctx.strokeStyle = `rgba(180, 160, 220, ${(pauseAmount - 0.5) * 0.08})`;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < PLAY_BOTTOM; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, i); ctx.lineTo(W, i);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Wave announcements
+  for (const m of state.moveMarkers) {
+    if (m.type !== 'wave') continue;
+    const t = 1 - m.life / m.maxLife;
+    const alpha = m.life > 0.3 ? Math.min(1, (m.maxLife - m.life) * 3) : m.life * 3;
+    const isBoss = !!m.bossLabel;
+    const isBig = m.bossLabel === DISPLAY_NAME_DEFS.bigbossLabel;
+    const titleColor = isBig ? `rgba(180, 240, 90, ${alpha})`
+                     : isBoss ? `rgba(255, 130, 60, ${alpha})`
+                     : `rgba(200, 60, 40, ${alpha * 0.9})`;
+    ctx.fillStyle = titleColor;
+    ctx.font = `bold ${isBoss ? 46 : 42}px Georgia, serif`;
+    ctx.textAlign = 'center';
+    const y = m.y - t * 20;
+    if (isBoss) {
+      ctx.shadowColor = isBig ? '#a0ff40' : '#ff6020';
+      ctx.shadowBlur = 12;
+    }
+    ctx.fillText(`WAVE ${state.wave}`, m.x, y);
+    ctx.shadowBlur = 0;
+    ctx.font = '14px "Courier New", monospace';
+    ctx.fillStyle = isBoss
+      ? (isBig ? `rgba(220, 255, 160, ${alpha * 0.9})` : `rgba(255, 200, 140, ${alpha * 0.9})`)
+      : `rgba(200, 180, 140, ${alpha * 0.7})`;
+    ctx.fillText(m.bossLabel || DISPLAY_NAME_DEFS.waveSubtext, m.x, y + 24);
+    ctx.textAlign = 'left';
+  }
+
+  drawAbilityPanel();
+  updateHUD();
+  requestAnimationFrame(frame);
+}
+
+// ==================== BOOT ====================
+initCanvas();
+window.addEventListener('resize', () => {
+  resize();
+  generateTerrain();
+});
+
+setNewGameFn(newGame);
+initInput();
+
+generateTerrain();
+newGame();
+requestAnimationFrame(frame);

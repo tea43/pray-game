@@ -133,11 +133,11 @@
     <div class="hud" id="title">P - R A Y &nbsp; : &nbsp; T H E &nbsp; G A M E</div>
     <div class="hud" id="hudTL">SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp; KILLS: <span id="killCount">0</span></div>
     <div class="hud" id="hudTR">WAVE <span id="waveNum">1</span> / 21</div>
-    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME PAUSED — MOVE TO ADVANCE</span></div>
+    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span></div>
     <div class="hud" id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
       RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: x0
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold
     </div>
     <div id="overlay">
       <div id="gameOverText">ALL SURVIVORS DEAD</div>
@@ -2181,8 +2181,10 @@ const state = {
   spawnInterval: 1.4,
   gameOver: false,
   timeFlow: 0,
-  timeSpeed: 0,
+  timeSpeed: 1,      // 1–3, controlled by +/-
   manualPause: false,
+  spaceHeld: false,        // is Space physically held right now
+  spaceHoldDuration: 0,    // seconds Space has been held this press
   survivedSeconds: 0,
 };
 
@@ -2244,7 +2246,9 @@ function newGame() {
   state.victory = false;
   state.timeFlow = 0;
   state.manualPause = false;
-  state.timeSpeed = 0;
+  state.timeSpeed = 1;
+  state.spaceHeld = false;
+  state.spaceHoldDuration = 0;
   state.survivedSeconds = 0;
 
   document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
@@ -2610,14 +2614,12 @@ document.addEventListener('keydown', (e) => {
 
   if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
     e.preventDefault();
-    state.timeSpeed = clamp(state.timeSpeed + 1, 0, 3);
-    state.manualPause = false;
+    state.timeSpeed = clamp(state.timeSpeed + 1, 1, 3);
     return;
   }
   if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
     e.preventDefault();
-    state.timeSpeed = clamp(state.timeSpeed - 1, 0, 3);
-    state.manualPause = state.timeSpeed === 0;
+    state.timeSpeed = clamp(state.timeSpeed - 1, 1, 3);
     return;
   }
   if (k === 's') {
@@ -2626,8 +2628,10 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === ' ') {
     e.preventDefault();
-    state.timeSpeed = 0;
-    state.manualPause = true;
+    if (!state.spaceHeld) {
+      state.spaceHeld = true;
+      state.spaceHoldDuration = 0;
+    }
     return;
   }
   if (k === 'a' && (e.ctrlKey || e.metaKey)) {
@@ -2641,6 +2645,20 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     for (const u of state.selected) {
       if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (state.spaceHeld) {
+      // Short tap → toggle manual pause; long hold just released → no toggle
+      if (state.spaceHoldDuration < 1.0) {
+        state.manualPause = !state.manualPause;
+      }
+      state.spaceHeld = false;
+      state.spaceHoldDuration = 0;
     }
   }
 });
@@ -2910,16 +2928,22 @@ function updateHUD() {
   const bar = document.getElementById('timeBar');
   const label = document.getElementById('timeLabel');
   bar.classList.remove('flowing', 'paused');
-  if (state.manualPause) {
+  const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
+  if (spaceHoldDriving) {
+    bar.classList.add('flowing');
+    label.textContent = `TIME x${state.timeSpeed} — HOLDING`;
+  } else if (state.spaceHeld) {
     bar.classList.add('paused');
-    label.textContent = 'TIME x0 — PRESS + TO RESUME';
+    label.textContent = 'HOLD SPACE TO ADVANCE…';
+  } else if (state.manualPause) {
+    bar.classList.add('paused');
+    label.textContent = `TIME x0 — SPACE TO RESUME`;
   } else if (state.timeFlow < 0.5) {
     bar.classList.add('paused');
-    label.textContent = 'TIME x0 — MOVE OR PRESS +';
+    label.textContent = `TIME x0 — MOVE UNITS`;
   } else {
     bar.classList.add('flowing');
-    const speedLabel = state.timeSpeed > 0 ? state.timeSpeed : 1;
-    label.textContent = `TIME x${speedLabel}`;
+    label.textContent = `TIME x${state.timeSpeed}`;
   }
 }
 
@@ -2929,10 +2953,15 @@ function frame(now) {
   const realDt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
+  // Space hold tracking (uses real time, independent of game flow)
+  if (state.spaceHeld) state.spaceHoldDuration += realDt;
+
   const anyMoving = state.units.some(u => !u.dead && u.moving);
-  const targetFlow = state.gameOver || state.manualPause ? 0
-                   : state.timeSpeed > 0 ? state.timeSpeed
-                   : anyMoving ? 1
+  const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
+  const targetFlow = state.gameOver ? 0
+                   : spaceHoldDriving ? state.timeSpeed
+                   : state.manualPause ? 0
+                   : anyMoving ? state.timeSpeed
                    : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
   const gameDt = realDt * state.timeFlow;

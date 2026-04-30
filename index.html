@@ -1,17 +1,151 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>P-RAY: The Game</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #1a1008; display: flex; align-items: center; justify-content: center; height: 100vh; }
-      canvas { display: block; }
-    </style>
-  </head>
-  <body>
-    <canvas id="gameCanvas"></canvas>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<title>P-RAY: The Game</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0604;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    color: #d9c7a0;
+  }
+  #stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #frame {
+    position: relative;
+    background: #1a120a;
+    box-shadow: 0 0 60px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.6);
+    border: 2px solid #2a1a0a;
+  }
+  canvas {
+    display: block;
+    background: #6b5335;
+    cursor: crosshair;
+    image-rendering: crisp-edges;
+  }
+  .hud {
+    position: absolute;
+    padding: 6px 10px;
+    background: rgba(10, 6, 4, 0.75);
+    border: 1px solid #3a2a18;
+    color: #d9c7a0;
+    font-size: 12px;
+    letter-spacing: 1px;
+    pointer-events: none;
+    user-select: none;
+  }
+  #hudTL { top: 10px; left: 10px; }
+  #hudTR { top: 10px; right: 10px; text-align: right; }
+  #timeBar {
+    bottom: 100px; left: 10px;
+    min-width: 220px;
+  }
+  #controls {
+    bottom: 10px; right: 10px;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #a89470;
+    text-align: right;
+    background: rgba(10, 6, 4, 0.65);
+  }
+  #title {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Georgia', serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: #8a6b3a;
+    border: none;
+    background: none;
+  }
+  .flow-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: #c5a572;
+    transition: background 0.2s;
+  }
+  .flowing .flow-indicator { background: #8bc34a; box-shadow: 0 0 8px #8bc34a; }
+  .paused .flow-indicator { background: #c5a572; }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(10, 5, 2, 0.85);
+    pointer-events: none;
+  }
+  #overlay.show { display: flex; pointer-events: auto; }
+  #gameOverText {
+    font-family: 'Georgia', serif;
+    font-size: 40px;
+    color: #a83a2a;
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px #000, 0 2px 0 #000;
+    margin-bottom: 20px;
+  }
+  #finalStats {
+    color: #d9c7a0;
+    font-size: 14px;
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+  }
+  #restart {
+    padding: 10px 28px;
+    background: #2a1a0a;
+    border: 1px solid #8a6b3a;
+    color: #d9c7a0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #restart:hover {
+    background: #3a2a1a;
+    border-color: #c5a572;
+    color: #fff;
+  }
+  #gameOverText.victory {
+    color: #a0d040;
+    text-shadow: 0 0 30px #60a010, 0 2px 0 #000;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="frame">
+    <canvas id="game"></canvas>
+    <div class="hud" id="title">P - R A Y &nbsp; : &nbsp; T H E &nbsp; G A M E</div>
+    <div class="hud" id="hudTL">SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp; KILLS: <span id="killCount">0</span></div>
+    <div class="hud" id="hudTR">WAVE <span id="waveNum">1</span> / 21</div>
+    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span></div>
+    <div class="hud" id="controls">
+      LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
+      RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold
+    </div>
+    <div id="overlay">
+      <div id="gameOverText">ALL SURVIVORS DEAD</div>
+      <div id="finalStats"></div>
+      <button id="restart">RESTART</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
 </html>

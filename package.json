@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:single": "vite build --mode single",
+    "preview": "vite preview",
     "check": "node scripts/check-game-data.js"
   },
   "devDependencies": {

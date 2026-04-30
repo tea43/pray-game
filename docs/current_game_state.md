@@ -19,10 +19,28 @@ P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a
 - `W`: Dick ability.
 - `E`: Habib ability.
 - `S`: stop selected survivors.
-- `+`: increase forced time speed from x0 to x1, x2, then x3.
-- `-`: decrease forced time speed from x3 to x2, x1, then x0.
-- `SPACE`: force time speed to x0.
+- `+`: increase time speed multiplier (x1 → x2 → x3).
+- `-`: decrease time speed multiplier (x3 → x2 → x1).
+- `SPACE` tap (< 1s): toggle manual pause on/off.
+- `SPACE` hold (≥ 1s): while held, world runs at the current speed multiplier regardless of pause state; releases back to previous pause state on key-up.
 - `R`: restart after game over or victory.
+
+## Time Flow Mechanics
+
+Time in P-RAY is activity-driven. The world advances only when something drives it:
+
+1. **Movement**: any living survivor walking → time flows at the current speed multiplier.
+2. **Speed multiplier** (`+`/`-`): sets the rate at x1, x2, or x3. Does not start or stop time by itself.
+3. **Manual pause** (`SPACE` tap): toggles an explicit freeze. The world stops regardless of survivor movement. Press again to lift.
+4. **Hold to advance** (`SPACE` hold ≥ 1s): temporarily forces time forward at the current speed while the key is physically held. Releasing returns to the previous pause/idle state.
+
+Priority order (highest first):
+
+1. Game over → always frozen.
+2. Space-hold driving (held ≥ 1s) → run at speed multiplier.
+3. Manual pause → frozen.
+4. Survivors moving → run at speed multiplier.
+5. Otherwise → frozen.
 
 ## Core Loop
 
