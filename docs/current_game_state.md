@@ -6,7 +6,7 @@ This snapshot is for fast agent onboarding. It describes the current playable be
 
 ## Game Identity
 
-Wasteland Survivors is a Canvas 2D survival tactics prototype. The player controls a squad of three survivors on a static wasteland arena. Time advances only while at least one survivor is moving, creating a hybrid of real-time action and pause-like tactical positioning.
+P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a squad of three survivors in a post-apocalyptic alien-worm setting built around P-RAY, a rare almost magical grass/substance. Time advances only while at least one survivor is moving, creating a hybrid of real-time action and pause-like tactical positioning.
 
 ## Controls
 
@@ -16,8 +16,8 @@ Wasteland Survivors is a Canvas 2D survival tactics prototype. The player contro
 - Click portrait: select from the bottom ability panel.
 - Right click: move selected survivors, or attack-move if clicking an enemy.
 - `Q`: Elliot ability.
-- `W`: Dikiy ability.
-- `E`: Dick ability.
+- `W`: Dick ability.
+- `E`: Habib ability.
 - `S`: stop selected survivors.
 - `+`: increase forced time speed from x0 to x1, x2, then x3.
 - `-`: decrease forced time speed from x3 to x2, x1, then x0.
@@ -26,7 +26,7 @@ Wasteland Survivors is a Canvas 2D survival tactics prototype. The player contro
 
 ## Core Loop
 
-- Survive escalating enemy waves.
+- Survive escalating alien worm waves.
 - Move survivors to advance time, kite enemies, pick up loot, and trigger attacks.
 - Time also advances while forced speed is x1, x2, or x3, even if survivors are idle.
 - x3 is the maximum forced speed.
@@ -40,20 +40,20 @@ Wasteland Survivors is a Canvas 2D survival tactics prototype. The player contro
 | Hero | Base Role | HP | Attack | Range | Rate | Ability |
 |---|---|---:|---:|---:|---:|---|
 | Elliot | Flexible melee skirmisher | 100 | 32 | 56 | 0.55s | `Q` Blink |
-| Dikiy | Fast melee bruiser | 120 | 24 | 36 | 0.34s | `W` Rage |
-| Dick | Ranged control attacker | 100 | 36 | 220 | 0.90s | `E` Chain Lightning |
+| Dick | Fast melee bruiser | 120 | 24 | 36 | 0.34s | `W` Rage |
+| Habib | Ranged control attacker | 100 | 36 | 220 | 0.90s | `E` Chain Lightning |
 
 ## Base Weapons
 
 - Elliot: `longClub`; melee hit with moderate knockback.
-- Dikiy: `dualClubs`; alternating melee swings with high attack frequency.
-- Dick: `thrownClub`; projectile attack that tracks a target, travels at 380 px/s, and expires after 280 px.
+- Dick: `dualClubs`; alternating melee swings with high attack frequency.
+- Habib: `thrownClub`; projectile attack that tracks a target, travels at 380 px/s, and expires after 280 px.
 
 ## Abilities
 
 - Elliot, Blink: teleports up to 240 px toward the cursor. Cooldown: 6s.
-- Dikiy, Rage: lasts 5s, doubles damage, speeds attacks by applying a 0.4x attack-rate multiplier, and increases knockback. Cooldown: 12s.
-- Dick, Chain Lightning: chains to up to 4 enemies within 200 px per jump. Each hit deals 30 damage and stuns for 1.8s. Cooldown: 8s.
+- Dick, Rage: lasts 5s, doubles damage, speeds attacks by applying a 0.4x attack-rate multiplier, and increases knockback. Cooldown: 12s.
+- Habib, Chain Lightning: chains to up to 4 enemies within 200 px per jump. Each hit deals 30 damage and stuns for 1.8s. Cooldown: 8s.
 
 ## Temporary Weapons
 
@@ -88,22 +88,24 @@ Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bom
 
 ## Enemies
 
-| Enemy | HP | Damage | Speed | Role |
-|---|---:|---:|---:|---|
-| Raider | 30 | 10 | 48 | Basic early melee enemy. |
-| Runner | 22 | 8 | 105 | Fast low-HP pressure unit. |
-| Ghoul | 50 | 14 | 58 | Midweight melee enemy. |
-| Mutant | 90 | 22 | 32 | Slow durable hard enemy with better drops. |
-| Blinker | 45 | 18 | 38 | Teleports behind survivors after a telegraph. |
-| Miniboss, Warlord | 600 | 32 | 40 | Boss-class melee enemy, knockback resistant. |
-| Bigboss, Behemoth | 2000 | 48 | 28 | Major boss with slam shockwave attack. |
+Current internal IDs still use the legacy prototype names. Player-facing direction is alien worms and snake-like worm mutations.
+
+| Future Display | Legacy ID | HP | Damage | Speed | Role |
+|---|---|---:|---:|---:|---|
+| Worm Hatchling | `raider` | 30 | 10 | 48 | Basic early melee worm. |
+| Dart Worm | `runner` | 22 | 8 | 105 | Fast low-HP pressure worm. |
+| Husk Crawler | `ghoul` | 50 | 14 | 58 | Midweight infected crawler. |
+| Burrow Brute | `mutant` | 90 | 22 | 32 | Slow durable worm mutation with better drops. |
+| Phase Worm | `blinker` | 45 | 18 | 38 | Teleports behind survivors after a telegraph. |
+| Brood Warden | `miniboss` | 600 | 32 | 40 | Boss-class worm, knockback resistant. |
+| Elder Worm | `bigboss` | 2000 | 48 | 28 | Major worm boss with slam shockwave attack. |
 
 Enemy entry by wave:
 
-- Wave 1: raiders.
-- Wave 2: ghouls and runners enter.
-- Wave 3: blinkers enter.
-- Wave 4: mutants enter.
+- Wave 1: worm hatchlings.
+- Wave 2: husk crawlers and dart worms enter.
+- Wave 3: phase worms enter.
+- Wave 4: burrow brutes enter.
 - Every 4th wave: miniboss.
 - Every 9th wave: bigboss takes priority over miniboss.
 
@@ -114,6 +116,7 @@ Enemy entry by wave:
 - Bottom HUD panel reserves 74 px plus padding.
 - Terrain is procedural decoration: debris, cracks, dust, soil variation, blood stains, vignette, and warm tint.
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
+- Asset injection is planned but not implemented yet. See `asset_injection_plan.md`.
 
 ## Current Architecture
 

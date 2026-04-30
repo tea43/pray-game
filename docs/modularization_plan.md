@@ -1,6 +1,6 @@
 # Modularization Plan
 
-Goal: make Wasteland Survivors manageable for humans and agents without corrupting the current playable file.
+Goal: make P-RAY: The Game manageable for humans and agents without corrupting the current playable file.
 
 The current game should remain shippable as `wasteland_survivors-v4.html` until a build system can reproduce the same behavior from modules.
 
@@ -20,6 +20,7 @@ pray_game/
   wasteland_survivors-v4.html        # current golden prototype
   dist/
     index.html                       # generated playable build later
+    pray-game.single.html            # optional self-contained build
   src/
     main.js                          # bootstraps canvas, state, loop
     state.js                         # createInitialState, reset helpers
@@ -28,6 +29,7 @@ pray_game/
       enemies.js
       loot.js
       waves.js
+      assets.js
     systems/
       input.js
       time.js
@@ -57,6 +59,8 @@ pray_game/
     wave_spawns.test.js
     loot_tables.test.js
   docs/
+  assets/
+    manifest.json
 ```
 
 This shape keeps gameplay systems visible and gives agents narrow files to inspect.
@@ -88,6 +92,7 @@ Actions:
   - enemy definitions
   - loot definitions
   - wave definitions
+  - asset/display-name definitions
 - Convert repeated magic numbers into named config values.
 - Keep constructors reading from config, but do not change runtime behavior.
 
@@ -98,6 +103,7 @@ Agents can patch balance by editing small tables instead of scanning constructor
 Exit criteria:
 
 - Hero, enemy, loot, and wave tuning can be changed from compact definitions.
+- Legacy enemy IDs can map to worm-facing display names without changing every behavior branch.
 - Current HTML still opens directly in a browser.
 
 ## Phase 2: Test Harness Before Split
@@ -125,6 +131,7 @@ Recommended stack:
 - Vite for local development and bundling.
 - Plain JavaScript modules first; TypeScript can wait until systems stabilize.
 - Keep Canvas 2D rendering; no engine migration unless gameplay demands it.
+- Optional single-HTML output for easy sharing, archiving, or Steam wrapper fallback.
 
 Actions:
 
@@ -137,7 +144,38 @@ Exit criteria:
 
 - `npm run dev` serves the modular game.
 - `npm run build` creates a static `dist/` version.
+- `npm run build:single` can create a self-contained HTML file if required.
 - The legacy file is still available for comparison.
+
+### Single-HTML Build Option
+
+Yes, the modular path can still compile into one HTML file.
+
+Complexity is low to moderate if planned early:
+
+- JavaScript and CSS can be bundled directly into one HTML file with Vite plus a single-file plugin or a small post-build script.
+- Small images can be inlined as base64/data URLs.
+- Larger assets should usually stay external during development, then optionally inline only for demos or archival builds.
+- Audio and comic panels can make single-file output very large, so the build should support both modes.
+
+Recommended commands:
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:single": "vite build --mode single"
+  }
+}
+```
+
+Recommended outputs:
+
+- `dist/index.html`: normal web build with external assets.
+- `dist/pray-game.single.html`: optional self-contained build.
+
+This is not hard if asset loading goes through a registry. The registry can resolve either external URLs or inlined data URLs without changing gameplay code.
 
 ## Phase 4: System Extraction Order
 
@@ -145,13 +183,14 @@ Extract low-risk pieces first.
 
 1. `utils/math.js`: `rand`, `randInt`, `dist2`, `clamp`.
 2. `config/*.js`: data tables.
-3. `state.js`: initial state and reset helpers.
-4. `entities/Projectile.js`, `SprayBullet.js`, `Loot.js`.
-5. `systems/loot.js`, `spawning.js`, `time.js`.
-6. `entities/Unit.js`, then split abilities/combat helpers.
-7. `entities/Enemy.js`, then split enemy behaviors.
-8. `render/*`: drawing only after entity behavior is stable.
-9. `input.js` and `main.js`.
+3. `config/assets.js`: manifest-backed asset registry shape.
+4. `state.js`: initial state and reset helpers.
+5. `entities/Projectile.js`, `SprayBullet.js`, `Loot.js`.
+6. `systems/loot.js`, `spawning.js`, `time.js`.
+7. `entities/Unit.js`, then split abilities/combat helpers.
+8. `entities/Enemy.js`, then split enemy behaviors.
+9. `render/*`: drawing only after entity behavior is stable.
+10. `input.js` and `main.js`.
 
 Avoid extracting rendering first. It is tightly coupled to entity state and easiest to break visually.
 

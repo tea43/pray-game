@@ -49,7 +49,7 @@ Outcome: power spikes are readable and satisfying.
 
 Owner: `rendering-agent`
 
-- Check telegraph clarity for blinkers and bigboss slam.
+- Check telegraph clarity for phase worms and elder worm slam.
 - Keep enemies distinguishable at full-window scale.
 - Audit particle density during late waves.
 
@@ -67,16 +67,27 @@ Owner: `systems-design-agent` plus `implementation-agent`
 
 Outcome: future agents work on focused files instead of one large script.
 
+### Asset Injection
+
+Owner: `systems-design-agent` plus `rendering-agent`
+
+- Follow `asset_injection_plan.md`.
+- Keep primitive Canvas renderers as fallbacks.
+- Add manifests for heroes, worm enemies, weapons, loot, and comic panels.
+- Do not require gameplay agents to edit draw functions just to add content.
+
+Outcome: P-RAY content can be added as data and assets instead of large code patches.
+
 ### Enemy Expansion
 
 Owner: `combat-loot-agent`
 
-Candidates:
+The enemy direction is alien worms and snake-like worm mutations. Candidates:
 
-- Ranged thrower: fires a slow projectile with a clear telegraph.
-- Shielder: resists frontal damage, rewards flanking.
-- Spitter: creates temporary hazard zones.
-- Support enemy: buffs nearby enemies, low direct damage.
+- Spitter worm: fires a slow projectile with a clear telegraph.
+- Shielded shell worm: resists frontal damage, rewards flanking.
+- Venom crawler: creates temporary hazard zones.
+- Brood singer: buffs nearby worms, low direct damage.
 
 First requirement: enemy stats and behavior hooks must be table-driven or modular enough to avoid making `Enemy.update()` harder to read.
 

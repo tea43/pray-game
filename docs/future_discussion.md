@@ -1,4 +1,4 @@
-# Wasteland Survivors — Future Design Discussion
+# P-RAY — Future Design Discussion
 
 Open questions and design considerations. Nothing here is committed to implementation — this is a planning scratchpad.
 
@@ -8,7 +8,7 @@ Open questions and design considerations. Nothing here is committed to implement
 
 ### Current approach
 
-Characters are drawn entirely with Canvas 2D primitives — arcs, rects, ellipses. Every visual detail (hat, shirt pattern, eyes, weapons) is hard-coded draw calls inside `_drawElliot`, `_drawDikiy`, `_drawDick`. Palette colours are the only parameterised part.
+Characters are drawn entirely with Canvas 2D primitives — arcs, rects, ellipses. Every visual detail (hat, shirt pattern, eyes, weapons) is hard-coded draw calls inside `_drawElliot`, `_drawDick`, `_drawHabib`. Palette colours are the only parameterised part.
 
 ### What "8 sprites" could mean
 
@@ -19,7 +19,7 @@ Typically a top-down character has 8 directional frames (N, NE, E, SE, S, SW, W,
 - In `Unit.draw()`, derive the facing octant from `this.facing` and the frame from `this.walkCycle`.
 - Pros: richer visuals, artist-friendly, no code for each new character.
 - Cons: requires a spritesheet per character at whatever resolution the canvas uses; scaling artefacts if canvas size varies. The current canvas is nearly full-window (97 vw/vh) so sprites need to be high-res or the art looks blurry with `crisp-edges` rendering.
-- Migration: replace the `_drawElliot` / `_drawDikiy` / `_drawDick` calls with a single `drawSprite(ctx, this.spritesheet, octant, frame)` helper. Everything else (HP bar, selection ring, ability aura, weapon) can stay as canvas primitives layered on top.
+- Migration: replace the `_drawElliot` / `_drawDick` / `_drawHabib` calls with a single `drawSprite(ctx, this.spritesheet, octant, frame)` helper. Everything else (HP bar, selection ring, ability aura, weapon) can stay as canvas primitives layered on top.
 
 **Option B — Hybrid: sprite body + primitive overlays**
 - Use a sprite only for the body/torso facing.
@@ -27,7 +27,7 @@ Typically a top-down character has 8 directional frames (N, NE, E, SE, S, SW, W,
 - Easier to author: a small 8-frame sprite at ~32×32 px looks fine at game scale, overlays handle the rest.
 
 **Option C — Keep primitives, add directional facing**
-- Currently Dikiy's cap bill rotates with `this.facing`, but the rest of the body doesn't.
+- Currently Dick's cap bill rotates with `this.facing`, but the rest of the body doesn't.
 - Full directional could be faked by: mirroring the draw (flip ctx horizontally when facing left) and drawing a facing indicator.
 - Cheapest to implement, least visual fidelity.
 
@@ -43,7 +43,7 @@ Typically a top-down character has 8 directional frames (N, NE, E, SE, S, SW, W,
 
 ### Current approach
 
-All 6 enemy kinds share one `Enemy` class with a constructor `if/else` block and one `draw()` method with per-kind branching. Adding a new enemy means touching both blocks.
+All 6 enemy kinds share one `Enemy` class with a constructor `if/else` block and one `draw()` method with per-kind branching. The lore direction is alien worms and snake-like worm mutations, but the current internal kind IDs are still legacy prototype names. Adding a new enemy means touching both blocks.
 
 ### Options
 
@@ -57,6 +57,7 @@ All 6 enemy kinds share one `Enemy` class with a constructor `if/else` block and
 - `Enemy` constructor does `Object.assign(this, ENEMY_DEFS[kind])`.
 - Draw method still needs per-kind branching for visuals, but stats are decoupled.
 - New enemies only need a config entry + a draw branch.
+- Display names and sprite paths should come from an asset/content manifest so worm variants can be injected without editing behavior code.
 
 **Option C — Sprite-based enemies (same as characters)**
 - Replace per-kind draw code with spritesheet lookup.
@@ -112,7 +113,7 @@ The map is a single flat canvas equal to 97% of the window. Enemies spawn from t
 
 ### Current terrain
 
-One terrain type: flat sandy wasteland with decorative debris, cracks, and dust. No terrain affects movement or gameplay.
+One terrain type: flat sandy post-apocalyptic ground with decorative debris, cracks, and dust. No terrain affects movement or gameplay.
 
 ### Design questions
 
@@ -186,6 +187,6 @@ One terrain type: flat sandy wasteland with decorative debris, cracks, and dust.
 
 - **Visual polish**: a brief floating text on pickup is already implemented for medkit (`+heal`) and stimpack (`RAGE`). All loot types could show a text pop.
 
-- **Enemy-type specific drops**: currently mutant and blinker have a special weapon drop roll. Could extend this — runners drop speed boosts, ghouls drop medkits slightly more. Would reinforce the "learn enemy behaviour to predict rewards" loop.
+- **Enemy-type specific drops**: currently the burrow brute/phase worm legacy types have a special weapon drop roll. Could extend this: dart worms drop speed boosts, husk crawlers drop medkits slightly more. This reinforces the "learn enemy behaviour to predict rewards" loop.
 
 - **Loot expiry**: items left too long could despawn with a flashing warning. Creates urgency and prevents loot hoarding from trivialising waves.

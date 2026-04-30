@@ -1,4 +1,4 @@
-# Wasteland Survivors v4 — Implementation Notes
+# P-RAY v4 — Implementation Notes
 
 Source file: `wasteland_survivors-v4.html` (~3 242 lines, single-file HTML/JS/CSS game on a `<canvas>` element).
 
@@ -51,7 +51,7 @@ const gameDt = realDt * state.timeFlow;
 
 ## 2. Character Drawing
 
-Each of the three player characters (Elliot, Dikiy, Dick) is drawn entirely with Canvas 2D primitives — no sprite sheets.
+Each of the three player characters (Elliot, Dick, Habib) is drawn entirely with Canvas 2D primitives — no sprite sheets.
 
 ### Draw dispatch (`Unit.draw()`, line ~518)
 
@@ -61,9 +61,9 @@ draw(ctx)
   → ability aura rings (blinkFlash, rageTimer)
   → selection indicator (pulsing ellipse + dashed path to target)
   → ctx.save() + ctx.translate(x, y + wobble)
-       → _drawElliot / _drawDikiy / _drawDick
+       → _drawElliot / _drawDick / _drawHabib
   → ctx.restore()
-  → Dick's ambient electric sparks (world-space)
+  → Habib's ambient electric sparks (world-space)
   → _drawWeapon() → weapon-type dispatch
   → swing arc flash
   → HP bar
@@ -81,8 +81,8 @@ draw(ctx)
 | Character | Body | Head | Weapon |
 |---|---|---|---|
 | **Elliot** | Pink shirt with floral pattern (acc1/acc2 ellipses + flower petals), shorts, skin face, straw hat with band | Hat brim ellipse + hatTop ellipse + dark eyes + small mouth arc | `longClub` (single long club, 40px, tape wrap near grip) |
-| **Dikiy** | Bare muscular torso (skin with shade lines, abs rects, nipple dots), skinDark shorts | Baseball cap with a bill that **rotates with `this.facing`**, glowing red eyes during rage | `dualClubs` (two short clubs, alternating left/right per swing via `dualSide` flag) |
-| **Dick** | White collared shirt with shadow sector + V-neck line, red shorts, exposed fist circles | Dark hair arc, plain dark eyes, static electric sparks at body edge when ability ready | `thrownClub` (two stub clubs in hands; front arm extends during `throwArm > 0`, smear when fully released) |
+| **Dick** | Bare muscular torso (skin with shade lines, abs rects, nipple dots), skinDark shorts | Baseball cap with a bill that **rotates with `this.facing`**, glowing red eyes during rage | `dualClubs` (two short clubs, alternating left/right per swing via `dualSide` flag) |
+| **Habib** | White collared shirt with shadow sector + V-neck line, red shorts, exposed fist circles | Dark hair arc, plain dark eyes, static electric sparks at body edge when ability ready | `thrownClub` (two stub clubs in hands; front arm extends during `throwArm > 0`, smear when fully released) |
 
 ### Hurt flash
 
@@ -90,7 +90,7 @@ draw(ctx)
 
 ### Mini-portraits in the ability panel
 
-`drawAbilityPanel()` (line ~2745) calls the same `_drawElliot/_drawDikiy/_drawDick` methods with `ctx.scale(0.65, 0.65)` at the portrait centre. Selection ring is suppressed by temporarily setting `u.selected = false`.
+`drawAbilityPanel()` (line ~2745) calls the same `_drawElliot/_drawDick/_drawHabib` methods with `ctx.scale(0.65, 0.65)` at the portrait centre. Selection ring is suppressed by temporarily setting `u.selected = false`.
 
 ---
 
@@ -117,8 +117,8 @@ Each frame (per `gameDt`):
 | Character | Base dmg | Attack rate (s) | Range (px) |
 |---|---|---|---|
 | Elliot | 32 | 0.55 | 56 |
-| Dikiy | 24 (×2 rage) | 0.34 (×0.4 rate during rage) | 36 |
-| Dick | 36 | 0.90 | 220 |
+| Dick | 24 (×2 rage) | 0.34 (×0.4 rate during rage) | 36 |
+| Habib | 36 | 0.90 | 220 |
 
 `atkDmg` and `atkRate` are getters that multiply base values by rage/active weapon modifiers.
 
@@ -127,8 +127,8 @@ Each frame (per `gameDt`):
 | Character | Key | Effect | Cooldown |
 |---|---|---|---|
 | Elliot | Q – BLINK | Teleports up to 240 px toward cursor. Leaves/arrives with particle puff + ring flash. | 6 s |
-| Dikiy | W – RAGE | Sets `rageTimer = 5 s`. While active: ×2 dmg, ×0.4 atkRate (faster), ×1.75 knockback, red aura ring + glowing eyes. | 12 s |
-| Dick | E – CHAIN LTG | Chains to up to 4 enemies within 200 px each. Each hit: 30 dmg + 1.8 s stun + small knockback. Renders a multi-segment zigzag bolt. | 8 s |
+| Dick | W – RAGE | Sets `rageTimer = 5 s`. While active: ×2 dmg, ×0.4 atkRate (faster), ×1.75 knockback, red aura ring + glowing eyes. | 12 s |
+| Habib | E – CHAIN LTG | Chains to up to 4 enemies within 200 px each. Each hit: 30 dmg + 1.8 s stun + small knockback. Renders a multi-segment zigzag bolt. | 8 s |
 
 Abilities are triggered from the `keydown` handler via `unit.cast()` → `_blink/_rage/_chainLightning`.
 
@@ -171,13 +171,13 @@ All enemies share `Enemy.draw()` (line ~1787) with per-`kind` branching.
 
 | Kind | r | Color | Eyes | Head detail | Notes |
 |---|---|---|---|---|---|
-| `raider` | 9 | `#3a2515` (dark brown) | Dark rects | Curved hair arc | Simplest enemy |
-| `ghoul` | 10 | `#4a3a25` | Yellow rects | Ear-nub rects | Default fallback |
-| `runner` | 8 | `#5a3a20` | Wide white + dark pupils | 5 spiked hair triangles | Fastest; wide wild eyes |
-| `mutant` | 15 | `#3a4a2a` (green) | Glowing red squares | 3 upward spine triangles | Largest regular enemy |
-| `blinker` | 10 | `#3a2545` (purple) | Purple glowing squares | Dark hood arc + 3 rotating wisps | Semi-transparent; telegraphs blink destination |
-| `miniboss` | 22 | `#2a1a0a` | Orange glow | Dark skull cap, beard stripe, shoulder guard triangles, chest armour rect | Named "WARLORD"; orange HP bar |
-| `bigboss` | 32 | `#2a3a1a` (dark green) | Green glow + inner white rects | 5 rotating energy lines, 5 crown spikes, V-shaped extra eyes | Named "BEHEMOTH"; slam attack shockwave; radiation sparkles |
+| `raider` | 9 | `#3a2515` (dark brown) | Dark rects | Curved hair arc | Legacy fallback for Worm Hatchling |
+| `ghoul` | 10 | `#4a3a25` | Yellow rects | Ear-nub rects | Legacy fallback for Husk Crawler |
+| `runner` | 8 | `#5a3a20` | Wide white + dark pupils | 5 spiked hair triangles | Legacy fallback for Dart Worm |
+| `mutant` | 15 | `#3a4a2a` (green) | Glowing red squares | 3 upward spine triangles | Legacy fallback for Burrow Brute |
+| `blinker` | 10 | `#3a2545` (purple) | Purple glowing squares | Dark hood arc + 3 rotating wisps | Legacy fallback for Phase Worm |
+| `miniboss` | 22 | `#2a1a0a` | Orange glow | Dark skull cap, beard stripe, shoulder guard triangles, chest armour rect | Named "BROOD WARDEN"; orange HP bar |
+| `bigboss` | 32 | `#2a3a1a` (dark green) | Green glow + inner white rects | 5 rotating energy lines, 5 crown spikes, V-shaped extra eyes | Named "ELDER WORM"; slam attack shockwave; radiation sparkles |
 
 ### Death
 
@@ -221,7 +221,7 @@ Debris types:
 
 Drawing order (back to front):
 
-1. **Base fill** `#6b5335` — sandy wasteland brown.
+1. **Base fill** `#6b5335` — sandy post-apocalyptic ground.
 2. **Noise dots** — two passes of deterministic-position dots (index-derived offsets, not `Math.random()` per frame) in dark and light brown.
 3. **Soil variation ellipses** — 25 large semi-transparent dark ellipses at fixed pseudo-random positions.
 4. **Cracks** — drawn as thin (`0.8 px`) dark polylines.
@@ -235,7 +235,7 @@ Drawing order (back to front):
 
 Enemies spawn from all four edges (`spawnEnemy()`, line ~2238):
 - A random edge is picked; a point is chosen along that edge with a 40 px margin outside.
-- Kind is determined by wave-gated probability table (raiders always available; ghouls/runners at wave 2; blinkers at wave 3; mutants at wave 4).
+- Kind is determined by a wave-gated probability table. Legacy IDs map to the P-RAY worm direction as: hatchlings always available; husk crawlers/dart worms at wave 2; phase worms at wave 3; burrow brutes at wave 4.
 - `spawnTimer` starts at 1.5 s, refills to `spawnInterval × rand(0.7, 1.3)` after each spawn.
 - `spawnInterval` starts at 1.4 s and shrinks 16% per wave (floor 0.30 s).
 - Wave 3+: 35% chance of a second simultaneous spawn. Wave 6+: another 35% chance of a third.

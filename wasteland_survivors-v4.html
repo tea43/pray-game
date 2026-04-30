@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wasteland Survivors</title>
+<title>P-RAY: The Game</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -130,7 +130,7 @@
 <div id="stage">
   <div id="frame">
     <canvas id="game"></canvas>
-    <div class="hud" id="title">W A S T E L A N D &nbsp; S U R V I V O R S</div>
+    <div class="hud" id="title">P - R A Y &nbsp; : &nbsp; T H E &nbsp; G A M E</div>
     <div class="hud" id="hudTL">SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp; KILLS: <span id="killCount">0</span></div>
     <div class="hud" id="hudTR">WAVE <span id="waveNum">1</span> / 21</div>
     <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME PAUSED — MOVE TO ADVANCE</span></div>
@@ -218,8 +218,8 @@ class Unit {
         shorts: '#8a6840', skin: '#e8b888',
         hat: '#d4b880', hatTop: '#bfa270', hatBand: '#5a3a1a',
       };
-    } else if (type === 'dikiy') {
-      this.name = 'Dikiy';
+    } else if (type === 'dick') {
+      this.name = 'Dick';
       this.abilityKey = 'W';
       this.abilityName = 'RAGE';
       this.abilityMaxCd = 12;
@@ -232,8 +232,8 @@ class Unit {
         skin: '#d8a878', skinShade: '#a8784a', skinDark: '#7a5030',
         cap: '#2a1a0a', capTop: '#3a2515', capBtn: '#c53030',
       };
-    } else if (type === 'dick') {
-      this.name = 'Dick';
+    } else if (type === 'habib') {
+      this.name = 'Habib';
       this.abilityKey = 'E';
       this.abilityName = 'CHAIN LTG';
       this.abilityMaxCd = 8;
@@ -411,8 +411,8 @@ class Unit {
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
     if (this.type === 'elliot') return this._blink();
-    if (this.type === 'dikiy') return this._rage();
-    if (this.type === 'dick') return this._chainLightning();
+    if (this.type === 'dick') return this._rage();
+    if (this.type === 'habib') return this._chainLightning();
     return false;
   }
 
@@ -571,13 +571,13 @@ class Unit {
     ctx.translate(this.x, this.y + wobble);
 
     if (this.type === 'elliot') this._drawElliot(ctx, flashBoost);
-    else if (this.type === 'dikiy') this._drawDikiy(ctx, flashBoost);
     else if (this.type === 'dick') this._drawDick(ctx, flashBoost);
+    else if (this.type === 'habib') this._drawHabib(ctx, flashBoost);
 
     ctx.restore();
 
-    // Dick's ambient electric sparks (in world space)
-    if (this.type === 'dick' && Math.random() < 0.06) {
+    // Habib's ambient electric sparks (in world space)
+    if (this.type === 'habib' && Math.random() < 0.06) {
       const a = rand(0, Math.PI * 2);
       const r = this.r + rand(1, 4);
       ctx.strokeStyle = 'rgba(200, 230, 255, 0.75)';
@@ -730,7 +730,7 @@ class Unit {
     }
   }
 
-  _drawDikiy(ctx, flashBoost) {
+  _drawDick(ctx, flashBoost) {
     const p = this.palette;
     ctx.fillStyle = p.skinDark;
     ctx.beginPath();
@@ -834,7 +834,7 @@ class Unit {
     ctx.stroke();
   }
 
-  _drawDick(ctx, flashBoost) {
+  _drawHabib(ctx, flashBoost) {
     const p = this.palette;
     ctx.fillStyle = p.shorts;
     ctx.beginPath();
@@ -1508,7 +1508,7 @@ class Enemy {
       this.color = '#2a1a0a'; this.skin = '#9a7a55';
       this.hair = '#1a0a05'; this.bloodColor = '#7a1010';
       this.kbResist = 0.35;
-      this.name = 'WARLORD';
+      this.name = 'BROOD WARDEN';
     } else if (kind === 'bigboss') {
       this.r = 32; this.speed = 28;
       this.hp = 2000; this.maxHp = 2000;
@@ -1516,7 +1516,7 @@ class Enemy {
       this.color = '#2a3a1a'; this.skin = '#6a8a40';
       this.hair = '#1a2010'; this.bloodColor = '#3a6a1a';
       this.kbResist = 0.18;
-      this.name = 'BEHEMOTH';
+      this.name = 'ELDER WORM';
     } else {
       // ghoul (default)
       this.r = 10; this.speed = 58;
@@ -2230,8 +2230,8 @@ function newGame() {
 
   const cx = W / 2, cy = PLAY_BOTTOM / 2;
   state.units.push(new Unit(cx - 44, cy + 8, 'elliot'));
-  state.units.push(new Unit(cx, cy - 10, 'dikiy'));
-  state.units.push(new Unit(cx + 44, cy + 8, 'dick'));
+  state.units.push(new Unit(cx, cy - 10, 'dick'));
+  state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
 
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('survCount').textContent = state.units.length;
@@ -2250,8 +2250,8 @@ function spawnEnemy() {
   const r = Math.random();
   let kind;
   const w = state.wave;
-  // Expanded spawn pool — runners enter at wave 2, blinkers at wave 3
-  // Pool gets richer with each wave; runners and blinkers fill an increasing share.
+  // Expanded spawn pool — dart worms enter at wave 2, phase worms at wave 3.
+  // Legacy kind IDs stay stable until the data/asset registry lands.
   if (w >= 4 && r < 0.18) kind = 'mutant';
   else if (w >= 3 && r < (w >= 5 ? 0.32 : 0.22)) kind = 'blinker';
   else if (w >= 2 && r < (w >= 5 ? 0.52 : 0.40)) kind = 'runner';
@@ -2783,7 +2783,7 @@ function drawAbilityPanel() {
     ctx.lineWidth = u.selected && !u.dead ? 2 : 1;
     ctx.strokeRect(x, y, slotW, slotH);
 
-    if (u.type === 'dikiy' && u.rageTimer > 0) {
+    if (u.type === 'dick' && u.rageTimer > 0) {
       const pulse = 0.5 + Math.sin(state.time * 12) * 0.5;
       ctx.strokeStyle = `rgba(255, 60, 30, ${0.5 + pulse * 0.5})`;
       ctx.lineWidth = 2;
@@ -2798,8 +2798,8 @@ function drawAbilityPanel() {
     const savedSelected = u.selected;
     u.selected = false;
     if (u.type === 'elliot') u._drawElliot(ctx, 0);
-    else if (u.type === 'dikiy') u._drawDikiy(ctx, 0);
     else if (u.type === 'dick') u._drawDick(ctx, 0);
+    else if (u.type === 'habib') u._drawHabib(ctx, 0);
     u.selected = savedSelected;
     ctx.restore();
 
@@ -2833,7 +2833,7 @@ function drawAbilityPanel() {
     ctx.fillStyle = u.abilityCd > 0 ? '#6a5030' : u.abilityColor;
     ctx.fillText(`[${u.abilityKey}] ${u.abilityName}`, x + 8, y + 46);
 
-    if (u.type === 'dikiy' && u.rageTimer > 0) {
+    if (u.type === 'dick' && u.rageTimer > 0) {
       ctx.fillStyle = '#ff8040';
       ctx.textAlign = 'right';
       ctx.font = '10px "Courier New", monospace';
@@ -3041,14 +3041,14 @@ function frame(now) {
       if (state.wave < 21) {
         state.wave++;
         state.spawnInterval = Math.max(0.30, state.spawnInterval * 0.84);
-        // Boss spawning - bigboss takes priority on overlap (waves 36, 72...)
+        // Boss spawning - elder worm takes priority on overlap (waves 36, 72...)
         let bossLabel = null;
         if (state.wave % 9 === 0) {
           spawnBoss('bigboss');
-          bossLabel = 'BEHEMOTH AWAKENS';
+          bossLabel = 'ELDER WORM SURFACES';
         } else if (state.wave % 4 === 0) {
           spawnBoss('miniboss');
-          bossLabel = 'A WARLORD ARRIVES';
+          bossLabel = 'A BROOD WARDEN SURFACES';
         }
         state.moveMarkers.push({
           x: W / 2, y: PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
@@ -3226,7 +3226,7 @@ function frame(now) {
     const t = 1 - m.life / m.maxLife;
     const alpha = m.life > 0.3 ? Math.min(1, (m.maxLife - m.life) * 3) : m.life * 3;
     const isBoss = !!m.bossLabel;
-    const isBig = m.bossLabel === 'BEHEMOTH AWAKENS';
+    const isBig = m.bossLabel === 'ELDER WORM SURFACES';
     const titleColor = isBig ? `rgba(180, 240, 90, ${alpha})`
                      : isBoss ? `rgba(255, 130, 60, ${alpha})`
                      : `rgba(200, 60, 40, ${alpha * 0.9})`;
@@ -3244,7 +3244,7 @@ function frame(now) {
     ctx.fillStyle = isBoss
       ? (isBig ? `rgba(220, 255, 160, ${alpha * 0.9})` : `rgba(255, 200, 140, ${alpha * 0.9})`)
       : `rgba(200, 180, 140, ${alpha * 0.7})`;
-    ctx.fillText(m.bossLabel || 'the horde grows', m.x, y + 24);
+    ctx.fillText(m.bossLabel || 'the brood stirs', m.x, y + 24);
     ctx.textAlign = 'left';
   }
 

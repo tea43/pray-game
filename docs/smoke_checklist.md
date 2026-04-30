@@ -28,8 +28,8 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 ## Abilities
 
 - Select Elliot, press `Q`, confirm blink toward cursor and cooldown.
-- Select Dikiy, press `W`, confirm rage aura, faster attacks, and cooldown.
-- Select Dick, press `E` near enemies, confirm chain lightning, stun, and cooldown.
+- Select Dick, press `W`, confirm rage aura, faster attacks, and cooldown.
+- Select Habib, press `E` near enemies, confirm chain lightning, stun, and cooldown.
 
 ## Combat And Loot
 

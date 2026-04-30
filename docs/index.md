@@ -6,10 +6,12 @@ This is the navigation hub for agents. Read this first, then open only the file 
 
 - `current_game_state.md`: Concise snapshot of the playable game: heroes, weapons, abilities, enemies, loot, waves, controls, and current architecture.
 - `implementation_notes.md`: Deeper technical reference for current `wasteland_survivors-v4.html` behavior and code locations.
+- `lore/PRAY_ the game.md`: User-authored lore source for the P-RAY setting, alien worms, heroes, and story tone.
 
 ## Planning
 
 - `modularization_plan.md`: Safe path from one large HTML file to a maintainable modular codebase without breaking the current playable file.
+- `asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, worm enemies, weapons, loot, and comic assets.
 - `future_development_plan.md`: Suggested development roadmap for gameplay, content, tooling, packaging, and eventual Steam readiness.
 - `smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
 - `future_discussion.md`: Scratchpad for larger design topics such as sprites, scrolling maps, terrain, enemies, and loot.
@@ -29,6 +31,7 @@ This is the navigation hub for agents. Read this first, then open only the file 
 | Balance change | `current_game_state.md`, then relevant code ranges |
 | Add ability, weapon, enemy, or loot | `current_game_state.md` + `implementation_notes.md` |
 | Architecture split | `modularization_plan.md` |
+| Asset/content pipeline | `asset_injection_plan.md` + `lore/PRAY_ the game.md` |
 | Roadmap or feature sequencing | `future_development_plan.md` |
 | Verify a patch | `smoke_checklist.md` |
 
