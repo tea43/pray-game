@@ -203,6 +203,14 @@ export class Enemy {
     playSfx('death');
     state.kills++;
     addKillScore(this.kind);
+    this._spawnBloodBurst();
+    this._spawnBossGlowBurst();   // no-op for regular enemies
+    this._triggerScreenEffects();
+    this._spawnLootDrops();
+  }
+
+  // Blood splatter particles — same for all enemy types, scaled by radius.
+  _spawnBloodBurst() {
     const burst = (this.kind === 'bigboss') ? 80 : (this.kind === 'miniboss') ? 40 : 18;
     for (let i = 0; i < burst; i++) {
       state.particles.push({
@@ -213,12 +221,13 @@ export class Enemy {
         color: this.bloodColor, size: rand(1.5, 3.5), realtime: true,
       });
     }
-    // Soul-glow burst — additive so big deaths really pop.
-    const glowBurst = (this.kind === 'bigboss') ? 38 : (this.kind === 'miniboss') ? 22 : (this.kind === 'mutant' || this.kind === 'blinker') ? 8 : 4;
-    const glowColor = this.kind === 'bigboss' ? 'rgba(180, 255, 120, 1)'
-                    : this.kind === 'miniboss' ? 'rgba(255, 160, 80, 1)'
-                    : this.kind === 'blinker' ? 'rgba(220, 160, 255, 1)'
-                    : 'rgba(255, 200, 140, 1)';
+  }
+
+  // Additive glow burst — bosses only so regular deaths stay gritty.
+  _spawnBossGlowBurst() {
+    const glowBurst = (this.kind === 'bigboss') ? 10 : (this.kind === 'miniboss') ? 5 : 0;
+    if (glowBurst === 0) return;
+    const glowColor = this.kind === 'bigboss' ? 'rgba(180, 255, 120, 1)' : 'rgba(255, 160, 80, 1)';
     for (let i = 0; i < glowBurst; i++) {
       const a = rand(0, Math.PI * 2);
       const v = rand(60, 220) * (this.r / 14);
@@ -229,6 +238,10 @@ export class Enemy {
         color: glowColor, size: rand(2, 4.5), realtime: true, additive: true,
       });
     }
+  }
+
+  // Screen shake, flash overlay, and hit-stop — bosses only.
+  _triggerScreenEffects() {
     if (this.kind === 'bigboss') {
       state.shockwaves.push({
         x: this.x, y: this.y,
@@ -240,13 +253,18 @@ export class Enemy {
       state.flashAlpha = Math.max(state.flashAlpha, 0.7);
       state.flashColor = '#c8ff90';
       state.hitStop = Math.max(state.hitStop, 0.14);
+      state.shake = Math.max(state.shake, 4);
     } else if (this.kind === 'miniboss') {
       state.flashAlpha = Math.max(state.flashAlpha, 0.45);
       state.flashColor = '#ffb070';
       state.hitStop = Math.max(state.hitStop, 0.08);
+      state.shake = Math.max(state.shake, 3);
     }
-    state.shake = Math.max(state.shake, this.kind === 'bigboss' ? 14 : this.kind === 'miniboss' ? 8 : 4);
+    // Regular enemies: no shake, no flash, no hit-stop.
+  }
 
+  // Loot drops — boss guaranteed drops, then regular chance-based drops.
+  _spawnLootDrops() {
     if (this.kind === 'bigboss') {
       const drops = ['bomb', 'medkit', 'stimpack', 'medkit', 'medkit'];
       for (let i = 0; i < drops.length; i++) {
@@ -417,8 +435,9 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y + wobble);
 
-    if (this.hurtFlash > 0) ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = this.hurtFlash > 0 ? '#ffb0a0' : this.color;
+    const isBoss = this.kind === 'miniboss' || this.kind === 'bigboss';
+    if (this.hurtFlash > 0 && isBoss) ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = this.hurtFlash > 0 ? '#d97060' : this.color;
     ctx.beginPath();
     ctx.arc(0, 0, this.r, 0, Math.PI * 2);
     ctx.fill();
@@ -432,7 +451,7 @@ export class Enemy {
     ctx.lineTo(0, 0);
     ctx.fill();
 
-    ctx.fillStyle = this.hurtFlash > 0 ? '#ffffff' : this.skin;
+    ctx.fillStyle = this.hurtFlash > 0 ? '#ffb8a8' : this.skin;
     ctx.beginPath();
     ctx.arc(0, -this.r * 0.6, this.r * 0.5, 0, Math.PI * 2);
     ctx.fill();

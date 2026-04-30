@@ -39,7 +39,6 @@ export class Projectile {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
         e.hp -= this.dmg;
-        e.hurtFlash = 1;
         e.knockX += this.vx * 0.32;
         e.knockY += this.vy * 0.32;
         state.bloodStains.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), r: e.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
@@ -51,18 +50,8 @@ export class Projectile {
             color: e.bloodColor, size: rand(1.2, 2.5), realtime: true,
           });
         }
-        // Wood splinters glow for an instant.
-        for (let i = 0; i < 4; i++) {
-          state.particles.push({
-            x: this.x, y: this.y,
-            vx: rand(-50, 50), vy: rand(-60, 0),
-            life: rand(0.18, 0.36), maxLife: 0.36,
-            color: 'rgba(255, 220, 160, 1)', size: rand(1.5, 3), realtime: true, additive: true,
-          });
-        }
         pushDamageNumber(e.x, e.y - e.r - 4, this.dmg);
-        state.shake = Math.max(state.shake, 2.5);
-        state.hitStop = Math.max(state.hitStop, 0.022);
+        state.shake = Math.max(state.shake, 1);
         this.dead = true;
         return;
       }
@@ -71,17 +60,6 @@ export class Projectile {
 
   draw(ctx) {
     if (this.dead) return;
-
-    // Additive motion streak.
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const streakR = 9;
-    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, streakR);
-    grd.addColorStop(0, 'rgba(255, 220, 150, 0.6)');
-    grd.addColorStop(1, 'rgba(255, 200, 120, 0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(this.x - streakR, this.y - streakR, streakR * 2, streakR * 2);
-    ctx.restore();
 
     ctx.strokeStyle = 'rgba(180, 160, 130, 0.45)';
     ctx.lineWidth = 1.4;
