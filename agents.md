@@ -1,6 +1,6 @@
 # Agents Guide
 
-Wasteland Survivors is currently a single-file Canvas 2D survival tactics game. The working game lives in `wasteland_survivors-v4.html`; project memory lives in `docs/`.
+P-RAY: The Game is currently a single-file Canvas 2D survival tactics game. The working game lives in `wasteland_survivors-v4.html`; project memory lives in `docs/`.
 
 This file is intentionally short. Start here, then read only the smallest doc that answers the task.
 
@@ -29,4 +29,5 @@ Avoid reading every markdown file by default. Avoid broad refactors unless `docs
 - Preserve `wasteland_survivors-v4.html` as the playable golden file until a build pipeline exists.
 - Keep new docs under `docs/` and link them from `docs/index.md`.
 - Prefer data extraction and adapter layers before splitting runtime code into many files.
+- Keep future content asset-injectable; see `docs/asset_injection_plan.md`.
 - For large work, create a plan markdown first, then implement in small phases.
