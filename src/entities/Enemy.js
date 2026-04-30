@@ -213,6 +213,38 @@ export class Enemy {
         color: this.bloodColor, size: rand(1.5, 3.5), realtime: true,
       });
     }
+    // Soul-glow burst — additive so big deaths really pop.
+    const glowBurst = (this.kind === 'bigboss') ? 38 : (this.kind === 'miniboss') ? 22 : (this.kind === 'mutant' || this.kind === 'blinker') ? 8 : 4;
+    const glowColor = this.kind === 'bigboss' ? 'rgba(180, 255, 120, 1)'
+                    : this.kind === 'miniboss' ? 'rgba(255, 160, 80, 1)'
+                    : this.kind === 'blinker' ? 'rgba(220, 160, 255, 1)'
+                    : 'rgba(255, 200, 140, 1)';
+    for (let i = 0; i < glowBurst; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(60, 220) * (this.r / 14);
+      state.particles.push({
+        x: this.x, y: this.y,
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(20, 90),
+        life: rand(0.5, 1.1), maxLife: 1.1,
+        color: glowColor, size: rand(2, 4.5), realtime: true, additive: true,
+      });
+    }
+    if (this.kind === 'bigboss') {
+      state.shockwaves.push({
+        x: this.x, y: this.y,
+        r: this.r, maxR: 360,
+        hit: new Set(),
+        life: 1.0, maxLife: 1.0,
+        speed: 360, dmg: 0,
+      });
+      state.flashAlpha = Math.max(state.flashAlpha, 0.7);
+      state.flashColor = '#c8ff90';
+      state.hitStop = Math.max(state.hitStop, 0.14);
+    } else if (this.kind === 'miniboss') {
+      state.flashAlpha = Math.max(state.flashAlpha, 0.45);
+      state.flashColor = '#ffb070';
+      state.hitStop = Math.max(state.hitStop, 0.08);
+    }
     state.shake = Math.max(state.shake, this.kind === 'bigboss' ? 14 : this.kind === 'miniboss' ? 8 : 4);
 
     if (this.kind === 'bigboss') {

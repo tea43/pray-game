@@ -1,6 +1,7 @@
 import { G } from '../globals.js';
 import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
+import { pushDamageNumber } from '../render/effects.js';
 
 export class SprayBullet {
   constructor(x, y, angle, dmg) {
@@ -36,6 +37,13 @@ export class SprayBullet {
             color: e.bloodColor, size: rand(1, 2), realtime: true,
           });
         }
+        // Bright muzzle pop.
+        state.particles.push({
+          x: this.x, y: this.y, vx: 0, vy: 0,
+          life: 0.13, maxLife: 0.13,
+          color: 'rgba(255, 230, 140, 1)', size: 5, realtime: true, additive: true,
+        });
+        pushDamageNumber(e.x, e.y - e.r - 4, this.dmg, { rgb: [255, 220, 120] });
         this.dead = true;
         return;
       }
@@ -44,15 +52,30 @@ export class SprayBullet {
 
   draw(ctx) {
     if (this.dead) return;
-    ctx.strokeStyle = 'rgba(255, 200, 80, 0.9)';
-    ctx.lineWidth = 2;
+    // Additive tracer — orange-yellow streak.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const tx = this.x - this.vx * 0.024;
+    const ty = this.y - this.vy * 0.024;
+    ctx.strokeStyle = 'rgba(255, 200, 80, 0.95)';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(this.x - this.vx * 0.018, this.y - this.vy * 0.018);
+    ctx.moveTo(tx, ty);
     ctx.lineTo(this.x, this.y);
     ctx.stroke();
-    ctx.fillStyle = '#fff8c0';
+    ctx.lineCap = 'butt';
+    const r = 5;
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+    grd.addColorStop(0, 'rgba(255, 250, 220, 1)');
+    grd.addColorStop(0.4, 'rgba(255, 200, 80, 0.6)');
+    grd.addColorStop(1, 'rgba(255, 100, 40, 0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(this.x - r, this.y - r, r * 2, r * 2);
+    ctx.restore();
+    ctx.fillStyle = '#fffae0';
     ctx.beginPath();
-    ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, 1.6, 0, Math.PI * 2);
     ctx.fill();
   }
 }

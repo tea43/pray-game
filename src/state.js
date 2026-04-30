@@ -14,12 +14,18 @@ export const state = {
   dust: [],
   cracks: [],
   bloodStains: [],
+  grassTufts: [],
+  embers: [],
+  floatingTexts: [],
   selected: [],
   mouse: { x: 0, y: 0, down: false, downX: 0, downY: 0, startedOnUnit: false, clickedPortrait: false },
   selectionBox: null,
   moveMarkers: [],
   time: 0,
   shake: 0,
+  hitStop: 0,
+  flashAlpha: 0,
+  flashColor: '#ffe0a0',
   kills: 0,
   wave: 1,
   waveTimer: 0,
@@ -70,6 +76,36 @@ export function generateTerrain() {
       x: rand(0, G.W), y: rand(0, G.PLAY_BOTTOM),
       vx: rand(-12, 12), vy: rand(-4, 4),
       life: rand(0, 1), size: rand(0.6, 1.4),
+    });
+  }
+
+  // P-RAY grass tufts: bioluminescent alien blades scattered across the wastes.
+  state.grassTufts = [];
+  const tuftCount = Math.floor((G.W * G.PLAY_BOTTOM) / 24000) + 24;
+  for (let i = 0; i < tuftCount; i++) {
+    state.grassTufts.push({
+      x: rand(8, G.W - 8),
+      y: rand(20, G.PLAY_BOTTOM - 8),
+      blades: randInt(3, 7),
+      size: rand(0.7, 1.6),
+      phase: rand(0, Math.PI * 2),
+      hue: rand(150, 178),
+      glow: rand(0.45, 1),
+    });
+  }
+
+  // Drifting embers — soft additive motes that breathe through the air.
+  state.embers = [];
+  for (let i = 0; i < 60; i++) {
+    state.embers.push({
+      x: rand(0, G.W),
+      y: rand(0, G.PLAY_BOTTOM),
+      vx: rand(-6, 6),
+      vy: rand(-14, -2),
+      life: rand(0, 4),
+      maxLife: rand(3, 6),
+      size: rand(0.6, 1.6),
+      hue: rand(20, 60),
     });
   }
 }

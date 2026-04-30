@@ -105,6 +105,18 @@ export function detonateBomb(x, y) {
       size: rand(2, 4.5), realtime: true,
     });
   }
+  // Glowing embers (additive).
+  for (let i = 0; i < 40; i++) {
+    const a = rand(0, Math.PI * 2);
+    const v = rand(60, 280);
+    state.particles.push({
+      x: x + rand(-4, 4), y: y + rand(-4, 4),
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(40, 120),
+      life: rand(0.3, 0.9), maxLife: 0.9,
+      color: i % 2 ? 'rgba(255, 230, 130, 1)' : 'rgba(255, 140, 60, 1)',
+      size: rand(2, 4), realtime: true, additive: true,
+    });
+  }
   for (let i = 0; i < 30; i++) {
     const a = rand(0, Math.PI * 2);
     const v = rand(20, 80);
@@ -117,6 +129,9 @@ export function detonateBomb(x, y) {
     });
   }
   state.explosions.push({ x, y, r: 8, maxR: radius, life: 0.55, maxLife: 0.55 });
+  state.flashAlpha = Math.max(state.flashAlpha, 0.45);
+  state.flashColor = '#ffd080';
+  state.hitStop = Math.max(state.hitStop, 0.06);
   state.shake = Math.max(state.shake, 18);
 }
 
@@ -148,6 +163,18 @@ export function detonateBananaBomb(x, y) {
       size: rand(2, 5), realtime: true,
     });
   }
+  // Banana glow shower (additive).
+  for (let i = 0; i < 60; i++) {
+    const a = rand(0, Math.PI * 2);
+    const v = rand(80, 380);
+    state.particles.push({
+      x: x + rand(-6, 6), y: y + rand(-6, 6),
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(60, 160),
+      life: rand(0.4, 1.1), maxLife: 1.1,
+      color: i % 2 ? 'rgba(255, 240, 150, 1)' : 'rgba(180, 230, 90, 1)',
+      size: rand(2.5, 5), realtime: true, additive: true,
+    });
+  }
   for (let i = 0; i < 40; i++) {
     const a = rand(0, Math.PI * 2);
     const v = rand(20, 90);
@@ -160,5 +187,8 @@ export function detonateBananaBomb(x, y) {
     });
   }
   state.explosions.push({ x, y, r: 10, maxR: radius, life: 0.7, maxLife: 0.7 });
+  state.flashAlpha = Math.max(state.flashAlpha, 0.65);
+  state.flashColor = '#fff5b0';
+  state.hitStop = Math.max(state.hitStop, 0.1);
   state.shake = Math.max(state.shake, 26);
 }

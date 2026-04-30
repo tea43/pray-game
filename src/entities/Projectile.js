@@ -1,6 +1,7 @@
 import { G } from '../globals.js';
 import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
+import { pushDamageNumber } from '../render/effects.js';
 
 export class Projectile {
   constructor(x, y, target, dmg, facing) {
@@ -49,7 +50,18 @@ export class Projectile {
             color: e.bloodColor, size: rand(1.2, 2.5), realtime: true,
           });
         }
+        // Wood splinters glow for an instant.
+        for (let i = 0; i < 4; i++) {
+          state.particles.push({
+            x: this.x, y: this.y,
+            vx: rand(-50, 50), vy: rand(-60, 0),
+            life: rand(0.18, 0.36), maxLife: 0.36,
+            color: 'rgba(255, 220, 160, 1)', size: rand(1.5, 3), realtime: true, additive: true,
+          });
+        }
+        pushDamageNumber(e.x, e.y - e.r - 4, this.dmg);
         state.shake = Math.max(state.shake, 2.5);
+        state.hitStop = Math.max(state.hitStop, 0.022);
         this.dead = true;
         return;
       }
@@ -58,6 +70,18 @@ export class Projectile {
 
   draw(ctx) {
     if (this.dead) return;
+
+    // Additive motion streak.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const streakR = 9;
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, streakR);
+    grd.addColorStop(0, 'rgba(255, 220, 150, 0.6)');
+    grd.addColorStop(1, 'rgba(255, 200, 120, 0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(this.x - streakR, this.y - streakR, streakR * 2, streakR * 2);
+    ctx.restore();
+
     ctx.strokeStyle = 'rgba(180, 160, 130, 0.45)';
     ctx.lineWidth = 1.4;
     ctx.beginPath();

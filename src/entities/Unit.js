@@ -6,6 +6,7 @@ import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { Projectile } from './Projectile.js';
 import { SprayBullet } from './SprayBullet.js';
 import { playSfx } from '../systems/audio.js';
+import { pushDamageNumber } from '../render/effects.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -147,11 +148,12 @@ export class Unit {
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
         if (Math.abs(diff) > halfArc) continue;
-        e.hp -= this.atkDmg;
+        const dmg = this.atkDmg;
+        e.hp -= dmg;
         e.knockX += Math.cos(this.facing) * 120;
         e.knockY += Math.sin(this.facing) * 120;
         e.hurtFlash = 1;
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 6; i++) {
           state.particles.push({
             x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
             vx: rand(-80, 80), vy: rand(-100, -10),
@@ -159,9 +161,28 @@ export class Unit {
             color: '#e8d080', size: rand(1.2, 2.5), realtime: true,
           });
         }
+        // Additive sword glints.
+        for (let i = 0; i < 5; i++) {
+          state.particles.push({
+            x: e.x + rand(-4, 4), y: e.y + rand(-4, 4),
+            vx: rand(-50, 50), vy: rand(-80, -10),
+            life: rand(0.2, 0.5), maxLife: 0.5,
+            color: 'rgba(255, 240, 180, 1)', size: rand(1.5, 3), realtime: true, additive: true,
+          });
+        }
+        pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
         hit++;
       }
-      state.shake = Math.max(state.shake, hit > 1 ? 6 : 3);
+      // Big arc slash — drawn as a brief expanding additive ring at the swing center.
+      state.particles.push({
+        x: this.x + Math.cos(this.facing) * 24,
+        y: this.y + Math.sin(this.facing) * 24,
+        vx: 0, vy: 0,
+        life: 0.18, maxLife: 0.18,
+        color: 'rgba(255, 245, 200, 1)', size: 16, realtime: true, additive: true,
+      });
+      state.shake = Math.max(state.shake, hit > 1 ? 7 : 3.5);
+      if (hit > 0) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
       return;
     }
 
@@ -196,7 +217,21 @@ export class Unit {
         color: enemy.bloodColor, size: rand(1.2, 2.8), realtime: true,
       });
     }
+    // Hit spark — additive flash at the impact point.
+    const sparkX = enemy.x - Math.cos(this.facing) * (enemy.r * 0.5);
+    const sparkY = enemy.y - Math.sin(this.facing) * (enemy.r * 0.5);
+    state.particles.push({
+      x: sparkX, y: sparkY, vx: 0, vy: 0,
+      life: 0.16, maxLife: 0.16,
+      color: this.rageTimer > 0 ? 'rgba(255, 160, 80, 1)' : 'rgba(255, 220, 160, 1)',
+      size: this.rageTimer > 0 ? 9 : 6, realtime: true, additive: true,
+    });
+    pushDamageNumber(enemy.x, enemy.y - enemy.r - 4, dmg, {
+      crit: this.rageTimer > 0,
+      rgb: this.rageTimer > 0 ? [255, 120, 80] : [255, 230, 200],
+    });
     state.shake = Math.max(state.shake, this.rageTimer > 0 ? 5 : 3);
+    state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
   }
 
   moveTo(x, y) {
@@ -227,24 +262,35 @@ export class Unit {
     playSfx('ability_blink');
     const maxRange = 240;
     const step = Math.min(d, maxRange);
-    for (let i = 0; i < 22; i++) {
+    // Departure burst.
+    for (let i = 0; i < 14; i++) {
       state.particles.push({
         x: this.x, y: this.y,
-        vx: rand(-100, 100), vy: rand(-100, 100),
+        vx: rand(-90, 90), vy: rand(-110, 60),
         life: rand(0.35, 0.7), maxLife: 0.7,
         color: '#80c8ff', size: rand(1.5, 3), realtime: true,
       });
     }
+    for (let i = 0; i < 10; i++) {
+      state.particles.push({
+        x: this.x, y: this.y,
+        vx: rand(-60, 60), vy: rand(-60, 60),
+        life: rand(0.3, 0.55), maxLife: 0.55,
+        color: 'rgba(180, 230, 255, 1)', size: rand(2, 4), realtime: true, additive: true,
+      });
+    }
     const nx = clamp(this.x + (dx / d) * step, 6, G.W - 6);
     const ny = clamp(this.y + (dy / d) * step, 6, G.PLAY_BOTTOM);
-    const steps = 8;
+    // Streak trail (additive, fades along path).
+    const steps = 16;
     for (let i = 1; i < steps; i++) {
       const t = i / steps;
       state.particles.push({
-        x: this.x + (nx - this.x) * t, y: this.y + (ny - this.y) * t,
+        x: this.x + (nx - this.x) * t + rand(-1.5, 1.5),
+        y: this.y + (ny - this.y) * t + rand(-1.5, 1.5),
         vx: 0, vy: 0,
-        life: 0.3, maxLife: 0.3,
-        color: '#a0d8ff', size: 2.5, realtime: true,
+        life: 0.32, maxLife: 0.32,
+        color: 'rgba(180, 230, 255, 1)', size: 3.5, realtime: true, additive: true,
       });
     }
     this.x = nx; this.y = ny;
@@ -253,11 +299,21 @@ export class Unit {
     for (let i = 0; i < 22; i++) {
       state.particles.push({
         x: this.x, y: this.y,
-        vx: rand(-100, 100), vy: rand(-100, 100),
+        vx: rand(-130, 130), vy: rand(-130, 80),
         life: rand(0.35, 0.7), maxLife: 0.7,
         color: '#80c8ff', size: rand(1.5, 3), realtime: true,
       });
     }
+    for (let i = 0; i < 14; i++) {
+      state.particles.push({
+        x: this.x, y: this.y,
+        vx: rand(-80, 80), vy: rand(-80, 80),
+        life: rand(0.3, 0.6), maxLife: 0.6,
+        color: 'rgba(200, 240, 255, 1)', size: rand(2, 4), realtime: true, additive: true,
+      });
+    }
+    state.flashAlpha = Math.max(state.flashAlpha, 0.18);
+    state.flashColor = '#a0d8ff';
     this.abilityCd = this.abilityMaxCd;
     state.shake = Math.max(state.shake, 2);
     return true;
@@ -276,6 +332,19 @@ export class Unit {
         size: rand(1.5, 3), realtime: true,
       });
     }
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(60, 130);
+      state.particles.push({
+        x: this.x, y: this.y,
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30,
+        life: rand(0.45, 0.9), maxLife: 0.9,
+        color: i % 2 ? 'rgba(255, 90, 40, 1)' : 'rgba(255, 200, 90, 1)',
+        size: rand(2.5, 4.5), realtime: true, additive: true,
+      });
+    }
+    state.flashAlpha = Math.max(state.flashAlpha, 0.22);
+    state.flashColor = '#ff7040';
     state.shake = Math.max(state.shake, 4);
     return true;
   }
@@ -297,7 +366,8 @@ export class Unit {
       if (!nearest) break;
       hit.add(nearest);
       points.push({ x: nearest.x, y: nearest.y });
-      nearest.hp -= 30;
+      const dmg = 30;
+      nearest.hp -= dmg;
       nearest.stunTimer = Math.max(nearest.stunTimer, 1.8);
       nearest.hurtFlash = 1;
       nearest.knockX += rand(-30, 30);
@@ -311,10 +381,22 @@ export class Unit {
           size: rand(1.2, 2.5), realtime: true,
         });
       }
+      for (let j = 0; j < 8; j++) {
+        state.particles.push({
+          x: nearest.x, y: nearest.y,
+          vx: rand(-90, 90), vy: rand(-90, 30),
+          life: rand(0.25, 0.55), maxLife: 0.55,
+          color: 'rgba(180, 230, 255, 1)', size: rand(2, 3.5), realtime: true, additive: true,
+        });
+      }
+      pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { rgb: [180, 230, 255] });
       cx = nearest.x; cy = nearest.y;
     }
     if (points.length > 1) {
       state.bolts.push({ points, life: 0.4, maxLife: 0.4 });
+      state.flashAlpha = Math.max(state.flashAlpha, 0.2);
+      state.flashColor = '#a0d8ff';
+      state.hitStop = Math.max(state.hitStop, 0.04);
     }
     this.abilityCd = this.abilityMaxCd;
     state.shake = Math.max(state.shake, 5);

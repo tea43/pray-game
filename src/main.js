@@ -12,7 +12,7 @@ import { initInput, setNewGameFn } from './systems/input.js';
 import { initMenu, setMenuCallbacks, showMainMenu } from './systems/menu.js';
 import { resetScore, addDeathPenalty, addWaveClearBonus, saveHighScore } from './systems/score.js';
 import { drawBackground } from './render/background.js';
-import { drawBolts, drawExplosions, drawShockwaves, drawParticles } from './render/effects.js';
+import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash } from './render/effects.js';
 import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
 import { playMusic, playSfx } from './systems/audio.js';
 
@@ -44,6 +44,9 @@ function newGame() {
   state.explosions = [];
   state.shockwaves = [];
   state.bloodStains = [];
+  state.floatingTexts = [];
+  state.hitStop = 0;
+  state.flashAlpha = 0;
   state.selected = [];
   state.moveMarkers = [];
   state.time = 0;
@@ -99,11 +102,58 @@ function frame(now) {
                    : anyMoving ? state.timeSpeed
                    : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
-  const gameDt = realDt * state.timeFlow;
+  let gameDt = realDt * state.timeFlow;
+
+  // Hit-stop: brief world freeze on heavy impacts. Decays in real time so playback feels responsive.
+  if (state.hitStop > 0) {
+    state.hitStop = Math.max(0, state.hitStop - realDt);
+    gameDt = 0;
+  }
 
   state.time += realDt;
   updateDust(realDt);
   if (state.shake > 0) state.shake = Math.max(0, state.shake - realDt * 18);
+  if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - realDt * 3.2);
+
+  // Drift embers in real time so atmosphere lives even while paused.
+  if (state.embers && state.embers.length) {
+    for (const em of state.embers) {
+      em.x += em.vx * realDt;
+      em.y += em.vy * realDt;
+      em.life += realDt;
+      if (em.life > em.maxLife || em.x < -10 || em.x > G.W + 10 || em.y < -20) {
+        em.x = rand(0, G.W);
+        em.y = G.PLAY_BOTTOM + rand(0, 30);
+        em.vx = rand(-6, 6);
+        em.vy = rand(-14, -2);
+        em.life = 0;
+        em.maxLife = rand(3, 6);
+        em.size = rand(0.6, 1.6);
+        em.hue = rand(20, 60);
+      }
+    }
+  }
+
+  // Floating damage/heal numbers age in real time so they read clearly.
+  for (const ft of state.floatingTexts) ft.life -= realDt;
+  state.floatingTexts = state.floatingTexts.filter(ft => ft.life > 0);
+
+  // Walking dust under moving survivors.
+  for (const u of state.units) {
+    if (u.dead || !u.moving) continue;
+    if (Math.random() < realDt * 14) {
+      const ang = u.facing + Math.PI + rand(-0.5, 0.5);
+      const v = rand(20, 50);
+      state.particles.push({
+        x: u.x + rand(-3, 3),
+        y: u.y + u.r - 1 + rand(-1, 1),
+        vx: Math.cos(ang) * v,
+        vy: Math.sin(ang) * v - rand(10, 30),
+        life: rand(0.25, 0.55), maxLife: 0.55,
+        color: 'rgba(220, 195, 150, 0.6)', size: rand(1.6, 2.6), realtime: true,
+      });
+    }
+  }
 
   for (const m of state.moveMarkers) m.life -= realDt;
   state.moveMarkers = state.moveMarkers.filter(m => m.life > 0);
@@ -266,7 +316,7 @@ function frame(now) {
   }
 
   // ==== DRAW ====
-  const { ctx, W, H, PLAY_BOTTOM } = G;
+  const { ctx, W, PLAY_BOTTOM } = G;
   ctx.save();
   if (state.shake > 0) ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
 
@@ -319,6 +369,7 @@ function frame(now) {
   drawExplosions();
   drawShockwaves();
   drawParticles();
+  drawFloatingTexts();
 
   // Selection box
   if (state.selectionBox) {
@@ -334,21 +385,28 @@ function frame(now) {
 
   ctx.restore();
 
-  // Time freeze overlay
+  // Time freeze overlay — cool desaturating tint + faint vignette pulse.
   if (state.timeFlow < 1) {
     const pauseAmount = 1 - state.timeFlow;
-    ctx.fillStyle = `rgba(60, 40, 90, ${pauseAmount * 0.18})`;
+    const tint = ctx.createLinearGradient(0, 0, 0, PLAY_BOTTOM + 8);
+    tint.addColorStop(0,   `rgba(40, 50, 90, ${pauseAmount * 0.22})`);
+    tint.addColorStop(0.5, `rgba(70, 60, 110, ${pauseAmount * 0.18})`);
+    tint.addColorStop(1,   `rgba(20, 30, 60, ${pauseAmount * 0.26})`);
+    ctx.fillStyle = tint;
     ctx.fillRect(0, 0, W, PLAY_BOTTOM + 8);
-    if (pauseAmount > 0.5) {
-      ctx.strokeStyle = `rgba(180, 160, 220, ${(pauseAmount - 0.5) * 0.08})`;
-      ctx.lineWidth = 1;
-      for (let i = 0; i < PLAY_BOTTOM; i += 4) {
-        ctx.beginPath();
-        ctx.moveTo(0, i); ctx.lineTo(W, i);
-        ctx.stroke();
-      }
+    if (pauseAmount > 0.4) {
+      const pulse = 0.5 + 0.5 * Math.sin(state.time * 2);
+      const ring = ctx.createRadialGradient(W / 2, PLAY_BOTTOM / 2, Math.min(W, PLAY_BOTTOM) * 0.35,
+                                            W / 2, PLAY_BOTTOM / 2, Math.max(W, PLAY_BOTTOM) * 0.6);
+      ring.addColorStop(0, 'rgba(120, 140, 200, 0)');
+      ring.addColorStop(1, `rgba(100, 110, 200, ${(pauseAmount - 0.4) * (0.18 + pulse * 0.06)})`);
+      ctx.fillStyle = ring;
+      ctx.fillRect(0, 0, W, PLAY_BOTTOM + 8);
     }
   }
+
+  // Screen flash for explosions / boss deaths / abilities.
+  drawScreenFlash();
 
   // Wave announcements
   for (const m of state.moveMarkers) {
