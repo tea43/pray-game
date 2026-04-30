@@ -13,11 +13,8 @@
     color: #d9c7a0;
   }
   #stage {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
   }
   #frame {
     position: relative;
@@ -31,6 +28,8 @@
     cursor: crosshair;
     image-rendering: crisp-edges;
   }
+
+  /* ---- HUD ---- */
   .hud {
     position: absolute;
     padding: 6px 10px;
@@ -44,86 +43,181 @@
   }
   #hudTL { top: 10px; left: 10px; }
   #hudTR { top: 10px; right: 10px; text-align: right; }
-  #timeBar {
-    bottom: 100px; left: 10px;
-    min-width: 220px;
-  }
+  #timeBar { bottom: 100px; left: 10px; min-width: 220px; }
   #controls {
     bottom: 10px; right: 10px;
-    font-size: 10px;
-    line-height: 1.6;
-    color: #a89470;
-    text-align: right;
+    font-size: 10px; line-height: 1.6;
+    color: #a89470; text-align: right;
     background: rgba(10, 6, 4, 0.65);
   }
   #title {
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 10px; left: 50%; transform: translateX(-50%);
     font-family: 'Georgia', serif;
-    font-size: 14px;
-    letter-spacing: 4px;
-    color: #8a6b3a;
-    border: none;
-    background: none;
+    font-size: 14px; letter-spacing: 4px;
+    color: #8a6b3a; border: none; background: none;
   }
   .flow-indicator {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-    vertical-align: middle;
-    background: #c5a572;
-    transition: background 0.2s;
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    background: #c5a572; transition: background 0.2s;
   }
   .flowing .flow-indicator { background: #8bc34a; box-shadow: 0 0 8px #8bc34a; }
-  .paused .flow-indicator { background: #c5a572; }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
+  .paused .flow-indicator  { background: #c5a572; }
+
+  /* ---- shared overlay base ---- */
+  .full-overlay {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
     flex-direction: column;
-    background: rgba(10, 5, 2, 0.85);
-    pointer-events: none;
+    background: rgba(10, 5, 2, 0.90);
   }
-  #overlay.show { display: flex; pointer-events: auto; }
-  #gameOverText {
-    font-family: 'Georgia', serif;
-    font-size: 40px;
-    color: #a83a2a;
-    letter-spacing: 6px;
-    text-shadow: 0 0 20px #000, 0 2px 0 #000;
-    margin-bottom: 20px;
-  }
-  #finalStats {
-    color: #d9c7a0;
-    font-size: 14px;
-    margin-bottom: 28px;
-    letter-spacing: 2px;
-  }
-  #restart {
+  .full-overlay.show { display: flex; }
+
+  /* ---- shared button ---- */
+  .game-btn {
     padding: 10px 28px;
     background: #2a1a0a;
     border: 1px solid #8a6b3a;
     color: #d9c7a0;
     font-family: 'Courier New', monospace;
-    font-size: 13px;
-    letter-spacing: 3px;
-    cursor: pointer;
-    transition: all 0.15s;
+    font-size: 13px; letter-spacing: 3px;
+    cursor: pointer; transition: all 0.15s;
   }
-  #restart:hover {
-    background: #3a2a1a;
-    border-color: #c5a572;
-    color: #fff;
+  .game-btn:hover  { background: #3a2a1a; border-color: #c5a572; color: #fff; }
+  .game-btn:disabled {
+    opacity: 0.3; cursor: default; pointer-events: none;
+  }
+
+  /* ---- game over / victory ---- */
+  #overlay { pointer-events: none; }
+  #overlay.show { pointer-events: auto; }
+  #gameOverText {
+    font-family: 'Georgia', serif;
+    font-size: 40px; color: #a83a2a;
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px #000, 0 2px 0 #000;
+    margin-bottom: 20px;
   }
   #gameOverText.victory {
     color: #a0d040;
     text-shadow: 0 0 30px #60a010, 0 2px 0 #000;
   }
+  #finalStats { color: #d9c7a0; font-size: 14px; margin-bottom: 28px; letter-spacing: 2px; }
+  .overlay-buttons { display: flex; gap: 14px; }
+
+  /* ---- shared menu box ---- */
+  .menu-box {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 44px 56px;
+    background: rgba(12, 7, 2, 0.97);
+    border: 1px solid #5a3a18;
+    box-shadow: 0 0 60px rgba(0,0,0,0.9);
+  }
+  .menu-title {
+    font-family: 'Georgia', serif;
+    font-size: 32px; letter-spacing: 8px;
+    color: #c5a050; text-shadow: 0 0 30px #7a4808, 0 0 60px #3a2404;
+    margin-bottom: 4px;
+  }
+  .menu-sub {
+    font-size: 10px; letter-spacing: 4px; color: #5a4020;
+  }
+  .menu-note { font-size: 10px; letter-spacing: 2px; color: #3a2a18; margin-top: 4px; }
+
+  /* ---- title screen ---- */
+  #titleScreen { min-width: 420px; }
+  .title-tagline {
+    font-size: 11px; letter-spacing: 2px; color: #7a5a30;
+    font-style: italic; margin-bottom: 16px; text-align: center;
+    line-height: 1.7;
+  }
+  .title-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .title-actions .game-btn { text-align: center; }
+  .title-version { font-size: 9px; letter-spacing: 2px; color: #2a1a0a; margin-top: 8px; }
+
+  /* ---- difficulty screen ---- */
+  #difficultyScreen { min-width: 420px; display: none; flex-direction: column; align-items: center; gap: 14px; }
+  #difficultyScreen.active { display: flex; }
+  .diff-group { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .diff-btn {
+    width: 100%; padding: 10px 16px;
+    background: #140e08; border: 1px solid #2a1c10;
+    color: #7a6040; font-family: 'Courier New', monospace;
+    cursor: pointer; transition: all 0.12s;
+    text-align: left;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  }
+  .diff-btn:hover { border-color: #7a5a30; color: #c5a572; }
+  .diff-btn.active {
+    border-color: #c5a572; color: #fff;
+    background: #2a1a0a;
+    box-shadow: inset 0 0 12px rgba(197,165,114,0.08);
+  }
+  .diff-btn .diff-label { font-size: 11px; letter-spacing: 3px; font-weight: bold; }
+  .diff-btn .diff-hint  { font-size: 9px; letter-spacing: 1px; color: #5a4020; transition: color 0.12s; }
+  .diff-btn.active .diff-hint { color: #a89060; }
+  .diff-actions { display: flex; gap: 12px; width: 100%; }
+  .diff-actions .game-btn { flex: 1; text-align: center; font-size: 12px; }
+
+  /* ---- pause menu ---- */
+  #pauseMenu { z-index: 15; }
+  .pause-box {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 36px 48px;
+    background: rgba(12, 7, 2, 0.97);
+    border: 1px solid #5a3a18;
+    min-width: 300px;
+  }
+  .pause-title {
+    font-family: 'Georgia', serif;
+    font-size: 22px; letter-spacing: 6px; color: #c5a050; margin-bottom: 8px;
+  }
+  .pause-sep { width: 100%; border: none; border-top: 1px solid #2a1c10; margin: 4px 0; }
+  #pauseMenu .game-btn { width: 100%; text-align: center; }
+  .pause-difficulty {
+    font-size: 10px; letter-spacing: 2px; color: #5a4020;
+    margin-top: 2px;
+  }
+
+  /* ---- main menu ---- */
+  #mainMenu {
+    z-index: 20;
+    background: transparent;    /* video handles the background */
+    justify-content: center;    /* vertical: keep panel centred */
+    align-items: flex-start;    /* horizontal: push panel to the left */
+    padding-left: 6%;
+  }
+  #menuVideo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    /* darken + desaturate so it fits the bleak wasteland palette */
+    filter: brightness(0.35) saturate(0.55);
+    z-index: 0;
+  }
+  #menuGradient {
+    position: absolute; inset: 0;
+    /* heavier dark on the left (behind panel), fades to transparent on the right */
+    background: linear-gradient(
+      to right,
+      rgba(6, 3, 1, 0.88) 0%,
+      rgba(6, 3, 1, 0.65) 35%,
+      rgba(6, 3, 1, 0.20) 65%,
+      transparent 100%
+    );
+    z-index: 1;
+    pointer-events: none;
+  }
+  /* lift panel above video layers */
+  #titleScreen, #difficultyScreen { z-index: 2; min-width: 360px; max-width: 400px; }
+  /* transparent panel — gradient provides the backing darkness */
+  #titleScreen, #difficultyScreen {
+    background: transparent; border: none; box-shadow: none;
+    padding: 40px 0;
+    border-left: 1px solid rgba(197,165,114,0.15);
+    padding-left: 32px;
+  }
+  #difficultyScreen { padding-left: 32px; }
 </style>
 </head>
 <body>
@@ -131,18 +225,98 @@
   <div id="frame">
     <canvas id="game"></canvas>
     <div class="hud" id="title">P - R A Y &nbsp; : &nbsp; T H E &nbsp; G A M E</div>
-    <div class="hud" id="hudTL">SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp; KILLS: <span id="killCount">0</span></div>
-    <div class="hud" id="hudTR">WAVE <span id="waveNum">1</span> / 21</div>
-    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span></div>
+    <div class="hud" id="hudTL">
+      SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp;
+      KILLS: <span id="killCount">0</span> &nbsp;&nbsp;
+      SCORE: <span id="scoreCount">0</span>
+    </div>
+    <div class="hud" id="hudTR">
+      WAVE <span id="waveNum">1</span> / 21 &nbsp;&nbsp; BEST: <span id="highScore">0</span>
+    </div>
+    <div class="hud paused" id="timeBar">
+      <span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span>
+    </div>
     <div class="hud" id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
       RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold &nbsp;&middot;&nbsp; ESC: menu
     </div>
-    <div id="overlay">
+
+    <!-- Game over / victory -->
+    <div id="overlay" class="full-overlay">
       <div id="gameOverText">ALL SURVIVORS DEAD</div>
       <div id="finalStats"></div>
-      <button id="restart">RESTART</button>
+      <div class="overlay-buttons">
+        <button id="restart" class="game-btn">RESTART</button>
+        <button id="overlayMainMenu" class="game-btn">MAIN MENU</button>
+      </div>
+    </div>
+
+    <!-- Pause menu -->
+    <div id="pauseMenu" class="full-overlay">
+      <div class="pause-box">
+        <div class="pause-title">PAUSED</div>
+        <button id="pauseResume"   class="game-btn">RESUME</button>
+        <button id="pauseRestart"  class="game-btn">RESTART</button>
+        <hr class="pause-sep">
+        <button id="pauseMainMenu" class="game-btn">MAIN MENU</button>
+        <div class="pause-difficulty">difficulty — <span id="pauseDiffLabel">Brood Hunter</span></div>
+        <div class="menu-note">AUDIO — coming in phase 6</div>
+      </div>
+    </div>
+
+    <!-- Main menu — two screens inside one overlay -->
+    <div id="mainMenu" class="full-overlay show">
+
+      <!-- Background video -->
+      <video id="menuVideo" autoplay loop muted playsinline>
+        <source src="/heavy/pray.menu.2.mp4" type="video/mp4">
+      </video>
+      <!-- Left-to-right darkening gradient -->
+      <div id="menuGradient"></div>
+
+      <!-- Screen 1: Title -->
+      <div id="titleScreen" class="menu-box">
+        <div class="menu-title">P-RAY</div>
+        <div class="menu-sub">T H E &nbsp; G A M E</div>
+        <div class="title-tagline">
+          Endoserpents at your door.<br>
+          P-RAY is all that can save your world.
+        </div>
+        <div class="title-actions">
+          <button id="menuPlay"    class="game-btn">PLAY</button>
+          <button                  class="game-btn" disabled>CREDITS</button>
+        </div>
+        <div class="title-version">prototype build · phase 5</div>
+      </div>
+
+      <!-- Screen 2: Difficulty -->
+      <div id="difficultyScreen" class="menu-box">
+        <div class="menu-title" style="font-size:20px;letter-spacing:6px">SELECT DIFFICULTY</div>
+        <div class="diff-group">
+          <button class="diff-btn" data-diff="cavity-cadet">
+            <span class="diff-label">CAVITY CADET</span>
+            <span class="diff-hint">fewer enemies · generous loot</span>
+          </button>
+          <button class="diff-btn active" data-diff="brood-hunter">
+            <span class="diff-label">BROOD HUNTER</span>
+            <span class="diff-hint">balanced · intended experience</span>
+          </button>
+          <button class="diff-btn" data-diff="crack-knight">
+            <span class="diff-label">THE CRACK KNIGHT</span>
+            <span class="diff-hint">faster · harder · scarcer loot</span>
+          </button>
+          <button class="diff-btn" data-diff="rear-admiral">
+            <span class="diff-label">REAR ADMIRAL</span>
+            <span class="diff-hint">brutal · multiple bosses · barely any healing</span>
+          </button>
+        </div>
+        <div class="diff-actions">
+          <button id="menuBack"  class="game-btn">BACK</button>
+          <button id="menuStart" class="game-btn">START</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>

@@ -1,0 +1,209 @@
+// Difficulty Configuration
+// ========================
+//
+// Each tier is a nested object grouped into three subsystems: hero, enemy, loot.
+// To add a new tier, copy an existing entry and adjust values — no other file needs
+// to change as long as DIFFICULTY_ORDER is updated.
+//
+// ── hero ───────────────────────────────────────────────────────────────────────
+//   hpMult         Multiplier on each survivor's max HP.
+//                    > 1 = more health (easier), < 1 = less health (harder).
+//   armorMult      Protection multiplier. Higher = more armour = less damage taken.
+//                    Damage received = base_dmg / armorMult.
+//                    1.2 → survivor takes ~17% less damage.
+//                    0.85 → survivor takes ~18% more damage.
+//                    Reserved — not yet wired into Unit damage application.
+//   abilityCdMult  Multiplier on all ability cooldown durations.
+//                    < 1 = cooldowns recharge faster (easier).
+//
+// ── enemy ──────────────────────────────────────────────────────────────────────
+//   hpMult         Multiplier on every spawned enemy's max HP.
+//   dmgMult        Multiplier on every spawned enemy's damage per hit.
+//   speedMult      Multiplier on every spawned enemy's movement speed.
+//   spawnMult      Spawn speed multiplier. Higher = faster spawns (harder).
+//                    spawnInterval = base / spawnMult.
+//                    1.0 = normal, 1.5 = 50% faster spawning.
+//   burstChanceMult  Scales the chance of a 2nd / 3rd enemy per spawn tick.
+//                    > 1 = more simultaneous spawns (harder).
+//   bosses         Explicit wave-to-count map per boss type.
+//                    Each key is a wave number (integer), each value is the
+//                    number of bosses of that type to spawn on that wave.
+//                    Multiple types can trigger on the same wave.
+//                    Supported types: miniboss, bigboss.
+//                    Reserved type: megaboss (add to ENEMY_DEFS + spawning.js when ready).
+//                    Example — two minibosses at wave 8, one bigboss at wave 9:
+//                      miniboss: { 4: 1, 8: 2 }
+//                      bigboss:  { 9: 1 }
+//
+// ── loot ───────────────────────────────────────────────────────────────────────
+//   dropChanceMult   Global multiplier on every enemy's base drop chance.
+//                      > 1 = more drops (easier).
+//   healAmount       Absolute HP restored by one medkit pickup.
+//   stimDuration     Seconds the stimpack rage buff lasts.
+//   itemChances      Independent probability for each basic loot item.
+//                    Each item is rolled separately — changing one does NOT
+//                    affect the others. Values are 0–1 probabilities.
+//                    Total < 1 → sometimes a drop roll yields nothing.
+//                    Total > 1 → sometimes multiple items drop at once.
+//     medkit           Probability of dropping a medkit on a successful drop roll.
+//     stimpack         Probability of dropping a stimpack on a successful drop roll.
+//     bomb             Probability of dropping a bomb on a successful drop roll.
+//   specialDropMult  Multiplier on banana-bomb and special-weapon drop chances
+//                    from elite enemies (mutant, blinker).
+
+export const DIFFICULTY_DEFS = {
+
+  'cavity-cadet': {
+    label: 'Cavity Cadet',
+
+    hero: {
+      hpMult:        1.25,  // survivors start with 25% more HP
+      armorMult:     1.20,  // 20% damage reduction (reserved)
+      abilityCdMult: 0.75,  // abilities recharge 25% faster
+    },
+
+    enemy: {
+      hpMult:          0.70,
+      dmgMult:         0.70,
+      speedMult:       0.80,
+      spawnMult:       0.75,  // spawns are 25% slower than normal
+      burstChanceMult: 0.50,
+      bosses: {
+        miniboss: { 5: 1, 10: 1, 15: 1, 20: 1 },
+        bigboss:  { 11: 1 },
+        // megaboss: {}  // reserved
+      },
+    },
+
+    loot: {
+      dropChanceMult:  1.50,
+      healAmount:      80,
+      stimDuration:    8,
+      itemChances: {    // independent rolls — changing one does not affect others
+        medkit:   0.70, // generous healing
+        stimpack: 0.30,
+        bomb:     0.05,
+      },
+      specialDropMult: 1.50,
+    },
+  },
+
+  'brood-hunter': {
+    label: 'Brood Hunter',
+
+    hero: {
+      hpMult:        1.00,
+      armorMult:     1.00,  // reserved
+      abilityCdMult: 1.00,
+    },
+
+    enemy: {
+      hpMult:          1.00,
+      dmgMult:         1.00,
+      speedMult:       1.00,
+      spawnMult:       1.00,
+      burstChanceMult: 1.00,
+      bosses: {
+        miniboss: { 4: 1, 8: 1, 12: 1, 16: 1, 20: 1 },
+        bigboss:  { 9: 1, 18: 1 },
+        // megaboss: {}  // reserved
+      },
+    },
+
+    loot: {
+      dropChanceMult:  1.00,
+      healAmount:      60,
+      stimDuration:    5,
+      itemChances: {
+        medkit:   0.60,
+        stimpack: 0.35,
+        bomb:     0.05,
+      },
+      specialDropMult: 1.00,
+    },
+  },
+
+  'crack-knight': {
+    label: 'The Crack Knight',
+
+    hero: {
+      hpMult:        0.85,
+      armorMult:     1.00,  // reserved
+      abilityCdMult: 1.15,  // abilities recharge 15% slower
+    },
+
+    enemy: {
+      hpMult:          1.30,
+      dmgMult:         1.30,
+      speedMult:       1.15,
+      spawnMult:       1.20,  // spawns are 20% faster
+      burstChanceMult: 1.30,
+      bosses: {
+        miniboss: { 3: 1, 6: 1, 10: 1, 13: 1, 17: 1, 20: 1 },
+        bigboss:  { 8: 1, 16: 1 },
+        // megaboss: {}  // reserved
+      },
+    },
+
+    loot: {
+      dropChanceMult:  0.70,
+      healAmount:      45,
+      stimDuration:    4,
+      itemChances: {
+        medkit:   0.50,  // fewer medkits
+        stimpack: 0.30,  // stimpack unchanged relative to medkit
+        bomb:     0.12,  // more explosives
+      },
+      specialDropMult: 0.70,
+    },
+  },
+
+  'rear-admiral': {
+    label: 'Rear Admiral',
+
+    hero: {
+      hpMult:        0.70,
+      armorMult:     0.85,  // take ~18% extra damage (reserved)
+      abilityCdMult: 1.35,
+    },
+
+    enemy: {
+      hpMult:          1.70,
+      dmgMult:         1.70,
+      speedMult:       1.40,
+      spawnMult:       1.55,  // spawns are 55% faster
+      burstChanceMult: 1.80,
+      bosses: {
+        miniboss: { 3: 2, 6: 1, 10: 2, 14: 1, 18: 1 },  // wave 3 and 10 spawn 2 minibosses
+        bigboss:  { 7: 1, 14: 1, 21: 1 },                // wave 14: miniboss + bigboss together
+        // megaboss: {}  // reserved
+      },
+    },
+
+    loot: {
+      dropChanceMult:  0.40,
+      healAmount:      30,
+      stimDuration:    3,
+      itemChances: {
+        medkit:   0.35,  // healing is rare
+        stimpack: 0.25,
+        bomb:     0.28,  // mostly explosives when loot does drop
+      },
+      specialDropMult: 0.40,
+    },
+  },
+
+};
+
+export const DIFFICULTY_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral'];
+
+// Rolls each item independently using the active difficulty's itemChances.
+// Returns an array of loot type strings (may be empty, may contain multiple).
+export function rollItemDrops(diff) {
+  const c = diff.loot.itemChances;
+  const drops = [];
+  if (Math.random() < c.medkit)   drops.push('medkit');
+  if (Math.random() < c.stimpack) drops.push('stimpack');
+  if (Math.random() < c.bomb)     drops.push('bomb');
+  return drops;
+}

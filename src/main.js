@@ -3,10 +3,13 @@ import { rand, dist2 } from './utils/math.js';
 import { state, generateTerrain } from './state.js';
 import { Unit } from './entities/Unit.js';
 import { WAVE_DEFS } from './config/waves.js';
+import { DIFFICULTY_DEFS } from './config/difficulty.js';
 import { DISPLAY_NAME_DEFS } from './config/assets.js';
 import { spawnEnemy, spawnBoss } from './systems/spawning.js';
 import { applyLoot } from './systems/loot.js';
 import { initInput, setNewGameFn } from './systems/input.js';
+import { initMenu, setMenuCallbacks, showMainMenu } from './systems/menu.js';
+import { resetScore, addDeathPenalty, addWaveClearBonus, saveHighScore } from './systems/score.js';
 import { drawBackground } from './render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles } from './render/effects.js';
 import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
@@ -28,6 +31,8 @@ function resize() {
 
 // ==================== NEW GAME ====================
 function newGame() {
+  const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+
   state.units = [];
   state.enemies = [];
   state.particles = [];
@@ -44,7 +49,7 @@ function newGame() {
   state.wave = 1;
   state.waveTimer = 0;
   state.spawnTimer = 1.5;
-  state.spawnInterval = WAVE_DEFS.spawnIntervalStart;
+  state.spawnInterval = WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult;
   state.gameOver = false;
   state.victory = false;
   state.timeFlow = 0;
@@ -53,6 +58,8 @@ function newGame() {
   state.spaceHeld = false;
   state.spaceHoldDuration = 0;
   state.survivedSeconds = 0;
+  state.menuPhase = 'playing';
+  resetScore();
 
   document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
   document.getElementById('gameOverText').classList.remove('victory');
@@ -67,6 +74,10 @@ function newGame() {
   updateHUD();
 }
 
+function startGame() {
+  newGame();
+}
+
 // ==================== GAME LOOP ====================
 let lastTime = performance.now();
 
@@ -78,7 +89,8 @@ function frame(now) {
 
   const anyMoving = state.units.some(u => !u.dead && u.moving);
   const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
-  const targetFlow = state.gameOver ? 0
+  const targetFlow = state.menuPhase !== 'playing' ? 0
+                   : state.gameOver ? 0
                    : spaceHoldDriving ? state.timeSpeed
                    : state.manualPause ? 0
                    : anyMoving ? state.timeSpeed
@@ -177,6 +189,7 @@ function frame(now) {
     for (const u of state.units) {
       if (u.hp <= 0 && !u.dead) {
         u.dead = true;
+        addDeathPenalty();
         const idx = state.selected.indexOf(u);
         if (idx >= 0) state.selected.splice(idx, 1);
         u.selected = false;
@@ -195,9 +208,11 @@ function frame(now) {
 
     state.spawnTimer -= gameDt;
     if (state.spawnTimer <= 0) {
+      const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+      const burst = WAVE_DEFS.burstChance * diff.enemy.burstChanceMult;
       spawnEnemy();
-      if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
-      if (state.wave >= WAVE_DEFS.thirdSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
+      if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < burst) spawnEnemy();
+      if (state.wave >= WAVE_DEFS.thirdSpawnWave && Math.random() < burst) spawnEnemy();
       state.spawnTimer = state.spawnInterval * rand(0.7, 1.3);
     }
 
@@ -205,16 +220,18 @@ function frame(now) {
     if (state.waveTimer > WAVE_DEFS.duration) {
       state.waveTimer = 0;
       if (state.wave < WAVE_DEFS.maxWave) {
+        addWaveClearBonus(state.wave);
         state.wave++;
         state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
-        let bossLabel = null;
-        if (state.wave % WAVE_DEFS.bigbossEvery === 0) {
-          spawnBoss('bigboss');
-          bossLabel = DISPLAY_NAME_DEFS.bigbossLabel;
-        } else if (state.wave % WAVE_DEFS.minibossEvery === 0) {
-          spawnBoss('miniboss');
-          bossLabel = DISPLAY_NAME_DEFS.minibossLabel;
-        }
+        const waveDiff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+        const bossMap = waveDiff.enemy.bosses;
+        const bigCount  = bossMap.bigboss?.[state.wave]  ?? 0;
+        const miniCount = bossMap.miniboss?.[state.wave] ?? 0;
+        for (let i = 0; i < bigCount;  i++) spawnBoss('bigboss');
+        for (let i = 0; i < miniCount; i++) spawnBoss('miniboss');
+        const bossLabel = bigCount  > 0 ? DISPLAY_NAME_DEFS.bigbossLabel
+                        : miniCount > 0 ? DISPLAY_NAME_DEFS.minibossLabel
+                        : null;
         state.moveMarkers.push({
           x: G.W / 2, y: G.PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
           type: 'wave', bossLabel,
@@ -222,20 +239,22 @@ function frame(now) {
       } else {
         state.gameOver = true;
         state.victory = true;
+        saveHighScore();
         const total = Math.floor(state.survivedSeconds);
         document.getElementById('gameOverText').textContent = 'YOU SURVIVED';
         document.getElementById('gameOverText').classList.add('victory');
         document.getElementById('finalStats').textContent =
-          `ALL ${WAVE_DEFS.maxWave} WAVES CLEARED · KILLS ${state.kills} · TIME ${total}s`;
+          `ALL ${WAVE_DEFS.maxWave} WAVES CLEARED · KILLS ${state.kills} · SCORE ${state.score} · TIME ${total}s`;
         document.getElementById('overlay').classList.add('show');
       }
     }
 
     if (state.units.every(u => u.dead)) {
       state.gameOver = true;
+      saveHighScore();
       const total = Math.floor(state.survivedSeconds);
       document.getElementById('finalStats').textContent =
-        `SURVIVED ${total}s · KILLS ${state.kills} · WAVE ${state.wave}`;
+        `SURVIVED ${total}s · KILLS ${state.kills} · SCORE ${state.score} · WAVE ${state.wave}`;
       document.getElementById('overlay').classList.add('show');
     }
   }
@@ -366,8 +385,9 @@ window.addEventListener('resize', () => {
 });
 
 setNewGameFn(newGame);
+setMenuCallbacks(startGame, newGame);
 initInput();
+initMenu();
 
 generateTerrain();
-newGame();
 requestAnimationFrame(frame);

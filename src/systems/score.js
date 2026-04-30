@@ -1,0 +1,39 @@
+import { state } from '../state.js';
+
+const KILL_POINTS = {
+  raider:   10,
+  runner:    8,
+  ghoul:    20,
+  blinker:  30,
+  mutant:   40,
+  miniboss: 200,
+  bigboss:  500,
+};
+
+const DEATH_PENALTY   = 50;
+const WAVE_BONUS_MULT = 50;
+const HS_KEY          = 'pray_highscore';
+
+export function addKillScore(kind) {
+  state.score += KILL_POINTS[kind] ?? 10;
+}
+
+export function addDeathPenalty() {
+  state.score = Math.max(0, state.score - DEATH_PENALTY);
+}
+
+export function addWaveClearBonus(wave) {
+  state.score += wave * WAVE_BONUS_MULT;
+}
+
+export function resetScore() {
+  state.score = 0;
+}
+
+export function getHighScore() {
+  return parseInt(localStorage.getItem(HS_KEY) ?? '0', 10);
+}
+
+export function saveHighScore() {
+  if (state.score > getHighScore()) localStorage.setItem(HS_KEY, String(state.score));
+}

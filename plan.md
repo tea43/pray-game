@@ -171,6 +171,8 @@ Commit:
 
 ## Phase 4: Modular Build Parity
 
+Status: completed. `npm run dev` serves the modular game. All systems extracted and confirmed playable.
+
 Goal:
 
 - Make modular source reproduce the current game.
@@ -196,7 +198,180 @@ Commit:
 
 - One commit per extracted system, for example `Extract time and spawning systems`.
 
-## Phase 5: Single-HTML Build
+## Phase 5: Menu And Score
+
+Goal:
+
+- Give the player a proper entry point and visible progress tracking.
+
+Implementation:
+
+- Main menu screen before the game starts:
+  - Title card: P-RAY: The Game.
+  - Start button.
+  - Settings button.
+  - Credits placeholder.
+- Pause menu (ESC key):
+  - Resume, Restart, Main Menu options.
+  - Volume slider placeholder (wired up in Phase 6).
+  - Difficulty selector — four tiers:
+    - Cavity Cadet (easy)
+    - Brood Hunter (default)
+    - The Crack Knight (hard)
+    - Rear Admiral (brutal)
+- Score / point counter:
+  - Points awarded for kills (scaled by enemy tier).
+  - Minus points for each death of a character.
+  - Bonus points for wave clears.
+  - Displayed in the HUD during play.
+  - Final score shown on the game-over and victory screens.
+- High score persisted to localStorage.
+
+Manual test:
+
+- Main menu appears on load.
+- ESC pauses and shows menu.
+- Score increments on kills and wave clears.
+- High score survives a page refresh.
+
+Commit:
+
+- `Add main menu, pause menu, and score system`
+
+## Phase 6: Audio System
+
+Goal:
+
+- Add music and sound effects that respond to game events.
+
+Implementation:
+
+- `src/systems/audio.js` wrapping Web Audio API or `<audio>` elements.
+- Music tracks:
+  - Menu / ambient track.
+  - Combat loop that intensifies on later waves.
+  - Boss encounter track.
+  - Victory and defeat stings.
+- Sound effects (event-driven, not per-frame):
+  - Hit / kill.
+  - Ability activation.
+  - (Optional) Loot pickup.
+  - Wave start announcement.
+  - Boss spawn.
+- Volume controlled via settings; defaults to 50%.
+- Audio must be optional: missing files are silently skipped, no crash.
+- Pause menu (Phase 5) exposes master volume slider.
+
+Manual test:
+
+- Game runs silently if no audio files are present.
+- With placeholder tracks, music switches at boss spawn.
+- Volume slider takes effect immediately.
+
+Commit:
+
+- `Add audio system with event-driven music and sfx`
+
+## Phase 7: Lore And Cutscenes
+
+Goal:
+
+- Engage players with the P-RAY story without interrupting gameplay flow.
+
+Implementation:
+
+- Comic panel viewer (`src/systems/cutscene.js`):
+  - Displays a sequence of panels with optional caption text.
+  - Player advances with click or Space.
+  - Panels are defined in `assets/comics/prologue/scene.json`.
+- Trigger points:
+  - Prologue on first game start (or from main menu).
+  - Short "chapter card" (title + quote) at wave milestones: wave 5, 10, 15.
+  - Boss intro card before the first miniboss and bigboss.
+  - Epilogue on victory.
+- Lore can display even if comic image assets are missing (text-only fallback).
+- Lore content source: `docs/lore/PRAY_ the game.md`.
+
+Manual test:
+
+- Prologue plays on first start.
+- Chapter cards appear at the right waves.
+- Skipping works at every trigger point.
+- Game continues normally after each cutscene.
+
+Commit:
+
+- `Add cutscene system and lore trigger points`
+
+## Phase 8: Asset Registry And Enemy Visual Overhaul
+
+Goal:
+
+- Support injectable sprites and give enemies visuals that match the worm setting.
+
+Implementation:
+
+- Asset registry (`src/config/assets.js` + `assets/manifest.json`):
+  - Renderer order: loaded sprite → configured primitive fallback → legacy primitive → debug placeholder.
+  - Missing assets never block gameplay.
+- Enemy visual model:
+  - Regular worms (Hatchling, Dart, Husk, Brute): segmented worm/snake body, drawn as a short chain of circles scaling with HP tier.
+  - Phase Worm: same worm body with blink ghost trail.
+  - Miniboss (Brood Warden): larger multi-segment worm, distinct color.
+  - Bigboss (Elder Worm): giant worm. Undecided whether to keep it as a pure worm or add humanoid mutant torso on the front segment — leave as a config flag for now so both can be compared in-game.
+- Hero sprites: placeholder portraits first; full sprites deferred.
+- Weapon and loot icons: small sprites or keep Canvas primitives until art is ready.
+
+Manual test:
+
+- Run with no assets — primitives still render.
+- Swap in one worm sprite sheet and confirm it loads and falls back cleanly.
+- Miniboss and bigboss are visually distinct from regular enemies.
+
+Commit:
+
+- `Add asset registry and worm visual models`
+
+## Phase 9: World Exploration And Environment
+
+Goal:
+
+- Move from a static screen-space arena to a scrollable world with physical obstacles.
+
+Implementation:
+
+- Camera and world coordinates:
+  - Add a `camera` object with world-space position.
+  - All entity positions stored in world space; camera transform applied at render time.
+  - HUD stays in screen space.
+  - Static arena mode remains available as a dev toggle.
+  - Camera frames all living survivors; centroid of the squad is the anchor point.
+  - When a survivor dies the camera re-centers on the remaining survivors.
+- Non-penetrable environment blocks:
+  - Walls, ruined structures, and debris that block movement for survivors and enemies.
+  - Defined as axis-aligned rectangles in world config.
+  - Line of sight does not pass through walls: enemies behind a wall are hidden until a survivor has line of sight to them. A survivor behind a wall reveals what is on their side only.
+  - Blink (Elliot's ability) does not pass through walls. If the target point is inside or beyond a wall, the blink stops at the nearest clear position before the wall — Elliot cannot get stuck.
+  - Collision resolution pushes units to the nearest clear position; does not teleport them.
+  - Enemies use simple pathfinding (waypoint or steering) to navigate around obstacles toward survivors.
+  - Renders as distinct terrain tiles with dark/solid visual treatment.
+- Terrain chunks:
+  - World is larger than the screen; procedural chunks generated around camera bounds.
+  - Spawn enemies relative to camera bounds, not canvas bounds.
+- Slow terrain zones and hazard pools (optional first pass; can defer to a sub-phase).
+
+Manual test:
+
+- Camera follows the squad centroid.
+- Survivors cannot walk through wall blocks.
+- Enemies pathfind around or are blocked by walls.
+- Loot and corpses remain in world space while camera moves.
+
+Commit:
+
+- `Add camera, world coordinates, and impassable environment blocks`
+
+## Phase 10: Single-HTML Build
 
 Goal:
 
@@ -222,34 +397,8 @@ Commit:
 
 - `Add single HTML build target`
 
-## Phase 6: Asset Registry And Fallbacks
+## Phase 11: Steam Wrapper
 
-Goal:
-
-- Support injectable heroes, worm enemies, weapons, loot, and comic panels.
-
-Implementation:
-
-- Add an asset registry.
-- Read definitions from manifest/config.
-- Renderer order:
-  1. loaded asset
-  2. configured primitive fallback
-  3. legacy primitive fallback
-  4. debug placeholder
-- Missing assets must never block gameplay.
-
-Manual test:
-
-- Run once with no external assets.
-- Run once with one test asset injected.
-- Confirm both paths render.
-
-Commit:
-
-- `Add asset registry with primitive fallbacks`
-
-## Phase 7: Steam Wrapper
 
 Goal:
 
@@ -277,7 +426,7 @@ Commit:
 
 - `Add desktop wrapper prototype`
 
-## Phase 8: Steamworks Integration
+## Phase 12: Steamworks Integration
 
 Goal:
 

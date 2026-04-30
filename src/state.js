@@ -33,6 +33,9 @@ export const state = {
   spaceHeld: false,
   spaceHoldDuration: 0,
   survivedSeconds: 0,
+  score: 0,
+  difficulty: 'brood-hunter',
+  menuPhase: 'main',
 };
 
 export function generateTerrain() {

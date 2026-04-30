@@ -2,8 +2,10 @@ import { G } from '../globals.js';
 import { rand, randInt, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
 import { ENEMY_DEFS } from '../config/enemies.js';
+import { DIFFICULTY_DEFS, rollItemDrops } from '../config/difficulty.js';
 import { LOOT_DEFS } from '../config/loot.js';
 import { Loot } from './Loot.js';
+import { addKillScore } from '../systems/score.js';
 
 export class Enemy {
   constructor(x, y, kind) {
@@ -31,10 +33,12 @@ export class Enemy {
     this.bossAura = 0;
 
     const def = ENEMY_DEFS[kind] || ENEMY_DEFS.ghoul;
+    const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     this.r = def.r;
-    this.speed = def.speed;
-    this.hp = def.hp; this.maxHp = def.hp;
-    this.dmg = def.dmg;
+    this.speed = def.speed * diff.enemy.speedMult;
+    this.hp = Math.round(def.hp * diff.enemy.hpMult);
+    this.maxHp = this.hp;
+    this.dmg = Math.round(def.dmg * diff.enemy.dmgMult);
     this.color = def.color; this.skin = def.skin;
     this.hair = def.hair; this.bloodColor = def.bloodColor;
     this.kbResist = def.kbResist || this.kbResist;
@@ -191,6 +195,7 @@ export class Enemy {
   _die() {
     this.dead = true;
     state.kills++;
+    addKillScore(this.kind);
     const burst = (this.kind === 'bigboss') ? 80 : (this.kind === 'miniboss') ? 40 : 18;
     for (let i = 0; i < burst; i++) {
       state.particles.push({
@@ -237,24 +242,29 @@ export class Enemy {
     }
 
     const def = ENEMY_DEFS[this.kind] || ENEMY_DEFS.ghoul;
-    const dropRoll = Math.random();
-    const dropChance = def.dropChance || 0;
+    const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+    const dropChance = (def.dropChance || 0) * diff.loot.dropChanceMult;
     const lx = clamp(this.x + rand(-4, 4), 12, G.W - 12);
     const ly = clamp(this.y + rand(-4, 4), 12, G.PLAY_BOTTOM - 12);
-    if (dropRoll < dropChance) {
-      const r = Math.random();
-      const lootType = LOOT_DEFS.basicDropWeights.find(drop => r < drop.threshold).type;
-      state.loot.push(new Loot(lx, ly, lootType));
+    if (Math.random() < dropChance) {
+      const drops = rollItemDrops(diff);
+      drops.forEach((type, i) => {
+        state.loot.push(new Loot(
+          clamp(lx + i * 14, 12, G.W - 12),
+          clamp(ly, 12, G.PLAY_BOTTOM - 12),
+          type
+        ));
+      });
     }
 
     if (def.specialEligible) {
-      if (Math.random() < LOOT_DEFS.bananaBombChance) {
+      if (Math.random() < LOOT_DEFS.bananaBombChance * diff.loot.specialDropMult) {
         state.loot.push(new Loot(
           clamp(lx + rand(-8, 8), 12, G.W - 12),
           clamp(ly + rand(-8, 8), 12, G.PLAY_BOTTOM - 12),
           'banana_bomb'
         ));
-      } else if (Math.random() < LOOT_DEFS.specialWeaponChance) {
+      } else if (Math.random() < LOOT_DEFS.specialWeaponChance * diff.loot.specialDropMult) {
         const weapons = LOOT_DEFS.specialWeapons;
         const pick = weapons[Math.floor(Math.random() * weapons.length)];
         state.loot.push(new Loot(

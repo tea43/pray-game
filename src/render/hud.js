@@ -1,6 +1,7 @@
 import { G } from '../globals.js';
 import { rand } from '../utils/math.js';
 import { state } from '../state.js';
+import { getHighScore } from '../systems/score.js';
 
 export function drawAbilityPanel() {
   const { ctx, W, H, PANEL_H } = G;
@@ -130,6 +131,8 @@ export function updateHUD() {
   document.getElementById('survCount').textContent = alive;
   document.getElementById('killCount').textContent = state.kills;
   document.getElementById('waveNum').textContent = state.wave;
+  document.getElementById('scoreCount').textContent = state.score;
+  document.getElementById('highScore').textContent = getHighScore();
 
   const bar = document.getElementById('timeBar');
   const label = document.getElementById('timeLabel');

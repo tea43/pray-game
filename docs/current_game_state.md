@@ -138,20 +138,45 @@ Enemy entry by wave:
 
 ## Current Architecture
 
-The game is still one HTML file containing CSS, markup, JavaScript classes, state, input, update, and drawing.
+Phase 4 modular build is complete. The game runs from `src/` via `npm run dev`. `wasteland_survivors-v4.html` is retained as the golden single-file reference.
 
-Main code units:
+Module layout:
 
-- `Unit`: survivor stats, movement, attacks, abilities, drawing.
-- `Projectile`: thrown club projectile.
-- `SprayBullet`: spray gun projectile.
-- `Loot`: pickup state and icon drawing.
-- `Enemy`: enemy stats, AI, special behavior, death drops, drawing.
-- Global `state`: all runtime arrays and counters.
-- `newGame`, `spawnEnemy`, `spawnBoss`, `applyLoot`, explosion helpers.
-- Input handlers for mouse/keyboard.
-- `frame`: main update/draw loop.
+```
+src/
+  main.js              # bootstraps canvas, state, game loop
+  state.js             # createInitialState, reset helpers
+  globals.js           # shared mutable references
+  config/
+    heroes.js          # HERO_DEFS
+    enemies.js         # ENEMY_DEFS
+    loot.js            # LOOT_DEFS
+    waves.js           # WAVE_DEFS
+    assets.js          # asset registry shape
+  systems/
+    input.js           # mouse/keyboard handlers
+    time.js            # activity-driven time flow
+    combat.js          # hit resolution, knockback, explosions
+    abilities.js       # Blink, Rage, Chain Lightning
+    loot.js            # pickup, apply, expiry
+    spawning.js        # wave and boss spawn logic
+    world.js           # terrain generation
+  entities/
+    Unit.js            # survivor stats, movement, attack
+    Enemy.js           # enemy AI, behaviors, drops
+    Projectile.js      # thrown club
+    SprayBullet.js     # spray gun bullet
+    Loot.js            # pickup state and icon
+  render/
+    background.js      # terrain, debris, vignette
+    units.js           # survivor drawing
+    enemies.js         # enemy drawing
+    loot.js            # loot icon drawing
+    hud.js             # bottom HUD panel
+    effects.js         # particles, telegraphs
+  utils/
+    math.js            # rand, randInt, dist2, clamp
+    canvas.js          # canvas helpers
+```
 
-## Immediate Technical Risk
-
-The single-file structure is productive for prototyping but will become expensive for agents and humans as features grow. The safest next architectural move is not a direct split; it is a staged extraction where data definitions, pure helpers, and system boundaries are identified while `wasteland_survivors-v4.html` remains the golden playable file.
+Next planned phases: Menu + Score (Phase 5), Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.

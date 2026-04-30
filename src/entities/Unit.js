@@ -2,6 +2,7 @@ import { G } from '../globals.js';
 import { rand, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
 import { HERO_DEFS } from '../config/heroes.js';
+import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { Projectile } from './Projectile.js';
 import { SprayBullet } from './SprayBullet.js';
 
@@ -34,14 +35,15 @@ export class Unit {
     this.activeWeaponTimer = 0;
 
     const def = HERO_DEFS[type] || HERO_DEFS.elliot;
+    const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     this.name = def.name;
     this.abilityKey = def.abilityKey;
     this.abilityName = def.abilityName;
-    this.abilityMaxCd = def.abilityMaxCd;
+    this.abilityMaxCd = def.abilityMaxCd * diff.hero.abilityCdMult;
     this.abilityColor = def.abilityColor;
     this.weaponType = def.weaponType;
-    this.maxHp = def.maxHp;
-    this.hp = def.maxHp;
+    this.maxHp = Math.round(def.maxHp * diff.hero.hpMult);
+    this.hp = this.maxHp;
     this.atkRange = def.atkRange;
     this.baseAtkDmg = def.baseAtkDmg;
     this.baseAtkRate = def.baseAtkRate;

@@ -1,9 +1,11 @@
 import { rand, randInt, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
+import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 
 export function applyLoot(loot, unit) {
+  const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   if (loot.type === 'medkit') {
-    const heal = 60;
+    const heal = diff.loot.healAmount;
     const before = unit.hp;
     unit.hp = Math.min(unit.maxHp, unit.hp + heal);
     const actual = unit.hp - before;
@@ -20,7 +22,7 @@ export function applyLoot(loot, unit) {
     }
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + actual });
   } else if (loot.type === 'stimpack') {
-    unit.rageTimer = Math.max(unit.rageTimer, 5);
+    unit.rageTimer = Math.max(unit.rageTimer, diff.loot.stimDuration);
     unit.abilityCd = Math.max(unit.abilityCd - 2, 0);
     for (let i = 0; i < 22; i++) {
       const a = rand(0, Math.PI * 2);
