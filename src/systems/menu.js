@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { initAudio, setVolume, toggleMute, audioState } from './audio.js';
 
 let _newGame = null;
 let _startGame = null;
@@ -37,6 +38,10 @@ export function showPause() {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   document.getElementById('pauseDiffLabel').textContent = diff.label;
   document.getElementById('pauseMenu').classList.add('show');
+  
+  // Update Audio UI state
+  initAudio();
+  updateAudioUI();
 }
 
 export function hidePause() {
@@ -65,6 +70,7 @@ export function initMenu() {
 
   // Difficulty screen: START → begin game
   document.getElementById('menuStart').addEventListener('click', () => {
+    initAudio(); // Initialize audio context on first user interaction
     document.getElementById('mainMenu').classList.remove('show');
     _startGame && _startGame();
   });
@@ -91,4 +97,35 @@ export function initMenu() {
 
   // Show title screen on boot (mainMenu overlay already has class "show" in HTML)
   showTitleScreen();
+
+  // Audio controls
+  const volSlider = document.getElementById('volumeSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  
+  if (volSlider && muteBtn) {
+    // Initial UI state setup will happen when paused (so audioState is loaded)
+    volSlider.addEventListener('input', (e) => {
+      initAudio();
+      setVolume(parseFloat(e.target.value));
+      if (audioState.muted && parseFloat(e.target.value) > 0) {
+        toggleMute(); // un-mute if user changes volume
+        muteBtn.textContent = 'MUTE';
+      }
+    });
+
+    muteBtn.addEventListener('click', () => {
+      initAudio();
+      const isMuted = toggleMute();
+      muteBtn.textContent = isMuted ? 'UNMUTE' : 'MUTE';
+    });
+  }
+}
+
+export function updateAudioUI() {
+  const volSlider = document.getElementById('volumeSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  if (volSlider && muteBtn) {
+    volSlider.value = audioState.volume;
+    muteBtn.textContent = audioState.muted ? 'UNMUTE' : 'MUTE';
+  }
 }

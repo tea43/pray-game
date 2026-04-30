@@ -1,8 +1,10 @@
 import { rand, randInt, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { playSfx } from './audio.js';
 
 export function applyLoot(loot, unit) {
+  playSfx('loot');
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   if (loot.type === 'medkit') {
     const heal = diff.loot.healAmount;
@@ -77,6 +79,7 @@ export function applyLoot(loot, unit) {
 }
 
 export function detonateBomb(x, y) {
+  playSfx('explosion');
   const radius = 280;
   for (const e of state.enemies) {
     if (e.dead) continue;
@@ -118,6 +121,7 @@ export function detonateBomb(x, y) {
 }
 
 export function detonateBananaBomb(x, y) {
+  playSfx('explosion');
   const radius = 420;
   for (const e of state.enemies) {
     if (e.dead) continue;

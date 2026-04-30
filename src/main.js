@@ -4,7 +4,8 @@ import { state, generateTerrain } from './state.js';
 import { Unit } from './entities/Unit.js';
 import { WAVE_DEFS } from './config/waves.js';
 import { DIFFICULTY_DEFS } from './config/difficulty.js';
-import { DISPLAY_NAME_DEFS } from './config/assets.js';
+import { DISPLAY_NAME_DEFS, loadAssets } from './config/assets.js';
+import manifest from './config/manifest.json';
 import { spawnEnemy, spawnBoss } from './systems/spawning.js';
 import { applyLoot } from './systems/loot.js';
 import { initInput, setNewGameFn } from './systems/input.js';
@@ -13,6 +14,7 @@ import { resetScore, addDeathPenalty, addWaveClearBonus, saveHighScore } from '.
 import { drawBackground } from './render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles } from './render/effects.js';
 import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
+import { playMusic, playSfx } from './systems/audio.js';
 
 // ==================== INIT ====================
 function initCanvas() {
@@ -60,6 +62,7 @@ function newGame() {
   state.survivedSeconds = 0;
   state.menuPhase = 'playing';
   resetScore();
+  playMusic('combat');
 
   document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
   document.getElementById('gameOverText').classList.remove('victory');
@@ -232,6 +235,7 @@ function frame(now) {
         const bossLabel = bigCount  > 0 ? DISPLAY_NAME_DEFS.bigbossLabel
                         : miniCount > 0 ? DISPLAY_NAME_DEFS.minibossLabel
                         : null;
+        playSfx('wave');
         state.moveMarkers.push({
           x: G.W / 2, y: G.PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
           type: 'wave', bossLabel,
@@ -239,6 +243,7 @@ function frame(now) {
       } else {
         state.gameOver = true;
         state.victory = true;
+        playMusic('menu');
         saveHighScore();
         const total = Math.floor(state.survivedSeconds);
         document.getElementById('gameOverText').textContent = 'YOU SURVIVED';
@@ -251,6 +256,7 @@ function frame(now) {
 
     if (state.units.every(u => u.dead)) {
       state.gameOver = true;
+      playMusic('menu');
       saveHighScore();
       const total = Math.floor(state.survivedSeconds);
       document.getElementById('finalStats').textContent =
@@ -389,5 +395,6 @@ setMenuCallbacks(startGame, newGame);
 initInput();
 initMenu();
 
+loadAssets(manifest);
 generateTerrain();
 requestAnimationFrame(frame);

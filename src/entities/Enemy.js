@@ -4,8 +4,10 @@ import { state } from '../state.js';
 import { ENEMY_DEFS } from '../config/enemies.js';
 import { DIFFICULTY_DEFS, rollItemDrops } from '../config/difficulty.js';
 import { LOOT_DEFS } from '../config/loot.js';
+import { resolveAsset } from '../config/assets.js';
 import { Loot } from './Loot.js';
 import { addKillScore } from '../systems/score.js';
+import { playSfx } from '../systems/audio.js';
 
 export class Enemy {
   constructor(x, y, kind) {
@@ -43,6 +45,8 @@ export class Enemy {
     this.hair = def.hair; this.bloodColor = def.bloodColor;
     this.kbResist = def.kbResist || this.kbResist;
     this.name = def.name;
+
+    this.bigbossMutantTorso = false; // config flag as requested
   }
 
   update(dt) {
@@ -176,6 +180,7 @@ export class Enemy {
         target.hp -= this.dmg;
         target.hurtFlash = 1;
         this.dmgCd = 0.75;
+        playSfx('hit');
         state.shake = Math.max(state.shake, 2);
         for (let i = 0; i < 6; i++) {
           state.particles.push({
@@ -189,11 +194,13 @@ export class Enemy {
     }
 
     this.dmgCd -= dt;
+
     if (this.hp <= 0) this._die();
   }
 
   _die() {
     this.dead = true;
+    playSfx('death');
     state.kills++;
     addKillScore(this.kind);
     const burst = (this.kind === 'bigboss') ? 80 : (this.kind === 'miniboss') ? 40 : 18;
@@ -294,6 +301,18 @@ export class Enemy {
       return;
     }
 
+    const sprite = resolveAsset('enemies', this.kind);
+    if (sprite) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.facing);
+      ctx.drawImage(sprite, -this.r, -this.r, this.r * 2, this.r * 2);
+      ctx.restore();
+      this._drawHpBar(ctx);
+      return;
+    }
+
+    // Primitive fallback: Segmented Worm
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath();
     ctx.ellipse(this.x, this.y + this.r - 1, this.r * 0.9, this.r * 0.35, 0, 0, Math.PI * 2);
@@ -550,6 +569,10 @@ export class Enemy {
       ctx.shadowBlur = 0;
     }
 
+    this._drawHpBar(ctx);
+  }
+
+  _drawHpBar(ctx) {
     if (this.hp < this.maxHp || this.kind === 'miniboss' || this.kind === 'bigboss') {
       const isBoss = this.kind === 'miniboss' || this.kind === 'bigboss';
       const barW = isBoss ? this.r * 3.6 : this.r * 2.2;

@@ -22,3 +22,19 @@ export const ASSET_REGISTRY = {
 export function resolveAsset(category, key) {
   return ASSET_REGISTRY[category]?.[key] ?? null;
 }
+
+/**
+ * Load assets from a manifest object (e.g. parsed from manifest.json).
+ * Structure: { category: { key: url } }
+ */
+export function loadAssets(manifest) {
+  for (const [category, items] of Object.entries(manifest)) {
+    if (!ASSET_REGISTRY[category]) ASSET_REGISTRY[category] = {};
+    for (const [key, url] of Object.entries(items)) {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => { ASSET_REGISTRY[category][key] = img; };
+      img.onerror = () => { console.warn(`Failed to load asset: ${url}`); };
+    }
+  }
+}

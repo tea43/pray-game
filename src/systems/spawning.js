@@ -3,6 +3,7 @@ import { rand, randInt } from '../utils/math.js';
 import { state } from '../state.js';
 import { Enemy } from '../entities/Enemy.js';
 import { WAVE_DEFS } from '../config/waves.js';
+import { playSfx } from './audio.js';
 
 export function spawnEnemy() {
   const edge = randInt(0, 3);
@@ -34,4 +35,5 @@ export function spawnBoss(kind) {
   else if (edge === 2) { x = rand(G.W * 0.2, G.W * 0.8); y = G.PLAY_BOTTOM + margin; }
   else { x = -margin; y = rand(G.PLAY_BOTTOM * 0.2, G.PLAY_BOTTOM * 0.8); }
   state.enemies.push(new Enemy(x, y, kind));
+  playSfx('boss_spawn');
 }

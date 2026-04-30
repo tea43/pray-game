@@ -5,6 +5,7 @@ import { HERO_DEFS } from '../config/heroes.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { Projectile } from './Projectile.js';
 import { SprayBullet } from './SprayBullet.js';
+import { playSfx } from '../systems/audio.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -117,6 +118,7 @@ export class Unit {
     this.swing = 1;
 
     if (this.activeWeapon === 'spray_gun') {
+      playSfx('shoot');
       this.throwArm = 1;
       const spread = 0.35;
       const bulletCount = 5;
@@ -132,6 +134,7 @@ export class Unit {
     }
 
     if (this.activeWeapon === 'samurai_sword') {
+      playSfx('hit');
       const cleaveRange = 80;
       const halfArc = Math.PI * (60 / 180);
       let hit = 0;
@@ -163,6 +166,7 @@ export class Unit {
     }
 
     if (this.weaponType === 'thrownClub') {
+      playSfx('shoot');
       this.throwArm = 1;
       const dmg = this.atkDmg;
       const sx = this.x + Math.cos(this.facing) * (this.r + 6);
@@ -177,6 +181,7 @@ export class Unit {
     }
 
     const dmg = this.atkDmg;
+    playSfx('hit');
     enemy.hp -= dmg;
     const kb = this.rageTimer > 0 ? 140 : 80;
     enemy.knockX += Math.cos(this.facing) * kb;
@@ -219,6 +224,7 @@ export class Unit {
     const dx = mx - this.x, dy = my - this.y;
     const d = Math.hypot(dx, dy);
     if (d < 6) return false;
+    playSfx('ability_blink');
     const maxRange = 240;
     const step = Math.min(d, maxRange);
     for (let i = 0; i < 22; i++) {
@@ -258,6 +264,7 @@ export class Unit {
   }
 
   _rage() {
+    playSfx('ability_rage');
     this.rageTimer = 5;
     this.abilityCd = this.abilityMaxCd;
     for (let i = 0; i < 28; i++) {
@@ -274,6 +281,7 @@ export class Unit {
   }
 
   _chainLightning() {
+    playSfx('ability_lightning');
     const chains = 4;
     const maxRange = 200;
     let cx = this.x, cy = this.y;
