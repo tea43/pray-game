@@ -17,7 +17,7 @@ Ultimate goals:
 
 ## Phase 0: Lore And Planning Baseline
 
-Status: in progress.
+Status: completed in commit `31da7c9`, with root-guide follow-up in `980d497`.
 
 Goal:
 
@@ -47,6 +47,8 @@ Commit:
 - `Align P-RAY lore and asset planning`
 
 ## Phase 1: In-File Data Boundaries
+
+Status: implemented. Browser boot/speed smoke passed; full gameplay smoke should run before Phase 2.
 
 Goal:
 

@@ -2,6 +2,16 @@
 
 Source file: `wasteland_survivors-v4.html` (~3 242 lines, single-file HTML/JS/CSS game on a `<canvas>` element).
 
+The current HTML now has in-file definition tables near the top of the script:
+
+- `HERO_DEFS`
+- `ENEMY_DEFS`
+- `LOOT_DEFS`
+- `WAVE_DEFS`
+- `DISPLAY_NAME_DEFS`
+
+These are the first modularization boundary. They keep tuning and display metadata compact while the golden single-file build remains playable.
+
 ---
 
 ## 1. Active Pause
