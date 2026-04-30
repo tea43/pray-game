@@ -14,11 +14,12 @@ This is the navigation hub for agents. Read this first, then open only the file 
 - `asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, worm enemies, weapons, loot, and comic assets.
 - `future_development_plan.md`: Suggested development roadmap for gameplay, content, tooling, packaging, and eventual Steam readiness.
 - `smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
-- `future_discussion.md`: Scratchpad for larger design topics such as sprites, scrolling maps, terrain, enemies, and loot.
+- `backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). This is the backlog — not immediate work.
 - `wasteland_survivors_feature_plan.md`: Historical/completed feature ledger plus near-term backlog.
 
 ## Root Entry Points
 
+- `plan.md`: Immediate action plan — phased implementation steps, commit targets, and status. Phases 0–4 complete; Phase 5 complete; Phase 6 is next.
 - `../AGENTS.md`: Agent roles, token-saving workflow, and guardrails.
 - `../CLAUDE.md`: Short Claude-specific entry point that forwards to this index.
 

@@ -1,5 +1,8 @@
 # P-RAY Build And Steam Plan
 
+> **This file is the immediate action plan** — phases with clear scope, implementation steps, and commit targets.
+> For larger design questions, open-ended ideas, and long-horizon discussions see [`backlog.md`](backlog.md).
+
 Ultimate goals:
 
 - Keep a single-file HTML build available.
@@ -199,6 +202,8 @@ Commit:
 - One commit per extracted system, for example `Extract time and spawning systems`.
 
 ## Phase 5: Menu And Score
+
+Status: completed.
 
 Goal:
 
