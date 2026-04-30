@@ -1,25 +1,17 @@
 # Claude Guide
 
-Wasteland Survivors is a canvas-based browser action game with wave survival, three playable survivors, enemy archetypes/bosses, loot drops, and ability-driven combat.
+Wasteland Survivors is a browser Canvas survival tactics prototype with three survivors, movement-driven time flow, enemy waves, bosses, loot drops, and temporary weapon spikes.
 
-Start here for full context:
-- docs/index.md
+Use `AGENTS.md` for role routing. Use `docs/index.md` as the navigation hub.
 
-This file is a root entry point for models/agents. It should stay short and high-level.
+## Fast Context
 
-## Project Brief
-
-- Main game implementation lives in wasteland_survivors-v4.html.
-- Design and architecture context lives under /docs.
-- Gameplay focus: movement-driven time flow, unit abilities, enemy waves, and loot progression.
-
-## Recommended Reading Order
-
-1. docs/index.md
-2. docs/implementation_notes.md
-3. docs/wasteland_survivors_feature_plan.md
-4. docs/future_discussion.md
+- Playable source: `wasteland_survivors-v4.html`
+- Documentation hub: `docs/index.md`
+- Current game snapshot: `docs/current_game_state.md`
+- Modularization path: `docs/modularization_plan.md`
+- Future roadmap: `docs/future_development_plan.md`
 
 ## Working Principle
 
-Use docs/index.md as the navigation hub before diving into any specific markdown file.
+Spend tokens on the subsystem being changed, not the whole project. Read `docs/index.md`, choose the smallest relevant file, then inspect exact code ranges with search.

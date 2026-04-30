@@ -1,24 +1,32 @@
 # Agents Guide
 
-Wasteland Survivors is a single-file canvas survival game with three survivors, wave progression, enemy variety, and loot-based power spikes.
+Wasteland Survivors is currently a single-file Canvas 2D survival tactics game. The working game lives in `wasteland_survivors-v4.html`; project memory lives in `docs/`.
 
-Primary navigation hub:
-- docs/index.md
+This file is intentionally short. Start here, then read only the smallest doc that answers the task.
 
-This file is the root-level quick role map for agents.
+## Token-Saving Workflow
 
-## Agent Roles
+1. Read `docs/index.md`.
+2. Pick one role and one target system.
+3. Read the target system doc only.
+4. Patch narrowly.
+5. Update docs only when behavior, architecture, or roadmap changes.
 
-- implementation-agent: implement approved features in game code with minimal, testable edits.
-- systems-design-agent: turn future ideas into staged technical plans with trade-off analysis.
-- balance-agent: tune pacing, drop rates, damage curves, and reward consistency.
-- combat-loot-agent: own attack branching, temporary weapon behavior, and pickup effects.
-- rendering-agent: maintain draw clarity, telegraphs, and canvas performance.
-- map-world-agent: handle terrain, spawning context, camera, and world-space transitions.
+Avoid reading every markdown file by default. Avoid broad refactors unless `docs/modularization_plan.md` says the current phase allows it.
 
-## Recommended Agent Workflow
+## Role Map
 
-1. Read docs/index.md first.
-2. Choose one primary agent role for the task.
-3. Keep changes scoped to one system family per patch.
-4. Escalate to systems-design-agent before large refactors.
+- `implementation-agent`: small approved game-code changes.
+- `systems-design-agent`: staged architecture and feature plans.
+- `balance-agent`: waves, drop rates, damage, pacing.
+- `combat-loot-agent`: attacks, abilities, pickups, temporary weapons.
+- `rendering-agent`: Canvas clarity, telegraphs, HUD, performance.
+- `map-world-agent`: terrain, spawning context, camera/world-space work.
+- `docs-agent`: keep docs concise, indexed, and non-duplicative.
+
+## Current Guardrails
+
+- Preserve `wasteland_survivors-v4.html` as the playable golden file until a build pipeline exists.
+- Keep new docs under `docs/` and link them from `docs/index.md`.
+- Prefer data extraction and adapter layers before splitting runtime code into many files.
+- For large work, create a plan markdown first, then implement in small phases.

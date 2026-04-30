@@ -137,7 +137,7 @@
     <div class="hud" id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
       RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; SPACE: pause
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: x0
     </div>
     <div id="overlay">
       <div id="gameOverText">ALL SURVIVORS DEAD</div>
@@ -2159,6 +2159,7 @@ const state = {
   spawnInterval: 1.4,
   gameOver: false,
   timeFlow: 0,
+  timeSpeed: 0,
   manualPause: false,
   survivedSeconds: 0,
 };
@@ -2219,7 +2220,9 @@ function newGame() {
   state.spawnInterval = 1.4;
   state.gameOver = false;
   state.victory = false;
+  state.timeFlow = 0;
   state.manualPause = false;
+  state.timeSpeed = 0;
   state.survivedSeconds = 0;
 
   document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
@@ -2583,13 +2586,26 @@ document.addEventListener('keydown', (e) => {
   }
   const k = e.key.toLowerCase();
 
+  if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
+    e.preventDefault();
+    state.timeSpeed = clamp(state.timeSpeed + 1, 0, 3);
+    state.manualPause = false;
+    return;
+  }
+  if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+    e.preventDefault();
+    state.timeSpeed = clamp(state.timeSpeed - 1, 0, 3);
+    state.manualPause = state.timeSpeed === 0;
+    return;
+  }
   if (k === 's') {
     for (const u of state.selected) u.stop();
     return;
   }
   if (e.key === ' ') {
     e.preventDefault();
-    state.manualPause = !state.manualPause;
+    state.timeSpeed = 0;
+    state.manualPause = true;
     return;
   }
   if (k === 'a' && (e.ctrlKey || e.metaKey)) {
@@ -2874,13 +2890,14 @@ function updateHUD() {
   bar.classList.remove('flowing', 'paused');
   if (state.manualPause) {
     bar.classList.add('paused');
-    label.textContent = 'MANUAL PAUSE — PRESS SPACE';
+    label.textContent = 'TIME x0 — PRESS + TO RESUME';
   } else if (state.timeFlow < 0.5) {
     bar.classList.add('paused');
-    label.textContent = 'TIME PAUSED — MOVE TO ADVANCE';
+    label.textContent = 'TIME x0 — MOVE OR PRESS +';
   } else {
     bar.classList.add('flowing');
-    label.textContent = 'TIME FLOWING';
+    const speedLabel = state.timeSpeed > 0 ? state.timeSpeed : 1;
+    label.textContent = `TIME x${speedLabel}`;
   }
 }
 
@@ -2891,7 +2908,10 @@ function frame(now) {
   lastTime = now;
 
   const anyMoving = state.units.some(u => !u.dead && u.moving);
-  const targetFlow = (anyMoving && !state.manualPause && !state.gameOver) ? 1 : 0;
+  const targetFlow = state.gameOver || state.manualPause ? 0
+                   : state.timeSpeed > 0 ? state.timeSpeed
+                   : anyMoving ? 1
+                   : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
   const gameDt = realDt * state.timeFlow;
 

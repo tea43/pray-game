@@ -13,20 +13,25 @@ The game uses an **activity-driven time-flow system** rather than a simple boole
 | Field | Type | Purpose |
 |---|---|---|
 | `state.timeFlow` | `float 0..1` | Current game speed multiplier (smoothly animated) |
-| `state.manualPause` | `bool` | Set by SPACE key |
+| `state.manualPause` | `bool` | Set when SPACE forces time to x0 |
+| `state.timeSpeed` | `int 0..3` | Forced speed level from `+` / `-`; x0 pauses, x1/x2/x3 advance time even when idle |
 | `state.gameOver` | `bool` | Suppresses flow regardless |
 
 ### Game loop logic (`frame()`, ~line 2893)
 
 ```js
 const anyMoving = state.units.some(u => !u.dead && u.moving);
-const targetFlow = (anyMoving && !state.manualPause && !state.gameOver) ? 1 : 0;
+const targetFlow = state.gameOver || state.manualPause ? 0
+                 : state.timeSpeed > 0 ? state.timeSpeed
+                 : anyMoving ? 1
+                 : 0;
 state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
 const gameDt = realDt * state.timeFlow;
 ```
 
 - **Time only flows when at least one survivor is moving** (i.e. has a destination further than 2.5px from current position — see `Unit.moving` getter).
-- `timeFlow` interpolates toward 0 or 1 at a rate of `12× per second`, giving a smooth slow-down/resume feel rather than a hard cut.
+- Or when the player has forced speed with `+`: x1, x2, or x3. Forced speed advances time even when survivors are idle.
+- `timeFlow` interpolates toward the current target speed at a rate of `12× per second`, giving a smooth slow-down/resume feel rather than a hard cut.
 - `gameDt` is applied to all gameplay (unit/enemy update, wave timer, loot pickup, explosions, shockwaves). `realDt` is used for UI-only effects (dust particles, move markers, bolts, loot bob animation, screen shake decay).
 
 ### Pause indicators
@@ -36,7 +41,9 @@ const gameDt = realDt * state.timeFlow;
 
 ### Controls
 
-- **SPACE**: toggles `state.manualPause`.
+- **SPACE**: forces time to x0.
+- **+**: raises forced speed to x1, x2, then x3.
+- **-**: lowers forced speed to x2, x1, then x0.
 - **Moving a unit**: sets `unit.tx/ty`, which makes `unit.moving` true, which drives `targetFlow = 1`.
 - Stopping all units (`S` key → `unit.stop()`) sets `tx = x, ty = y`, so `moving` becomes false immediately.
 

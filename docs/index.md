@@ -1,31 +1,41 @@
 # Docs Index
 
-This index gives a quick brief for every markdown file currently in `/docs` so models can understand project context without reading all files first.
+This is the navigation hub for agents. Read this first, then open only the file that matches the task.
 
-## File Summaries
+## Current State
 
-- Name: `future_discussion.md`
-  Brief description: Exploratory design discussion for future expansions, including character sprite migration, enemy architecture options, scrolling/world-space maps, terrain systems, and long-term enemy/loot evolution.
+- `current_game_state.md`: Concise snapshot of the playable game: heroes, weapons, abilities, enemies, loot, waves, controls, and current architecture.
+- `implementation_notes.md`: Deeper technical reference for current `wasteland_survivors-v4.html` behavior and code locations.
 
-- Name: `implementation_notes.md`
-  Brief description: Technical reference of current game behavior and code architecture in `wasteland_survivors-v4.html`, covering time-flow, character rendering, combat, enemy visuals/logic, and map generation/spawning internals.
+## Planning
 
-- Name: `wasteland_survivors_feature_plan.md`
-  Brief description: Implementation plan for prioritized features with suggested code touchpoints and risk levels, including wave cap/victory flow, canvas sizing, loot-drop tuning, and special weapon drop systems.
+- `modularization_plan.md`: Safe path from one large HTML file to a maintainable modular codebase without breaking the current playable file.
+- `future_development_plan.md`: Suggested development roadmap for gameplay, content, tooling, packaging, and eventual Steam readiness.
+- `smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
+- `future_discussion.md`: Scratchpad for larger design topics such as sprites, scrolling maps, terrain, enemies, and loot.
+- `wasteland_survivors_feature_plan.md`: Historical/completed feature ledger plus near-term backlog.
 
 ## Root Entry Points
 
-- Name: `../claude.md`
-  Brief description: Root-level project brief for models and agents with a quick pointer to this index.
+- `../AGENTS.md`: Agent roles, token-saving workflow, and guardrails.
+- `../CLAUDE.md`: Short Claude-specific entry point that forwards to this index.
 
-- Name: `../agents.md`
-  Brief description: Root-level role map for agent responsibilities and task-routing guidance.
+## Read Matrix
 
-## Scaling Rule for Large Topics
+| Task | Read |
+|---|---|
+| Quick gameplay summary | `current_game_state.md` |
+| Bug fix in current game | `implementation_notes.md` + targeted code search |
+| Balance change | `current_game_state.md`, then relevant code ranges |
+| Add ability, weapon, enemy, or loot | `current_game_state.md` + `implementation_notes.md` |
+| Architecture split | `modularization_plan.md` |
+| Roadmap or feature sequencing | `future_development_plan.md` |
+| Verify a patch | `smoke_checklist.md` |
 
-If a single topic grows too large to summarize clearly in one markdown file, create a dedicated subfolder under `/docs` for that topic and split content into focused markdown files.
+## Documentation Rule
 
-Example:
-- `/docs/combat/overview.md`
-- `/docs/combat/loot.md`
-- `/docs/combat/enemy_scaling.md`
+Keep docs short and non-duplicative. If a topic grows large, create a focused subfolder, for example:
+
+- `docs/combat/overview.md`
+- `docs/combat/loot.md`
+- `docs/world/camera.md`
