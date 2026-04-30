@@ -131,7 +131,7 @@ export class Enemy {
             life: 1.4, maxLife: 1.4,
             speed: 280, dmg: 35,
           });
-          state.shake = Math.max(state.shake, 12);
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 12);
           this.slamCharge = 0;
           this.slamTimer = rand(4.5, 6.5);
           for (let i = 0; i < 30; i++) {
@@ -181,7 +181,7 @@ export class Enemy {
         target.hurtFlash = 1;
         this.dmgCd = 0.75;
         playSfx('hit');
-        state.shake = Math.max(state.shake, 2);
+        if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
         for (let i = 0; i < 6; i++) {
           state.particles.push({
             x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
@@ -250,15 +250,11 @@ export class Enemy {
         life: 1.0, maxLife: 1.0,
         speed: 360, dmg: 0,
       });
-      state.flashAlpha = Math.max(state.flashAlpha, 0.7);
-      state.flashColor = '#c8ff90';
-      state.hitStop = Math.max(state.hitStop, 0.14);
-      state.shake = Math.max(state.shake, 4);
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.7); state.flashColor = '#c8ff90'; }
+      if (!state.settings.noShake) { state.hitStop = Math.max(state.hitStop, 0.14); state.shake = Math.max(state.shake, 4); }
     } else if (this.kind === 'miniboss') {
-      state.flashAlpha = Math.max(state.flashAlpha, 0.45);
-      state.flashColor = '#ffb070';
-      state.hitStop = Math.max(state.hitStop, 0.08);
-      state.shake = Math.max(state.shake, 3);
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.45); state.flashColor = '#ffb070'; }
+      if (!state.settings.noShake) { state.hitStop = Math.max(state.hitStop, 0.08); state.shake = Math.max(state.shake, 3); }
     }
     // Regular enemies: no shake, no flash, no hit-stop.
   }
@@ -436,7 +432,7 @@ export class Enemy {
     ctx.translate(this.x, this.y + wobble);
 
     const isBoss = this.kind === 'miniboss' || this.kind === 'bigboss';
-    if (this.hurtFlash > 0 && isBoss) ctx.globalCompositeOperation = 'lighter';
+    if (this.hurtFlash > 0 && isBoss && !state.settings.noLightning) ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = this.hurtFlash > 0 ? '#d97060' : this.color;
     ctx.beginPath();
     ctx.arc(0, 0, this.r, 0, Math.PI * 2);

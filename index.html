@@ -179,6 +179,24 @@
     margin-top: 2px;
   }
 
+  /* ---- settings screen ---- */
+  #settingsScreen { min-width: 360px; display: none; flex-direction: column; align-items: center; gap: 14px; }
+  #settingsScreen.active { display: flex; }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; gap: 24px;
+  }
+  .settings-label { font-size: 11px; letter-spacing: 2px; color: #a89470; }
+  .toggle-btn {
+    padding: 6px 18px;
+    background: #140e08; border: 1px solid #2a1c10;
+    color: #5a4020; font-family: 'Courier New', monospace;
+    font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.12s;
+    min-width: 80px; text-align: center;
+  }
+  .toggle-btn.on { border-color: #c5a572; color: #d9c7a0; background: #2a1a0a; }
+  .toggle-btn:hover { border-color: #7a5a30; color: #c5a572; }
+
   /* ---- main menu ---- */
   #mainMenu {
     z-index: 20;
@@ -209,15 +227,15 @@
     pointer-events: none;
   }
   /* lift panel above video layers */
-  #titleScreen, #difficultyScreen { z-index: 2; min-width: 360px; max-width: 400px; }
+  #titleScreen, #difficultyScreen, #settingsScreen { z-index: 2; min-width: 360px; max-width: 400px; }
   /* transparent panel — gradient provides the backing darkness */
-  #titleScreen, #difficultyScreen {
+  #titleScreen, #difficultyScreen, #settingsScreen {
     background: transparent; border: none; box-shadow: none;
     padding: 40px 0;
     border-left: 1px solid rgba(197,165,114,0.15);
     padding-left: 32px;
   }
-  #difficultyScreen { padding-left: 32px; }
+  #difficultyScreen, #settingsScreen { padding-left: 32px; }
 </style>
 </head>
 <body>
@@ -268,6 +286,17 @@
             <button id="muteBtn" class="game-btn" style="padding: 4px 10px; font-size: 10px;">MUTE</button>
           </div>
         </div>
+        <hr class="pause-sep">
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <div class="settings-row">
+            <span class="settings-label">SCREEN SHAKE</span>
+            <button id="pauseToggleShake" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">LIGHTNING EFFECTS</span>
+            <button id="pauseToggleLightning" class="toggle-btn on">ON</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -290,8 +319,9 @@
           P-RAY is all that can save your world.
         </div>
         <div class="title-actions">
-          <button id="menuPlay"    class="game-btn">PLAY</button>
-          <button                  class="game-btn" disabled>CREDITS</button>
+          <button id="menuPlay"     class="game-btn">PLAY</button>
+          <button id="menuSettings" class="game-btn">SETTINGS</button>
+          <button                   class="game-btn" disabled>CREDITS</button>
         </div>
         <div class="title-version">prototype build · phase 5</div>
       </div>
@@ -320,6 +350,24 @@
         <div class="diff-actions">
           <button id="menuBack"  class="game-btn">BACK</button>
           <button id="menuStart" class="game-btn">START</button>
+        </div>
+      </div>
+
+      <!-- Screen 3: Settings -->
+      <div id="settingsScreen" class="menu-box">
+        <div class="menu-title" style="font-size:20px;letter-spacing:6px">SETTINGS</div>
+        <div class="diff-group" style="gap:14px">
+          <div class="settings-row">
+            <span class="settings-label">SCREEN SHAKE</span>
+            <button id="toggleShake" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">LIGHTNING EFFECTS</span>
+            <button id="toggleLightning" class="toggle-btn on">ON</button>
+          </div>
+        </div>
+        <div class="diff-actions" style="margin-top:8px">
+          <button id="settingsBack" class="game-btn">BACK</button>
         </div>
       </div>
 

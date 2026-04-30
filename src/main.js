@@ -224,7 +224,7 @@ function frame(now) {
               color: '#a83a2a', size: rand(1.2, 2.5), realtime: true,
             });
           }
-          state.shake = Math.max(state.shake, 5);
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
         }
       }
       if (sw.r > sw.maxR) sw.life = 0;
@@ -254,7 +254,7 @@ function frame(now) {
             color: '#8a2a1a', size: rand(1.5, 3), realtime: true,
           });
         }
-        state.shake = Math.max(state.shake, 7);
+        if (!state.settings.noShake) state.shake = Math.max(state.shake, 7);
       }
     }
 
@@ -321,7 +321,7 @@ function frame(now) {
   // ==== DRAW ====
   const { ctx, W, PLAY_BOTTOM } = G;
   ctx.save();
-  if (state.shake > 0) ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
+  if (state.shake > 0 && !state.settings.noShake) ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
 
   drawBackground();
 
@@ -368,9 +368,9 @@ function frame(now) {
   for (const ent of drawables) ent.draw(ctx);
   for (const pr of state.projectiles) pr.draw(ctx);
 
-  drawBolts();
+  if (!state.settings.noLightning) drawBolts();
   drawExplosions();
-  drawShockwaves();
+  if (!state.settings.noLightning) drawShockwaves();
   drawParticles();
   drawFloatingTexts();
 
@@ -457,6 +457,13 @@ setNewGameFn(newGame);
 setMenuCallbacks(startGame, newGame);
 initInput();
 initMenu();
+
+window.addEventListener('beforeunload', e => {
+  if (state.menuPhase === 'playing' || state.menuPhase === 'paused') {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 loadAssets(manifest);
 generateTerrain();

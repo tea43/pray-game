@@ -199,7 +199,7 @@ export function drawFloatingTexts() {
 
 export function drawScreenFlash() {
   const { ctx, W, H } = G;
-  if (state.flashAlpha <= 0.01) return;
+  if (state.flashAlpha <= 0.01 || state.settings.noLightning) return;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = state.flashColor;

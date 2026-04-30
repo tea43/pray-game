@@ -15,11 +15,41 @@ export function setMenuCallbacks(startGameFn, newGameFn) {
 function showTitleScreen() {
   document.getElementById('titleScreen').style.display      = '';
   document.getElementById('difficultyScreen').classList.remove('active');
+  document.getElementById('settingsScreen').classList.remove('active');
 }
 
 function showDifficultyScreen() {
   document.getElementById('titleScreen').style.display      = 'none';
   document.getElementById('difficultyScreen').classList.add('active');
+  document.getElementById('settingsScreen').classList.remove('active');
+}
+
+function showSettingsScreen() {
+  document.getElementById('titleScreen').style.display      = 'none';
+  document.getElementById('difficultyScreen').classList.remove('active');
+  document.getElementById('settingsScreen').classList.add('active');
+  syncSettingsUI();
+}
+
+function syncSettingsUI() {
+  const on = !state.settings.noShake;
+  const onL = !state.settings.noLightning;
+  for (const id of ['toggleShake', 'pauseToggleShake']) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.textContent = on ? 'ON' : 'OFF';
+    btn.classList.toggle('on', on);
+  }
+  for (const id of ['toggleLightning', 'pauseToggleLightning']) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.textContent = onL ? 'ON' : 'OFF';
+    btn.classList.toggle('on', onL);
+  }
+}
+
+function saveSettings() {
+  try { localStorage.setItem('praySettings', JSON.stringify(state.settings)); } catch {}
 }
 
 // ── public API ────────────────────────────────────────────────────────────────
@@ -39,9 +69,10 @@ export function showPause() {
   document.getElementById('pauseDiffLabel').textContent = diff.label;
   document.getElementById('pauseMenu').classList.add('show');
   
-  // Update Audio UI state
+  // Update Audio and Settings UI state
   initAudio();
   updateAudioUI();
+  syncSettingsUI();
 }
 
 export function hidePause() {
@@ -55,6 +86,36 @@ export function hidePause() {
 export function initMenu() {
   // Title screen: PLAY → difficulty screen
   document.getElementById('menuPlay').addEventListener('click', showDifficultyScreen);
+
+  // Title screen: SETTINGS → settings screen
+  document.getElementById('menuSettings').addEventListener('click', showSettingsScreen);
+
+  // Settings screen: BACK → title screen
+  document.getElementById('settingsBack').addEventListener('click', showTitleScreen);
+
+  // Settings toggles
+  document.getElementById('toggleShake').addEventListener('click', () => {
+    state.settings.noShake = !state.settings.noShake;
+    saveSettings();
+    syncSettingsUI();
+  });
+  document.getElementById('toggleLightning').addEventListener('click', () => {
+    state.settings.noLightning = !state.settings.noLightning;
+    saveSettings();
+    syncSettingsUI();
+  });
+
+  // Pause menu settings toggles (in-game)
+  document.getElementById('pauseToggleShake').addEventListener('click', () => {
+    state.settings.noShake = !state.settings.noShake;
+    saveSettings();
+    syncSettingsUI();
+  });
+  document.getElementById('pauseToggleLightning').addEventListener('click', () => {
+    state.settings.noLightning = !state.settings.noLightning;
+    saveSettings();
+    syncSettingsUI();
+  });
 
   // Difficulty screen: BACK → title screen
   document.getElementById('menuBack').addEventListener('click', showTitleScreen);

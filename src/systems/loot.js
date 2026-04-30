@@ -37,7 +37,7 @@ export function applyLoot(loot, unit) {
         size: rand(1.5, 3), realtime: true,
       });
     }
-    state.shake = Math.max(state.shake, 4);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'stim', text: 'RAGE' });
   } else if (loot.type === 'bomb') {
     detonateBomb(loot.x, loot.y);
@@ -55,7 +55,7 @@ export function applyLoot(loot, unit) {
         size: rand(1.5, 3), realtime: true,
       });
     }
-    state.shake = Math.max(state.shake, 3);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: 'SPRAY GUN!' });
   } else if (loot.type === 'samurai_sword') {
     unit.activeWeapon = 'samurai_sword';
@@ -71,7 +71,7 @@ export function applyLoot(loot, unit) {
         size: rand(1.5, 3), realtime: true,
       });
     }
-    state.shake = Math.max(state.shake, 4);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: 'KATANA!' });
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
@@ -119,7 +119,7 @@ export function detonateBomb(x, y) {
     });
   }
   state.explosions.push({ x, y, r: 8, maxR: radius, life: 0.55, maxLife: 0.55 });
-  state.shake = Math.max(state.shake, 7);
+  if (!state.settings.noShake) state.shake = Math.max(state.shake, 7);
 }
 
 export function detonateBananaBomb(x, y) {
@@ -164,5 +164,5 @@ export function detonateBananaBomb(x, y) {
     });
   }
   state.explosions.push({ x, y, r: 10, maxR: radius, life: 0.7, maxLife: 0.7 });
-  state.shake = Math.max(state.shake, 11);
+  if (!state.settings.noShake) state.shake = Math.max(state.shake, 11);
 }
