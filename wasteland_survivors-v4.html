@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wasteland Survivors</title>
+<title>P-RAY: The Game</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -130,14 +130,14 @@
 <div id="stage">
   <div id="frame">
     <canvas id="game"></canvas>
-    <div class="hud" id="title">W A S T E L A N D &nbsp; S U R V I V O R S</div>
+    <div class="hud" id="title">P - R A Y &nbsp; : &nbsp; T H E &nbsp; G A M E</div>
     <div class="hud" id="hudTL">SURVIVORS: <span id="survCount">3</span>/3 &nbsp;&nbsp; KILLS: <span id="killCount">0</span></div>
     <div class="hud" id="hudTR">WAVE <span id="waveNum">1</span> / 21</div>
-    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME PAUSED — MOVE TO ADVANCE</span></div>
+    <div class="hud paused" id="timeBar"><span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span></div>
     <div class="hud" id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
       RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; SPACE: pause
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold
     </div>
     <div id="overlay">
       <div id="gameOverText">ALL SURVIVORS DEAD</div>
@@ -167,6 +167,103 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 const PANEL_H = 74;
 let PLAY_BOTTOM = H - PANEL_H - 24;
+
+const HERO_DEFS = {
+  elliot: {
+    name: 'Elliot',
+    abilityKey: 'Q',
+    abilityName: 'BLINK',
+    abilityMaxCd: 6,
+    abilityColor: '#80c8ff',
+    weaponType: 'longClub',
+    maxHp: 100,
+    atkRange: 56,
+    baseAtkDmg: 32,
+    baseAtkRate: 0.55,
+    fallbackRenderer: 'elliot',
+    palette: {
+      shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
+      shorts: '#8a6840', skin: '#e8b888',
+      hat: '#d4b880', hatTop: '#bfa270', hatBand: '#5a3a1a',
+    },
+  },
+  dick: {
+    name: 'Dick',
+    abilityKey: 'W',
+    abilityName: 'RAGE',
+    abilityMaxCd: 12,
+    abilityColor: '#ff6040',
+    weaponType: 'dualClubs',
+    maxHp: 120,
+    atkRange: 36,
+    baseAtkDmg: 24,
+    baseAtkRate: 0.34,
+    fallbackRenderer: 'dick',
+    palette: {
+      skin: '#d8a878', skinShade: '#a8784a', skinDark: '#7a5030',
+      cap: '#2a1a0a', capTop: '#3a2515', capBtn: '#c53030',
+    },
+  },
+  habib: {
+    name: 'Habib',
+    abilityKey: 'E',
+    abilityName: 'CHAIN LTG',
+    abilityMaxCd: 8,
+    abilityColor: '#c8a0ff',
+    weaponType: 'thrownClub',
+    maxHp: 100,
+    atkRange: 220,
+    baseAtkDmg: 36,
+    baseAtkRate: 0.9,
+    fallbackRenderer: 'habib',
+    palette: {
+      shirt: '#ece8dc', shirtShade: '#b8b0a0',
+      shorts: '#c53030', shortsShade: '#8a1e1e',
+      skin: '#d4a878', hair: '#3a2a15',
+    },
+  },
+};
+
+const ENEMY_DEFS = {
+  raider:  { displayName: 'Worm Hatchling', r: 9,  speed: 48,  hp: 30,   dmg: 10, color: '#3a2515', skin: '#c4a68a', hair: '#1a0f05', bloodColor: '#8a1a1a', dropChance: 0.45, fallbackRenderer: 'raider' },
+  runner:  { displayName: 'Dart Worm',      r: 8,  speed: 105, hp: 22,   dmg: 8,  color: '#5a3a20', skin: '#d8b890', hair: '#1a0f05', bloodColor: '#8a1a1a', dropChance: 0.30, fallbackRenderer: 'runner' },
+  ghoul:   { displayName: 'Husk Crawler',   r: 10, speed: 58,  hp: 50,   dmg: 14, color: '#4a3a25', skin: '#9a8570', hair: '#3a2515', bloodColor: '#6a3030', dropChance: 0.65, fallbackRenderer: 'ghoul' },
+  mutant:  { displayName: 'Burrow Brute',   r: 15, speed: 32,  hp: 90,   dmg: 22, color: '#3a4a2a', skin: '#7a8a55', hair: '#2a3a20', bloodColor: '#4a6a2a', dropChance: 1.00, specialEligible: true, fallbackRenderer: 'mutant' },
+  blinker: { displayName: 'Phase Worm',     r: 10, speed: 38,  hp: 45,   dmg: 18, color: '#3a2545', skin: '#a890c8', hair: '#2a1830', bloodColor: '#5a2a6a', dropChance: 0.80, specialEligible: true, fallbackRenderer: 'blinker' },
+  miniboss:{ displayName: 'Brood Warden',   r: 22, speed: 40,  hp: 600,  dmg: 32, color: '#2a1a0a', skin: '#9a7a55', hair: '#1a0a05', bloodColor: '#7a1010', kbResist: 0.35, name: 'BROOD WARDEN', fallbackRenderer: 'miniboss' },
+  bigboss: { displayName: 'Elder Worm',     r: 32, speed: 28,  hp: 2000, dmg: 48, color: '#2a3a1a', skin: '#6a8a40', hair: '#1a2010', bloodColor: '#3a6a1a', kbResist: 0.18, name: 'ELDER WORM', fallbackRenderer: 'bigboss' },
+};
+
+const LOOT_DEFS = {
+  basicDropWeights: [
+    { type: 'medkit', threshold: 0.60 },
+    { type: 'stimpack', threshold: 0.95 },
+    { type: 'bomb', threshold: 1.00 },
+  ],
+  specialWeapons: ['spray_gun', 'samurai_sword'],
+  bananaBombChance: 0.02,
+  specialWeaponChance: 0.20,
+};
+
+const WAVE_DEFS = {
+  maxWave: 21,
+  duration: 22,
+  spawnIntervalStart: 1.4,
+  spawnIntervalScale: 0.84,
+  spawnIntervalMin: 0.30,
+  secondSpawnWave: 3,
+  thirdSpawnWave: 6,
+  burstChance: 0.35,
+  minibossEvery: 4,
+  bigbossEvery: 9,
+};
+
+const DISPLAY_NAME_DEFS = {
+  gameTitle: 'P-RAY: The Game',
+  waveSubtext: 'the brood stirs',
+  minibossLabel: 'A BROOD WARDEN SURFACES',
+  bigbossLabel: 'ELDER WORM SURFACES',
+};
 
 window.addEventListener('resize', () => {
   resizeCanvas();
@@ -205,49 +302,19 @@ class Unit {
     this.activeWeapon = null;   // 'spray_gun' | 'samurai_sword' | null
     this.activeWeaponTimer = 0; // seconds remaining
 
-    if (type === 'elliot') {
-      this.name = 'Elliot';
-      this.abilityKey = 'Q';
-      this.abilityName = 'BLINK';
-      this.abilityMaxCd = 6;
-      this.abilityColor = '#80c8ff';
-      this.weaponType = 'longClub';
-      this.atkRange = 56;
-      this.palette = {
-        shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
-        shorts: '#8a6840', skin: '#e8b888',
-        hat: '#d4b880', hatTop: '#bfa270', hatBand: '#5a3a1a',
-      };
-    } else if (type === 'dikiy') {
-      this.name = 'Dikiy';
-      this.abilityKey = 'W';
-      this.abilityName = 'RAGE';
-      this.abilityMaxCd = 12;
-      this.abilityColor = '#ff6040';
-      this.maxHp = 120; this.hp = 120;
-      this.weaponType = 'dualClubs';
-      this.baseAtkDmg = 24;
-      this.baseAtkRate = 0.34;
-      this.palette = {
-        skin: '#d8a878', skinShade: '#a8784a', skinDark: '#7a5030',
-        cap: '#2a1a0a', capTop: '#3a2515', capBtn: '#c53030',
-      };
-    } else if (type === 'dick') {
-      this.name = 'Dick';
-      this.abilityKey = 'E';
-      this.abilityName = 'CHAIN LTG';
-      this.abilityMaxCd = 8;
-      this.abilityColor = '#c8a0ff';
-      this.weaponType = 'thrownClub';
-      this.atkRange = 220;
-      this.baseAtkDmg = 36;
-      this.baseAtkRate = 0.9;
-      this.palette = {
-        shirt: '#ece8dc', shirtShade: '#b8b0a0',
-        shorts: '#c53030', shortsShade: '#8a1e1e',
-        skin: '#d4a878', hair: '#3a2a15',
-      };
-    }
+    const def = HERO_DEFS[type] || HERO_DEFS.elliot;
+    this.name = def.name;
+    this.abilityKey = def.abilityKey;
+    this.abilityName = def.abilityName;
+    this.abilityMaxCd = def.abilityMaxCd;
+    this.abilityColor = def.abilityColor;
+    this.weaponType = def.weaponType;
+    this.maxHp = def.maxHp;
+    this.hp = def.maxHp;
+    this.atkRange = def.atkRange;
+    this.baseAtkDmg = def.baseAtkDmg;
+    this.baseAtkRate = def.baseAtkRate;
+    this.palette = { ...def.palette };
   }
 
   get atkDmg() {
@@ -411,8 +478,8 @@ class Unit {
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
     if (this.type === 'elliot') return this._blink();
-    if (this.type === 'dikiy') return this._rage();
-    if (this.type === 'dick') return this._chainLightning();
+    if (this.type === 'dick') return this._rage();
+    if (this.type === 'habib') return this._chainLightning();
     return false;
   }
 
@@ -571,13 +638,13 @@ class Unit {
     ctx.translate(this.x, this.y + wobble);
 
     if (this.type === 'elliot') this._drawElliot(ctx, flashBoost);
-    else if (this.type === 'dikiy') this._drawDikiy(ctx, flashBoost);
     else if (this.type === 'dick') this._drawDick(ctx, flashBoost);
+    else if (this.type === 'habib') this._drawHabib(ctx, flashBoost);
 
     ctx.restore();
 
-    // Dick's ambient electric sparks (in world space)
-    if (this.type === 'dick' && Math.random() < 0.06) {
+    // Habib's ambient electric sparks (in world space)
+    if (this.type === 'habib' && Math.random() < 0.06) {
       const a = rand(0, Math.PI * 2);
       const r = this.r + rand(1, 4);
       ctx.strokeStyle = 'rgba(200, 230, 255, 0.75)';
@@ -730,7 +797,7 @@ class Unit {
     }
   }
 
-  _drawDikiy(ctx, flashBoost) {
+  _drawDick(ctx, flashBoost) {
     const p = this.palette;
     ctx.fillStyle = p.skinDark;
     ctx.beginPath();
@@ -834,7 +901,7 @@ class Unit {
     ctx.stroke();
   }
 
-  _drawDick(ctx, flashBoost) {
+  _drawHabib(ctx, flashBoost) {
     const p = this.palette;
     ctx.fillStyle = p.shorts;
     ctx.beginPath();
@@ -1477,54 +1544,15 @@ class Enemy {
     this.slamX = 0; this.slamY = 0;
     this.bossAura = 0;
 
-    if (kind === 'raider') {
-      this.r = 9; this.speed = 48;
-      this.hp = 30; this.maxHp = 30;
-      this.dmg = 10;
-      this.color = '#3a2515'; this.skin = '#c4a68a';
-      this.hair = '#1a0f05'; this.bloodColor = '#8a1a1a';
-    } else if (kind === 'mutant') {
-      this.r = 15; this.speed = 32;
-      this.hp = 90; this.maxHp = 90;
-      this.dmg = 22;
-      this.color = '#3a4a2a'; this.skin = '#7a8a55';
-      this.hair = '#2a3a20'; this.bloodColor = '#4a6a2a';
-    } else if (kind === 'runner') {
-      this.r = 8; this.speed = 105;
-      this.hp = 22; this.maxHp = 22;
-      this.dmg = 8;
-      this.color = '#5a3a20'; this.skin = '#d8b890';
-      this.hair = '#1a0f05'; this.bloodColor = '#8a1a1a';
-    } else if (kind === 'blinker') {
-      this.r = 10; this.speed = 38;
-      this.hp = 45; this.maxHp = 45;
-      this.dmg = 18;
-      this.color = '#3a2545'; this.skin = '#a890c8';
-      this.hair = '#2a1830'; this.bloodColor = '#5a2a6a';
-    } else if (kind === 'miniboss') {
-      this.r = 22; this.speed = 40;
-      this.hp = 600; this.maxHp = 600;
-      this.dmg = 32;
-      this.color = '#2a1a0a'; this.skin = '#9a7a55';
-      this.hair = '#1a0a05'; this.bloodColor = '#7a1010';
-      this.kbResist = 0.35;
-      this.name = 'WARLORD';
-    } else if (kind === 'bigboss') {
-      this.r = 32; this.speed = 28;
-      this.hp = 2000; this.maxHp = 2000;
-      this.dmg = 48;
-      this.color = '#2a3a1a'; this.skin = '#6a8a40';
-      this.hair = '#1a2010'; this.bloodColor = '#3a6a1a';
-      this.kbResist = 0.18;
-      this.name = 'BEHEMOTH';
-    } else {
-      // ghoul (default)
-      this.r = 10; this.speed = 58;
-      this.hp = 50; this.maxHp = 50;
-      this.dmg = 14;
-      this.color = '#4a3a25'; this.skin = '#9a8570';
-      this.hair = '#3a2515'; this.bloodColor = '#6a3030';
-    }
+    const def = ENEMY_DEFS[kind] || ENEMY_DEFS.ghoul;
+    this.r = def.r;
+    this.speed = def.speed;
+    this.hp = def.hp; this.maxHp = def.hp;
+    this.dmg = def.dmg;
+    this.color = def.color; this.skin = def.skin;
+    this.hair = def.hair; this.bloodColor = def.bloodColor;
+    this.kbResist = def.kbResist || this.kbResist;
+    this.name = def.name;
   }
 
   update(dt) {
@@ -1745,35 +1773,29 @@ class Enemy {
     }
 
     // Regular enemy loot drop
+    const def = ENEMY_DEFS[this.kind] || ENEMY_DEFS.ghoul;
     const dropRoll = Math.random();
-    const dropChance = this.kind === 'mutant' ? 1.0
-                     : this.kind === 'ghoul' ? 0.65
-                     : this.kind === 'blinker' ? 0.80
-                     : this.kind === 'runner' ? 0.30
-                     : 0.45;
+    const dropChance = def.dropChance || 0;
     const lx = clamp(this.x + rand(-4, 4), 12, W - 12);
     const ly = clamp(this.y + rand(-4, 4), 12, PLAY_BOTTOM - 12);
     if (dropRoll < dropChance) {
       const r = Math.random();
-      let lootType;
-      if (r < 0.60) lootType = 'medkit';
-      else if (r < 0.95) lootType = 'stimpack';
-      else lootType = 'bomb';
+      const lootType = LOOT_DEFS.basicDropWeights.find(drop => r < drop.threshold).type;
       state.loot.push(new Loot(lx, ly, lootType));
     }
 
     // Hard enemies: special weapon secondary roll
-    if (this.kind === 'mutant' || this.kind === 'blinker') {
-      if (Math.random() < 0.02) {
+    if (def.specialEligible) {
+      if (Math.random() < LOOT_DEFS.bananaBombChance) {
         // Banana bomb: extreme rarity ~2%
         state.loot.push(new Loot(
           clamp(lx + rand(-8, 8), 12, W - 12),
           clamp(ly + rand(-8, 8), 12, PLAY_BOTTOM - 12),
           'banana_bomb'
         ));
-      } else if (Math.random() < 0.20) {
+      } else if (Math.random() < LOOT_DEFS.specialWeaponChance) {
         // Regular special weapon 20%
-        const weapons = ['spray_gun', 'samurai_sword'];
+        const weapons = LOOT_DEFS.specialWeapons;
         const pick = weapons[Math.floor(Math.random() * weapons.length)];
         state.loot.push(new Loot(
           clamp(lx + rand(-8, 8), 12, W - 12),
@@ -2159,7 +2181,10 @@ const state = {
   spawnInterval: 1.4,
   gameOver: false,
   timeFlow: 0,
+  timeSpeed: 1,      // 1–3, controlled by +/-
   manualPause: false,
+  spaceHeld: false,        // is Space physically held right now
+  spaceHoldDuration: 0,    // seconds Space has been held this press
   survivedSeconds: 0,
 };
 
@@ -2216,10 +2241,14 @@ function newGame() {
   state.wave = 1;
   state.waveTimer = 0;
   state.spawnTimer = 1.5;
-  state.spawnInterval = 1.4;
+  state.spawnInterval = WAVE_DEFS.spawnIntervalStart;
   state.gameOver = false;
   state.victory = false;
+  state.timeFlow = 0;
   state.manualPause = false;
+  state.timeSpeed = 1;
+  state.spaceHeld = false;
+  state.spaceHoldDuration = 0;
   state.survivedSeconds = 0;
 
   document.getElementById('gameOverText').textContent = 'ALL SURVIVORS DEAD';
@@ -2227,8 +2256,8 @@ function newGame() {
 
   const cx = W / 2, cy = PLAY_BOTTOM / 2;
   state.units.push(new Unit(cx - 44, cy + 8, 'elliot'));
-  state.units.push(new Unit(cx, cy - 10, 'dikiy'));
-  state.units.push(new Unit(cx + 44, cy + 8, 'dick'));
+  state.units.push(new Unit(cx, cy - 10, 'dick'));
+  state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
 
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('survCount').textContent = state.units.length;
@@ -2247,8 +2276,8 @@ function spawnEnemy() {
   const r = Math.random();
   let kind;
   const w = state.wave;
-  // Expanded spawn pool — runners enter at wave 2, blinkers at wave 3
-  // Pool gets richer with each wave; runners and blinkers fill an increasing share.
+  // Expanded spawn pool — dart worms enter at wave 2, phase worms at wave 3.
+  // Legacy kind IDs stay stable until the data/asset registry lands.
   if (w >= 4 && r < 0.18) kind = 'mutant';
   else if (w >= 3 && r < (w >= 5 ? 0.32 : 0.22)) kind = 'blinker';
   else if (w >= 2 && r < (w >= 5 ? 0.52 : 0.40)) kind = 'runner';
@@ -2583,13 +2612,26 @@ document.addEventListener('keydown', (e) => {
   }
   const k = e.key.toLowerCase();
 
+  if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
+    e.preventDefault();
+    state.timeSpeed = clamp(state.timeSpeed + 1, 1, 3);
+    return;
+  }
+  if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+    e.preventDefault();
+    state.timeSpeed = clamp(state.timeSpeed - 1, 1, 3);
+    return;
+  }
   if (k === 's') {
     for (const u of state.selected) u.stop();
     return;
   }
   if (e.key === ' ') {
     e.preventDefault();
-    state.manualPause = !state.manualPause;
+    if (!state.spaceHeld) {
+      state.spaceHeld = true;
+      state.spaceHoldDuration = 0;
+    }
     return;
   }
   if (k === 'a' && (e.ctrlKey || e.metaKey)) {
@@ -2603,6 +2645,20 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     for (const u of state.selected) {
       if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (state.spaceHeld) {
+      // Short tap → toggle manual pause; long hold just released → no toggle
+      if (state.spaceHoldDuration < 1.0) {
+        state.manualPause = !state.manualPause;
+      }
+      state.spaceHeld = false;
+      state.spaceHoldDuration = 0;
     }
   }
 });
@@ -2767,7 +2823,7 @@ function drawAbilityPanel() {
     ctx.lineWidth = u.selected && !u.dead ? 2 : 1;
     ctx.strokeRect(x, y, slotW, slotH);
 
-    if (u.type === 'dikiy' && u.rageTimer > 0) {
+    if (u.type === 'dick' && u.rageTimer > 0) {
       const pulse = 0.5 + Math.sin(state.time * 12) * 0.5;
       ctx.strokeStyle = `rgba(255, 60, 30, ${0.5 + pulse * 0.5})`;
       ctx.lineWidth = 2;
@@ -2782,8 +2838,8 @@ function drawAbilityPanel() {
     const savedSelected = u.selected;
     u.selected = false;
     if (u.type === 'elliot') u._drawElliot(ctx, 0);
-    else if (u.type === 'dikiy') u._drawDikiy(ctx, 0);
     else if (u.type === 'dick') u._drawDick(ctx, 0);
+    else if (u.type === 'habib') u._drawHabib(ctx, 0);
     u.selected = savedSelected;
     ctx.restore();
 
@@ -2817,7 +2873,7 @@ function drawAbilityPanel() {
     ctx.fillStyle = u.abilityCd > 0 ? '#6a5030' : u.abilityColor;
     ctx.fillText(`[${u.abilityKey}] ${u.abilityName}`, x + 8, y + 46);
 
-    if (u.type === 'dikiy' && u.rageTimer > 0) {
+    if (u.type === 'dick' && u.rageTimer > 0) {
       ctx.fillStyle = '#ff8040';
       ctx.textAlign = 'right';
       ctx.font = '10px "Courier New", monospace';
@@ -2872,15 +2928,22 @@ function updateHUD() {
   const bar = document.getElementById('timeBar');
   const label = document.getElementById('timeLabel');
   bar.classList.remove('flowing', 'paused');
-  if (state.manualPause) {
+  const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
+  if (spaceHoldDriving) {
+    bar.classList.add('flowing');
+    label.textContent = `TIME x${state.timeSpeed} — HOLDING`;
+  } else if (state.spaceHeld) {
     bar.classList.add('paused');
-    label.textContent = 'MANUAL PAUSE — PRESS SPACE';
+    label.textContent = 'HOLD SPACE TO ADVANCE…';
+  } else if (state.manualPause) {
+    bar.classList.add('paused');
+    label.textContent = `TIME x0 — SPACE TO RESUME`;
   } else if (state.timeFlow < 0.5) {
     bar.classList.add('paused');
-    label.textContent = 'TIME PAUSED — MOVE TO ADVANCE';
+    label.textContent = `TIME x0 — MOVE UNITS`;
   } else {
     bar.classList.add('flowing');
-    label.textContent = 'TIME FLOWING';
+    label.textContent = `TIME x${state.timeSpeed}`;
   }
 }
 
@@ -2890,8 +2953,16 @@ function frame(now) {
   const realDt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
+  // Space hold tracking (uses real time, independent of game flow)
+  if (state.spaceHeld) state.spaceHoldDuration += realDt;
+
   const anyMoving = state.units.some(u => !u.dead && u.moving);
-  const targetFlow = (anyMoving && !state.manualPause && !state.gameOver) ? 1 : 0;
+  const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
+  const targetFlow = state.gameOver ? 0
+                   : spaceHoldDriving ? state.timeSpeed
+                   : state.manualPause ? 0
+                   : anyMoving ? state.timeSpeed
+                   : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
   const gameDt = realDt * state.timeFlow;
 
@@ -3010,25 +3081,25 @@ function frame(now) {
     if (state.spawnTimer <= 0) {
       spawnEnemy();
       // Burst spawns at higher waves to keep pressure up despite loot
-      if (state.wave >= 3 && Math.random() < 0.35) spawnEnemy();
-      if (state.wave >= 6 && Math.random() < 0.35) spawnEnemy();
+      if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
+      if (state.wave >= WAVE_DEFS.thirdSpawnWave && Math.random() < WAVE_DEFS.burstChance) spawnEnemy();
       state.spawnTimer = state.spawnInterval * rand(0.7, 1.3);
     }
 
     state.waveTimer += gameDt;
-    if (state.waveTimer > 22) {
+    if (state.waveTimer > WAVE_DEFS.duration) {
       state.waveTimer = 0;
-      if (state.wave < 21) {
+      if (state.wave < WAVE_DEFS.maxWave) {
         state.wave++;
-        state.spawnInterval = Math.max(0.30, state.spawnInterval * 0.84);
-        // Boss spawning - bigboss takes priority on overlap (waves 36, 72...)
+        state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
+        // Boss spawning - elder worm takes priority on overlap (waves 36, 72...)
         let bossLabel = null;
-        if (state.wave % 9 === 0) {
+        if (state.wave % WAVE_DEFS.bigbossEvery === 0) {
           spawnBoss('bigboss');
-          bossLabel = 'BEHEMOTH AWAKENS';
-        } else if (state.wave % 4 === 0) {
+          bossLabel = DISPLAY_NAME_DEFS.bigbossLabel;
+        } else if (state.wave % WAVE_DEFS.minibossEvery === 0) {
           spawnBoss('miniboss');
-          bossLabel = 'A WARLORD ARRIVES';
+          bossLabel = DISPLAY_NAME_DEFS.minibossLabel;
         }
         state.moveMarkers.push({
           x: W / 2, y: PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
@@ -3042,7 +3113,7 @@ function frame(now) {
         document.getElementById('gameOverText').textContent = 'YOU SURVIVED';
         document.getElementById('gameOverText').classList.add('victory');
         document.getElementById('finalStats').textContent =
-          `ALL 21 WAVES CLEARED · KILLS ${state.kills} · TIME ${total}s`;
+          `ALL ${WAVE_DEFS.maxWave} WAVES CLEARED · KILLS ${state.kills} · TIME ${total}s`;
         document.getElementById('overlay').classList.add('show');
       }
     }
@@ -3206,7 +3277,7 @@ function frame(now) {
     const t = 1 - m.life / m.maxLife;
     const alpha = m.life > 0.3 ? Math.min(1, (m.maxLife - m.life) * 3) : m.life * 3;
     const isBoss = !!m.bossLabel;
-    const isBig = m.bossLabel === 'BEHEMOTH AWAKENS';
+    const isBig = m.bossLabel === DISPLAY_NAME_DEFS.bigbossLabel;
     const titleColor = isBig ? `rgba(180, 240, 90, ${alpha})`
                      : isBoss ? `rgba(255, 130, 60, ${alpha})`
                      : `rgba(200, 60, 40, ${alpha * 0.9})`;
@@ -3224,7 +3295,7 @@ function frame(now) {
     ctx.fillStyle = isBoss
       ? (isBig ? `rgba(220, 255, 160, ${alpha * 0.9})` : `rgba(255, 200, 140, ${alpha * 0.9})`)
       : `rgba(200, 180, 140, ${alpha * 0.7})`;
-    ctx.fillText(m.bossLabel || 'the horde grows', m.x, y + 24);
+    ctx.fillText(m.bossLabel || DISPLAY_NAME_DEFS.waveSubtext, m.x, y + 24);
     ctx.textAlign = 'left';
   }
 
