@@ -2,91 +2,139 @@ import { G } from '../globals.js';
 import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
+import { playSfx } from '../systems/audio.js';
 
 export class Projectile {
-  constructor(x, y, target, dmg, facing) {
+  constructor(x, y, target, dmg, facing, owner = null) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
-    const dx = target.x - x, dy = target.y - y;
-    const d = Math.max(1, Math.hypot(dx, dy));
-    const speed = 380;
-    this.vx = (dx / d) * speed;
-    this.vy = (dy / d) * speed;
+    this.owner = owner;
+    this.target = target;
+    this.targetX = target.x;
+    this.targetY = target.y;
     this.maxRange = 280;
+    this.speed = 430;
+    this.returnSpeed = 520;
     this.dmg = dmg;
     this.dead = false;
+    this.returning = false;
+    this.hasHit = false;
     this.rot = facing;
     this.spin = 18;
     this.facing = facing;
     this.r = 5;
     this.life = 0;
+    this.maxLife = 2.2;
+    this.flightSound = playSfx('weapon.thrownClub.throw', { synthetic: 'shoot' });
   }
 
   update(dt) {
     if (this.dead) return;
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-    this.rot += this.spin * dt;
     this.life += dt;
+    this.rot += this.spin * dt;
+
+    if (this.life > this.maxLife) {
+      this.cleanup();
+      return;
+    }
+
+    if (this.returning) {
+      this.updateReturn(dt);
+    } else {
+      this.updateOutbound(dt);
+    }
+  }
+
+  updateOutbound(dt) {
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    this.facing = Math.atan2(dy, dx);
+    this.x += (dx / d) * this.speed * dt;
+    this.y += (dy / d) * this.speed * dt;
 
     const traveled = Math.hypot(this.x - this.startX, this.y - this.startY);
-    if (traveled > this.maxRange) { this.dead = true; return; }
-    if (this.x < -10 || this.x > G.W + 10 || this.y < -10 || this.y > G.PLAY_BOTTOM + 10) {
-      this.dead = true; return;
+    if (traveled > this.maxRange || d < 8) {
+      this.beginReturn();
+      return;
     }
 
     for (const e of state.enemies) {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
-        e.hp -= this.dmg;
-        e.hurtFlash = 1;
-        e.knockX += this.vx * 0.32;
-        e.knockY += this.vy * 0.32;
-        state.bloodStains.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), r: e.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
-        for (let i = 0; i < 9; i++) {
-          state.particles.push({
-            x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
-            vx: rand(-90, 90), vy: rand(-110, -10),
-            life: rand(0.3, 0.6), maxLife: 0.6,
-            color: e.bloodColor, size: rand(1.2, 2.5), realtime: true,
-          });
-        }
-        // Wood splinters glow for an instant.
-        for (let i = 0; i < 4; i++) {
-          state.particles.push({
-            x: this.x, y: this.y,
-            vx: rand(-50, 50), vy: rand(-60, 0),
-            life: rand(0.18, 0.36), maxLife: 0.36,
-            color: 'rgba(255, 220, 160, 1)', size: rand(1.5, 3), realtime: true, additive: true,
-          });
-        }
-        pushDamageNumber(e.x, e.y - e.r - 4, this.dmg);
-        state.shake = Math.max(state.shake, 2.5);
-        state.hitStop = Math.max(state.hitStop, 0.022);
-        this.dead = true;
+        this.hitEnemy(e);
+        this.beginReturn();
         return;
       }
     }
   }
 
+  updateReturn(dt) {
+    if (!this.owner || this.owner.dead) {
+      this.cleanup();
+      return;
+    }
+
+    const dx = this.owner.x - this.x;
+    const dy = this.owner.y - this.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    this.facing = Math.atan2(dy, dx);
+    this.x += (dx / d) * this.returnSpeed * dt;
+    this.y += (dy / d) * this.returnSpeed * dt;
+
+    if (d < this.owner.r + this.r + 5) {
+      this.cleanup();
+    }
+  }
+
+  hitEnemy(e) {
+    if (this.hasHit) return;
+    this.hasHit = true;
+    this.stopFlightSound();
+    playSfx('weapon.thrownClub.impact', { fallback: 'weapon.impact.default', synthetic: 'hit' });
+    playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
+
+    e.hp -= this.dmg;
+    e.knockX += Math.cos(this.facing) * this.speed * 0.32;
+    e.knockY += Math.sin(this.facing) * this.speed * 0.32;
+    state.bloodStains.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), r: e.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
+    for (let i = 0; i < 9; i++) {
+      state.particles.push({
+        x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
+        vx: rand(-90, 90), vy: rand(-110, -10),
+        life: rand(0.3, 0.6), maxLife: 0.6,
+        color: e.bloodColor, size: rand(1.2, 2.5), realtime: true,
+      });
+    }
+    pushDamageNumber(e.x, e.y - e.r - 4, this.dmg);
+    state.shake = Math.max(state.shake, 1);
+  }
+
+  beginReturn() {
+    this.returning = true;
+    this.stopFlightSound();
+  }
+
+  stopFlightSound() {
+    if (this.flightSound) {
+      this.flightSound.stop(0.06);
+      this.flightSound = null;
+    }
+  }
+
+  cleanup() {
+    this.stopFlightSound();
+    this.dead = true;
+  }
+
   draw(ctx) {
     if (this.dead) return;
 
-    // Additive motion streak.
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const streakR = 9;
-    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, streakR);
-    grd.addColorStop(0, 'rgba(255, 220, 150, 0.6)');
-    grd.addColorStop(1, 'rgba(255, 200, 120, 0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(this.x - streakR, this.y - streakR, streakR * 2, streakR * 2);
-    ctx.restore();
-
-    ctx.strokeStyle = 'rgba(180, 160, 130, 0.45)';
-    ctx.lineWidth = 1.4;
+    const trailScale = this.returning ? 0.014 : 0.024;
+    ctx.strokeStyle = this.returning ? 'rgba(160, 190, 210, 0.35)' : 'rgba(180, 160, 130, 0.45)';
+    ctx.lineWidth = this.returning ? 1.0 : 1.4;
     ctx.beginPath();
-    ctx.moveTo(this.x - this.vx * 0.025, this.y - this.vy * 0.025);
+    ctx.moveTo(this.x - Math.cos(this.facing) * this.speed * trailScale, this.y - Math.sin(this.facing) * this.speed * trailScale);
     ctx.lineTo(this.x, this.y);
     ctx.stroke();
 

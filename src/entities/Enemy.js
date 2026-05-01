@@ -124,6 +124,7 @@ export class Enemy {
       if (this.slamCharge > 0) {
         this.slamCharge += dt;
         if (this.slamCharge >= 1.2) {
+          playSfx('boss.attack.default');
           state.shockwaves.push({
             x: this.slamX, y: this.slamY,
             r: this.r + 4, maxR: 320,
@@ -131,7 +132,7 @@ export class Enemy {
             life: 1.4, maxLife: 1.4,
             speed: 280, dmg: 35,
           });
-          state.shake = Math.max(state.shake, 12);
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 12);
           this.slamCharge = 0;
           this.slamTimer = rand(4.5, 6.5);
           for (let i = 0; i < 30; i++) {
@@ -152,6 +153,7 @@ export class Enemy {
           this.slamX = this.x;
           this.slamY = this.y;
           this.slamCharge = 0.001;
+          playSfx('boss.ability.default');
         }
       }
       if (this.slamCharge > 0) {
@@ -176,12 +178,16 @@ export class Enemy {
         this.x += (dx / d) * this.speed * dt;
         this.y += (dy / d) * this.speed * dt;
         this.walkCycle += dt * 7;
+        if (this.kind === 'bigboss' || this.kind === 'miniboss') {
+          playSfx('boss.walk.default', { cooldownKey: `boss.walk.${this.kind}` });
+        }
       } else if (this.dmgCd <= 0) {
         target.hp -= this.dmg;
         target.hurtFlash = 1;
         this.dmgCd = 0.75;
-        playSfx('hit');
-        state.shake = Math.max(state.shake, 2);
+        playSfx('alien.attack.default', { synthetic: 'hit' });
+        playSfx('character.damaged.default', { synthetic: 'hit' });
+        if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
         for (let i = 0; i < 6; i++) {
           state.particles.push({
             x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
@@ -200,9 +206,17 @@ export class Enemy {
 
   _die() {
     this.dead = true;
-    playSfx('death');
+    playSfx(this.kind === 'bigboss' || this.kind === 'miniboss' ? 'boss.death.default' : 'alien.death.default');
     state.kills++;
     addKillScore(this.kind);
+    this._spawnBloodBurst();
+    this._spawnBossGlowBurst();   // no-op for regular enemies
+    this._triggerScreenEffects();
+    this._spawnLootDrops();
+  }
+
+  // Blood splatter particles — same for all enemy types, scaled by radius.
+  _spawnBloodBurst() {
     const burst = (this.kind === 'bigboss') ? 80 : (this.kind === 'miniboss') ? 40 : 18;
     for (let i = 0; i < burst; i++) {
       state.particles.push({
@@ -213,12 +227,13 @@ export class Enemy {
         color: this.bloodColor, size: rand(1.5, 3.5), realtime: true,
       });
     }
-    // Soul-glow burst — additive so big deaths really pop.
-    const glowBurst = (this.kind === 'bigboss') ? 38 : (this.kind === 'miniboss') ? 22 : (this.kind === 'mutant' || this.kind === 'blinker') ? 8 : 4;
-    const glowColor = this.kind === 'bigboss' ? 'rgba(180, 255, 120, 1)'
-                    : this.kind === 'miniboss' ? 'rgba(255, 160, 80, 1)'
-                    : this.kind === 'blinker' ? 'rgba(220, 160, 255, 1)'
-                    : 'rgba(255, 200, 140, 1)';
+  }
+
+  // Additive glow burst — bosses only so regular deaths stay gritty.
+  _spawnBossGlowBurst() {
+    const glowBurst = (this.kind === 'bigboss') ? 10 : (this.kind === 'miniboss') ? 5 : 0;
+    if (glowBurst === 0) return;
+    const glowColor = this.kind === 'bigboss' ? 'rgba(180, 255, 120, 1)' : 'rgba(255, 160, 80, 1)';
     for (let i = 0; i < glowBurst; i++) {
       const a = rand(0, Math.PI * 2);
       const v = rand(60, 220) * (this.r / 14);
@@ -229,6 +244,10 @@ export class Enemy {
         color: glowColor, size: rand(2, 4.5), realtime: true, additive: true,
       });
     }
+  }
+
+  // Screen shake, flash overlay, and hit-stop — bosses only.
+  _triggerScreenEffects() {
     if (this.kind === 'bigboss') {
       state.shockwaves.push({
         x: this.x, y: this.y,
@@ -237,16 +256,17 @@ export class Enemy {
         life: 1.0, maxLife: 1.0,
         speed: 360, dmg: 0,
       });
-      state.flashAlpha = Math.max(state.flashAlpha, 0.7);
-      state.flashColor = '#c8ff90';
-      state.hitStop = Math.max(state.hitStop, 0.14);
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.7); state.flashColor = '#c8ff90'; }
+      if (!state.settings.noShake) { state.hitStop = Math.max(state.hitStop, 0.14); state.shake = Math.max(state.shake, 4); }
     } else if (this.kind === 'miniboss') {
-      state.flashAlpha = Math.max(state.flashAlpha, 0.45);
-      state.flashColor = '#ffb070';
-      state.hitStop = Math.max(state.hitStop, 0.08);
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.45); state.flashColor = '#ffb070'; }
+      if (!state.settings.noShake) { state.hitStop = Math.max(state.hitStop, 0.08); state.shake = Math.max(state.shake, 3); }
     }
-    state.shake = Math.max(state.shake, this.kind === 'bigboss' ? 14 : this.kind === 'miniboss' ? 8 : 4);
+    // Regular enemies: no shake, no flash, no hit-stop.
+  }
 
+  // Loot drops — boss guaranteed drops, then regular chance-based drops.
+  _spawnLootDrops() {
     if (this.kind === 'bigboss') {
       const drops = ['bomb', 'medkit', 'stimpack', 'medkit', 'medkit'];
       for (let i = 0; i < drops.length; i++) {
@@ -407,165 +427,13 @@ export class Enemy {
       ctx.shadowBlur = 0;
     }
 
-    const wobble = this.stunTimer > 0 ? 0 : Math.sin(this.walkCycle) * 1.2;
-
     const prevAlpha = ctx.globalAlpha;
-    if (this.kind === 'blinker') {
-      ctx.globalAlpha = 0.78 + this.blinkAfterglow * 0.22;
-    }
+    if (this.kind === 'blinker') ctx.globalAlpha = 0.78 + this.blinkAfterglow * 0.22;
 
     ctx.save();
-    ctx.translate(this.x, this.y + wobble);
-
-    if (this.hurtFlash > 0) ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = this.hurtFlash > 0 ? '#ffb0a0' : this.color;
-    ctx.beginPath();
-    ctx.arc(0, 0, this.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.strokeStyle = '#0a0604';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.arc(2, 3, this.r * 0.9, -0.3, 1.8);
-    ctx.lineTo(0, 0);
-    ctx.fill();
-
-    ctx.fillStyle = this.hurtFlash > 0 ? '#ffffff' : this.skin;
-    ctx.beginPath();
-    ctx.arc(0, -this.r * 0.6, this.r * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#0a0604';
-    ctx.stroke();
-
-    if (this.kind === 'mutant') {
-      ctx.fillStyle = '#ff4020'; ctx.shadowColor = '#ff4020'; ctx.shadowBlur = 4;
-      ctx.fillRect(-3, -this.r * 0.65, 1.8, 1.8);
-      ctx.fillRect(1.2, -this.r * 0.65, 1.8, 1.8);
-      ctx.shadowBlur = 0;
-    } else if (this.kind === 'ghoul') {
-      ctx.fillStyle = '#f0e890';
-      ctx.fillRect(-3, -this.r * 0.65, 1.5, 1.2);
-      ctx.fillRect(1.5, -this.r * 0.65, 1.5, 1.2);
-    } else if (this.kind === 'runner') {
-      ctx.fillStyle = '#fff8d0';
-      ctx.fillRect(-3, -this.r * 0.7, 2, 1.4);
-      ctx.fillRect(1, -this.r * 0.7, 2, 1.4);
-      ctx.fillStyle = '#1a0a05';
-      ctx.fillRect(-2.5, -this.r * 0.66, 1, 1);
-      ctx.fillRect(1.5, -this.r * 0.66, 1, 1);
-    } else if (this.kind === 'blinker') {
-      ctx.fillStyle = '#e8c0ff'; ctx.shadowColor = '#c890ff'; ctx.shadowBlur = 5;
-      ctx.fillRect(-3, -this.r * 0.65, 1.8, 1.8);
-      ctx.fillRect(1.2, -this.r * 0.65, 1.8, 1.8);
-      ctx.shadowBlur = 0;
-    } else if (this.kind === 'miniboss') {
-      ctx.fillStyle = '#ffd040'; ctx.shadowColor = '#ff8020'; ctx.shadowBlur = 5;
-      ctx.fillRect(-5, -this.r * 0.72, 3, 2);
-      ctx.fillRect(2, -this.r * 0.72, 3, 2);
-      ctx.shadowBlur = 0;
-    } else if (this.kind === 'bigboss') {
-      ctx.fillStyle = '#fff060'; ctx.shadowColor = '#a0ff20'; ctx.shadowBlur = 9;
-      ctx.fillRect(-7, -this.r * 0.72, 4, 3);
-      ctx.fillRect(3, -this.r * 0.72, 4, 3);
-      ctx.fillStyle = '#fffac0';
-      ctx.fillRect(-6, -this.r * 0.72, 1.5, 1.5);
-      ctx.fillRect(4, -this.r * 0.72, 1.5, 1.5);
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.fillStyle = '#1a0f06';
-      ctx.fillRect(-3, -this.r * 0.7, 1.5, 1);
-      ctx.fillRect(1.5, -this.r * 0.7, 1.5, 1);
-    }
-
-    if (this.kind === 'raider') {
-      ctx.fillStyle = this.hair;
-      ctx.beginPath();
-      ctx.arc(0, -this.r * 0.78, this.r * 0.48, Math.PI + 0.2, -0.2);
-      ctx.fill();
-    } else if (this.kind === 'mutant') {
-      ctx.fillStyle = '#2a3a1a';
-      for (let i = -1; i <= 1; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * 3, -this.r * 0.85);
-        ctx.lineTo(i * 3 - 1, -this.r * 1.2);
-        ctx.lineTo(i * 3 + 1, -this.r * 1.2);
-        ctx.closePath(); ctx.fill();
-      }
-    } else if (this.kind === 'runner') {
-      ctx.fillStyle = this.hair;
-      for (let i = -2; i <= 2; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * 1.6, -this.r * 0.78);
-        ctx.lineTo(i * 1.6 - 0.6, -this.r * 1.15);
-        ctx.lineTo(i * 1.6 + 0.6, -this.r * 1.15);
-        ctx.closePath(); ctx.fill();
-      }
-    } else if (this.kind === 'blinker') {
-      ctx.fillStyle = '#1a1025';
-      ctx.beginPath();
-      ctx.arc(0, -this.r * 0.5, this.r * 0.7, Math.PI, 0);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(180, 130, 240, 0.6)';
-      ctx.lineWidth = 0.8;
-      for (let i = 0; i < 3; i++) {
-        const ang = state.time * 1.5 + i * 2;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * (this.r + 1), Math.sin(ang) * (this.r + 1));
-        ctx.lineTo(Math.cos(ang) * (this.r + 5), Math.sin(ang) * (this.r + 5) - 1);
-        ctx.stroke();
-      }
-    } else if (this.kind === 'miniboss') {
-      ctx.fillStyle = '#1a0f06';
-      ctx.beginPath();
-      ctx.arc(0, -this.r * 0.72, this.r * 0.62, Math.PI - 0.2, 0.2);
-      ctx.fill();
-      ctx.fillStyle = '#5a3025';
-      ctx.fillRect(-this.r * 0.55, -this.r * 0.6, this.r * 1.1, 2);
-      ctx.fillStyle = '#3a2515';
-      ctx.beginPath();
-      ctx.moveTo(-this.r * 0.85, -2); ctx.lineTo(-this.r * 1.3, -this.r * 0.5); ctx.lineTo(-this.r * 0.6, -this.r * 0.2); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(this.r * 0.85, -2); ctx.lineTo(this.r * 1.3, -this.r * 0.5); ctx.lineTo(this.r * 0.6, -this.r * 0.2); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#5a4a3a';
-      ctx.fillRect(-this.r * 0.4, -this.r * 0.05, this.r * 0.8, this.r * 0.55);
-      ctx.strokeStyle = '#1a0f06'; ctx.lineWidth = 0.8;
-      ctx.strokeRect(-this.r * 0.4, -this.r * 0.05, this.r * 0.8, this.r * 0.55);
-    } else if (this.kind === 'bigboss') {
-      ctx.strokeStyle = 'rgba(160, 240, 80, 0.75)'; ctx.lineWidth = 1.4;
-      ctx.shadowColor = '#a0ff40'; ctx.shadowBlur = 6;
-      for (let i = 0; i < 5; i++) {
-        const ang = i * (Math.PI * 2 / 5) + this.bossAura * 0.3;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        const r1 = this.r * 0.5, r2 = this.r * 0.95;
-        ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
-        ctx.lineTo(Math.cos(ang + 0.25) * r2, Math.sin(ang + 0.25) * r2);
-        ctx.stroke();
-      }
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#1a1505';
-      for (let i = -2; i <= 2; i++) {
-        const ang = i * 0.32 - Math.PI / 2;
-        const baseR = this.r * 0.85, tipR = this.r * 1.45;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * baseR, Math.sin(ang) * baseR);
-        ctx.lineTo(Math.cos(ang - 0.06) * baseR * 1.05, Math.sin(ang - 0.06) * baseR * 1.05);
-        ctx.lineTo(Math.cos(ang) * tipR, Math.sin(ang) * tipR);
-        ctx.lineTo(Math.cos(ang + 0.06) * baseR * 1.05, Math.sin(ang + 0.06) * baseR * 1.05);
-        ctx.closePath(); ctx.fill();
-      }
-      ctx.fillStyle = '#fff8d0';
-      ctx.beginPath();
-      ctx.moveTo(-2.5, -this.r * 0.4); ctx.lineTo(-1.5, -this.r * 0.2); ctx.lineTo(-0.5, -this.r * 0.4); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(0.5, -this.r * 0.4); ctx.lineTo(1.5, -this.r * 0.2); ctx.lineTo(2.5, -this.r * 0.4); ctx.fill();
-    } else {
-      ctx.fillStyle = '#5a4a35';
-      ctx.fillRect(-3, -this.r * 0.9, 2, 2);
-      ctx.fillRect(1, -this.r * 0.85, 2, 1.5);
-    }
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.facing);
+    this._drawWorm(ctx);
 
     ctx.restore();
     ctx.globalAlpha = prevAlpha;
@@ -580,17 +448,6 @@ export class Enemy {
         color: '#a0ff60', size: rand(1, 2), realtime: true,
       });
     }
-
-    const wpnLen = this.kind === 'bigboss' ? 14 : this.kind === 'miniboss' ? 11 : this.kind === 'mutant' ? 8 : 5;
-    const wpnW   = this.kind === 'bigboss' ? 3.5 : this.kind === 'miniboss' ? 3  : this.kind === 'mutant' ? 2 : 1.5;
-    const wx = this.x + Math.cos(this.facing) * (this.r + 2);
-    const wy = this.y + Math.sin(this.facing) * (this.r + 2);
-    ctx.strokeStyle = (this.kind === 'mutant' || this.kind === 'bigboss') ? '#8a7060' : '#4a3a28';
-    ctx.lineWidth = wpnW;
-    ctx.beginPath();
-    ctx.moveTo(wx, wy);
-    ctx.lineTo(wx + Math.cos(this.facing) * wpnLen, wy + Math.sin(this.facing) * wpnLen);
-    ctx.stroke();
 
     if (this.stunTimer > 0) {
       ctx.strokeStyle = 'rgba(180, 220, 255, 0.85)'; ctx.lineWidth = 1.2;
@@ -613,6 +470,218 @@ export class Enemy {
     }
 
     this._drawHpBar(ctx);
+  }
+
+  // ── Worm drawing ─────────────────────────────────────────────────────────────
+  // Called inside ctx.save/translate(x,y)/rotate(facing), so +X = forward, (0,0) = head.
+
+  _drawWorm(ctx) {
+    switch (this.kind) {
+      case 'raider':   this._wRaider(ctx);   break;
+      case 'runner':   this._wRunner(ctx);   break;
+      case 'ghoul':    this._wGhoul(ctx);    break;
+      case 'mutant':   this._wMutant(ctx);   break;
+      case 'blinker':  this._wBlinker(ctx);  break;
+      case 'miniboss': this._wMiniboss(ctx); break;
+      case 'bigboss':  this._wBigboss(ctx);  break;
+      default:         this._wRaider(ctx);
+    }
+  }
+
+  _segs(ctx, n, gap, colors, wAmp = 1.8) {
+    const hurt = this.hurtFlash > 0;
+    for (let i = n - 1; i >= 0; i--) {
+      const wobY = this.stunTimer > 0 ? 0 : Math.sin(this.walkCycle - i * 0.8) * wAmp;
+      const sr = this.r * Math.pow(0.84, i);
+      ctx.fillStyle = hurt ? (i === 0 ? '#d97060' : '#b05040') : colors[Math.min(i, colors.length - 1)];
+      ctx.beginPath();
+      ctx.arc(-gap * i, wobY, sr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+    }
+  }
+
+  _wRaider(ctx) {
+    const r = this.r;
+    this._segs(ctx, 4, r * 1.1, ['#7a5535', '#5e3f22', '#48301a', '#321f0e'], 1.6);
+    if (this.hurtFlash) return;
+    ctx.fillStyle = '#cc2a1a';
+    ctx.fillRect(r * 0.2, -r * 0.42, 2.2, 2.2);
+    ctx.fillRect(r * 0.2,  r * 0.14, 2.2, 2.2);
+  }
+
+  _wRunner(ctx) {
+    const r = this.r;
+    this._segs(ctx, 3, r * 1.35, ['#8a6030', '#6a4820', '#4a3012'], 2.2);
+    if (this.hurtFlash) return;
+    ctx.fillStyle = '#a87840';
+    ctx.beginPath();
+    ctx.moveTo(r * 0.9, 0);
+    ctx.lineTo(r * 1.7, -r * 0.22);
+    ctx.lineTo(r * 1.7,  r * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(200,145,65,0.5)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.4, -r * 0.62); ctx.lineTo(-r * 2.4, -r * 0.52); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.4,  r * 0.62); ctx.lineTo(-r * 2.4,  r * 0.52); ctx.stroke();
+    ctx.fillStyle = '#ffe090';
+    ctx.fillRect(r * 0.15, -r * 0.38, 2, 2);
+    ctx.fillRect(r * 0.15,  r * 0.18, 2, 2);
+  }
+
+  _wGhoul(ctx) {
+    const r = this.r;
+    this._segs(ctx, 5, r * 0.94, ['#848c68', '#6a7250', '#58603e', '#46502c', '#34401a'], 1.0);
+    if (this.hurtFlash) return;
+    for (let i = 1; i <= 3; i++) {
+      const sx = -r * 0.94 * i;
+      const sw = r * Math.pow(0.84, i);
+      ctx.strokeStyle = '#3a4828';
+      ctx.lineWidth = 1.5;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(sx, side * sw * 0.7);
+        ctx.lineTo(sx + r * 0.35, side * (sw + r * 0.55));
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = '#c0b84e';
+    ctx.fillRect(r * 0.1, -r * 0.44, 2.4, 2);
+    ctx.fillRect(r * 0.1,  r * 0.22, 2.4, 2);
+  }
+
+  _wMutant(ctx) {
+    const r = this.r;
+    this._segs(ctx, 4, r * 1.12, ['#3c5428', '#2e4220', '#223218', '#182612'], 1.4);
+    if (this.hurtFlash) return;
+    for (let i = 0; i < 3; i++) {
+      const sx = -r * 1.12 * i;
+      const sw = r * Math.pow(0.84, i);
+      ctx.fillStyle = 'rgba(18,28,12,0.55)';
+      ctx.fillRect(sx - sw * 0.52, -sw * 0.26, sw * 1.04, sw * 0.52);
+    }
+    ctx.strokeStyle = '#223818';
+    ctx.lineWidth = 2.8;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.65, side * r * 0.45);
+      ctx.lineTo(r * 1.65, side * r * 0.9);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(r * 1.45, side * r * 0.7);
+      ctx.lineTo(r * 1.65, side * r * 0.9);
+      ctx.lineTo(r * 1.65, side * r * 0.48);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#e03010'; ctx.shadowColor = '#ff4020'; ctx.shadowBlur = 5;
+    ctx.fillRect(r * 0.22, -r * 0.46, 3, 3);
+    ctx.fillRect(r * 0.22,  r * 0.15, 3, 3);
+    ctx.shadowBlur = 0;
+  }
+
+  _wBlinker(ctx) {
+    const r = this.r;
+    this._segs(ctx, 3, r * 1.2, ['#6a3a8a', '#4a2468', '#2e1448'], 2.0);
+    if (this.hurtFlash) return;
+    ctx.fillStyle = '#e8c0ff'; ctx.shadowColor = '#c890ff'; ctx.shadowBlur = 7;
+    ctx.fillRect(r * 0.1, -r * 0.38, 3, 3);
+    ctx.fillRect(r * 0.1,  r * 0.1,  3, 3);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(190, 140, 250, 0.45)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const a = state.time * 1.5 + i * 2.1;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r,       Math.sin(a) * r);
+      ctx.lineTo(Math.cos(a) * (r + 5), Math.sin(a) * (r + 5) - 1);
+      ctx.stroke();
+    }
+  }
+
+  _wMiniboss(ctx) {
+    const r = this.r;
+    this._segs(ctx, 5, r * 1.02, ['#703020', '#5a2418', '#421a10', '#2e120a', '#1e0c06'], 2.5);
+    if (this.hurtFlash) return;
+    for (let i = 0; i < 4; i++) {
+      const sx = -r * 1.02 * i;
+      const sw = r * Math.pow(0.84, i);
+      ctx.fillStyle = 'rgba(28,10,5,0.55)';
+      ctx.fillRect(sx - sw * 0.5, -sw * 0.2, sw, sw * 0.4);
+    }
+    ctx.strokeStyle = '#8a5a30';
+    ctx.lineWidth = 3;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.45, side * r * 0.65);
+      ctx.lineTo(r * 1.25, side * r * 1.3);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#2a1005';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(r * 0.55, -r * 0.22);
+    ctx.quadraticCurveTo(r * 1.05, 0, r * 0.55, r * 0.22);
+    ctx.stroke();
+    ctx.fillStyle = '#ffd040'; ctx.shadowColor = '#ff8020'; ctx.shadowBlur = 7;
+    ctx.fillRect(r * 0.14, -r * 0.5, 4, 3.5);
+    ctx.fillRect(r * 0.14,  r * 0.18, 4, 3.5);
+    ctx.shadowBlur = 0;
+  }
+
+  _wBigboss(ctx) {
+    const r = this.r;
+    this._segs(ctx, 6, r * 0.94, ['#3a5a28', '#2a4a1e', '#1e3a16', '#162e0e', '#0e220a', '#081806'], 3.2);
+    if (this.hurtFlash) return;
+    ctx.strokeStyle = 'rgba(120, 255, 60, 0.65)'; ctx.shadowColor = '#80ff40'; ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 5; i++) {
+      const sx = -r * 0.94 * i;
+      const sw = r * Math.pow(0.84, i);
+      ctx.beginPath();
+      ctx.moveTo(sx, -sw * 0.9);
+      ctx.lineTo(sx - sw * 0.15, -sw * 1.55);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    for (let i = 1; i < 5; i++) {
+      const sx = -r * 0.94 * i;
+      const sw = r * Math.pow(0.84, i);
+      ctx.fillStyle = 'rgba(50,80,28,0.5)';
+      ctx.fillRect(sx - sw * 0.5, -sw * 0.24, sw, sw * 0.48);
+    }
+    ctx.fillStyle = '#161a0a';
+    ctx.beginPath();
+    ctx.moveTo(r,       -r * 0.72);
+    ctx.lineTo(r * 1.62, -r * 0.28);
+    ctx.lineTo(r * 1.62,  r * 0.28);
+    ctx.lineTo(r,        r * 0.72);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#5a0a08';
+    ctx.beginPath();
+    ctx.moveTo(r * 1.06, -r * 0.38);
+    ctx.lineTo(r * 1.52,  0);
+    ctx.lineTo(r * 1.06,  r * 0.38);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#e8d8a0';
+    for (const t of [-1, 0, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.94, t * r * 0.46 - r * 0.16);
+      ctx.lineTo(r * 1.28, t * r * 0.46);
+      ctx.lineTo(r * 0.94, t * r * 0.46 + r * 0.16);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = '#c8ff40'; ctx.shadowColor = '#a0ff20'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(r * 0.38, -r * 0.46, r * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.38,  r * 0.46, r * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   _drawHpBar(ctx) {

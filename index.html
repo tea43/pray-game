@@ -44,12 +44,31 @@
   #hudTL { top: 10px; left: 10px; }
   #hudTR { top: 10px; right: 10px; text-align: right; }
   #timeBar { bottom: 100px; left: 10px; min-width: 220px; }
-  #controls {
+  #htpBtn {
+    position: absolute;
     bottom: 10px; right: 10px;
-    font-size: 10px; line-height: 1.6;
-    color: #a89470; text-align: right;
-    background: rgba(10, 6, 4, 0.65);
+    padding: 4px 10px;
+    font-size: 10px; letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+    background: rgba(10, 6, 4, 0.75);
+    border: 1px solid #3a2a18;
+    color: #a89470;
+    cursor: pointer;
+    z-index: 5;
+    user-select: none;
   }
+  #htpBtn:hover { border-color: #8a6b3a; color: #d9c7a0; }
+  #controls {
+    bottom: 44px; right: 10px;
+    font-size: 10px; line-height: 1.8;
+    color: #a89470; text-align: right;
+    background: rgba(10, 6, 4, 0.92);
+    border: 1px solid #3a2a18;
+    padding: 10px 14px;
+    display: none;
+    z-index: 5;
+  }
+  #controls.visible { display: block; }
   #title {
     top: 10px; left: 50%; transform: translateX(-50%);
     font-family: 'Georgia', serif;
@@ -91,6 +110,16 @@
   /* ---- game over / victory ---- */
   #overlay { pointer-events: none; }
   #overlay.show { pointer-events: auto; }
+  #victoryBg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.45;
+    pointer-events: none;
+    display: none;
+    z-index: 0;
+  }
+  #overlay > :not(#victoryBg) { position: relative; z-index: 1; }
   #gameOverText {
     font-family: 'Georgia', serif;
     font-size: 40px; color: #a83a2a;
@@ -156,6 +185,16 @@
   .diff-btn .diff-label { font-size: 11px; letter-spacing: 3px; font-weight: bold; }
   .diff-btn .diff-hint  { font-size: 9px; letter-spacing: 1px; color: #5a4020; transition: color 0.12s; }
   .diff-btn.active .diff-hint { color: #a89060; }
+  .diff-btn[data-diff="dev-mode"] {
+    border-color: #5a1010; color: #c04040;
+    background: #1a0808; border-style: dashed;
+    margin-top: 6px;
+    font-family: 'Courier New', monospace;
+  }
+  .diff-btn[data-diff="dev-mode"] .diff-hint { color: #6a2020; }
+  .diff-btn[data-diff="dev-mode"]:hover { border-color: #a03030; color: #e06060; background: #2a0e0e; }
+  .diff-btn[data-diff="dev-mode"].active { border-color: #e04040; color: #ff8080; background: #2a1010; box-shadow: inset 0 0 12px rgba(200,40,40,0.12); }
+  .diff-btn[data-diff="dev-mode"].active .diff-hint { color: #c06060; }
   .diff-actions { display: flex; gap: 12px; width: 100%; }
   .diff-actions .game-btn { flex: 1; text-align: center; font-size: 12px; }
 
@@ -178,6 +217,24 @@
     font-size: 10px; letter-spacing: 2px; color: #5a4020;
     margin-top: 2px;
   }
+
+  /* ---- settings screen ---- */
+  #settingsScreen { min-width: 360px; display: none; flex-direction: column; align-items: center; gap: 14px; }
+  #settingsScreen.active { display: flex; }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; gap: 24px;
+  }
+  .settings-label { font-size: 11px; letter-spacing: 2px; color: #a89470; }
+  .toggle-btn {
+    padding: 6px 18px;
+    background: #140e08; border: 1px solid #2a1c10;
+    color: #5a4020; font-family: 'Courier New', monospace;
+    font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.12s;
+    min-width: 80px; text-align: center;
+  }
+  .toggle-btn.on { border-color: #c5a572; color: #d9c7a0; background: #2a1a0a; }
+  .toggle-btn:hover { border-color: #7a5a30; color: #c5a572; }
 
   /* ---- main menu ---- */
   #mainMenu {
@@ -209,15 +266,42 @@
     pointer-events: none;
   }
   /* lift panel above video layers */
-  #titleScreen, #difficultyScreen { z-index: 2; min-width: 360px; max-width: 400px; }
+  #titleScreen, #difficultyScreen, #settingsScreen { z-index: 2; min-width: 360px; max-width: 400px; }
   /* transparent panel — gradient provides the backing darkness */
-  #titleScreen, #difficultyScreen {
+  #titleScreen, #difficultyScreen, #settingsScreen {
     background: transparent; border: none; box-shadow: none;
     padding: 40px 0;
     border-left: 1px solid rgba(197,165,114,0.15);
     padding-left: 32px;
   }
-  #difficultyScreen { padding-left: 32px; }
+  #difficultyScreen, #settingsScreen { padding-left: 32px; }
+
+  /* ---- splash screen (first-load gate) ---- */
+  #splashScreen {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(6,3,1,0.88);
+    transition: opacity 0.5s ease;
+  }
+  #splashScreen.hidden { opacity: 0; pointer-events: none; }
+  .splash-title {
+    font-size: 72px; letter-spacing: 14px;
+    color: #d9c7a0;
+    text-shadow: 0 0 40px rgba(197,165,114,0.45);
+  }
+  .splash-sub {
+    font-size: 14px; letter-spacing: 8px;
+    color: #a89470; margin-bottom: 48px;
+  }
+  .splash-prompt {
+    font-size: 12px; letter-spacing: 5px; color: #7a6040;
+    animation: splash-pulse 2s ease-in-out infinite;
+  }
+  @keyframes splash-pulse {
+    0%, 100% { opacity: 1;    color: #a89470; }
+    50%       { opacity: 0.4; color: #5a4020; }
+  }
 </style>
 </head>
 <body>
@@ -236,14 +320,17 @@
     <div class="hud paused" id="timeBar">
       <span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span>
     </div>
-    <div class="hud" id="controls">
+    <button id="htpBtn">? HOW TO PLAY</button>
+    <div id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
-      RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold &nbsp;&middot;&nbsp; ESC: menu
+      RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add to selection<br>
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: select all<br>
+      +/-: time speed &nbsp;&middot;&nbsp; SPACE: pause/hold &nbsp;&middot;&nbsp; ESC: menu
     </div>
 
     <!-- Game over / victory -->
     <div id="overlay" class="full-overlay">
+      <video id="victoryBg" muted loop playsinline></video>
       <div id="gameOverText">ALL SURVIVORS DEAD</div>
       <div id="finalStats"></div>
       <div class="overlay-buttons">
@@ -261,11 +348,25 @@
         <hr class="pause-sep">
         <button id="pauseMainMenu" class="game-btn">MAIN MENU</button>
         <div class="pause-difficulty">difficulty — <span id="pauseDiffLabel">Brood Hunter</span></div>
-        <div class="audio-controls" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          <div style="font-size: 11px; letter-spacing: 2px; color: #a89470;">VOLUME</div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572;">
-            <button id="muteBtn" class="game-btn" style="padding: 4px 10px; font-size: 10px;">MUTE</button>
+        <div class="audio-controls" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
+          <div class="settings-row">
+            <span class="settings-label">MUSIC</span>
+            <input type="range" id="pauseMusicSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">EFFECTS</span>
+            <input type="range" id="pauseSfxSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+        </div>
+        <hr class="pause-sep">
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <div class="settings-row">
+            <span class="settings-label">SCREEN SHAKE</span>
+            <button id="pauseToggleShake" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">LIGHTNING EFFECTS</span>
+            <button id="pauseToggleLightning" class="toggle-btn on">ON</button>
           </div>
         </div>
       </div>
@@ -281,6 +382,13 @@
       <!-- Left-to-right darkening gradient -->
       <div id="menuGradient"></div>
 
+      <!-- First-load splash gate — dismissed by any click or key press -->
+      <div id="splashScreen">
+        <div class="splash-title">P-RAY</div>
+        <div class="splash-sub">T H E &nbsp; G A M E</div>
+        <div class="splash-prompt">— CLICK OR PRESS ANY KEY —</div>
+      </div>
+
       <!-- Screen 1: Title -->
       <div id="titleScreen" class="menu-box">
         <div class="menu-title">P-RAY</div>
@@ -290,8 +398,9 @@
           P-RAY is all that can save your world.
         </div>
         <div class="title-actions">
-          <button id="menuPlay"    class="game-btn">PLAY</button>
-          <button                  class="game-btn" disabled>CREDITS</button>
+          <button id="menuPlay"     class="game-btn">PLAY</button>
+          <button id="menuSettings" class="game-btn">SETTINGS</button>
+          <button                   class="game-btn" disabled>CREDITS</button>
         </div>
         <div class="title-version">prototype build · phase 5</div>
       </div>
@@ -316,10 +425,40 @@
             <span class="diff-label">REAR ADMIRAL</span>
             <span class="diff-hint">brutal · multiple bosses · barely any healing</span>
           </button>
+          <button class="diff-btn" data-diff="dev-mode">
+            <span class="diff-label">DEV MODE</span>
+            <span class="diff-hint">waves 1 · 15 · 21 only · for testing end-game</span>
+          </button>
         </div>
         <div class="diff-actions">
           <button id="menuBack"  class="game-btn">BACK</button>
           <button id="menuStart" class="game-btn">START</button>
+        </div>
+      </div>
+
+      <!-- Screen 3: Settings -->
+      <div id="settingsScreen" class="menu-box">
+        <div class="menu-title" style="font-size:20px;letter-spacing:6px">SETTINGS</div>
+        <div class="diff-group" style="gap:14px">
+          <div class="settings-row">
+            <span class="settings-label">SCREEN SHAKE</span>
+            <button id="toggleShake" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">LIGHTNING EFFECTS</span>
+            <button id="toggleLightning" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">MUSIC</span>
+            <input type="range" id="menuMusicSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">EFFECTS</span>
+            <input type="range" id="menuSfxSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+        </div>
+        <div class="diff-actions" style="margin-top:8px">
+          <button id="settingsBack" class="game-btn">BACK</button>
         </div>
       </div>
 

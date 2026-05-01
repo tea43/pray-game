@@ -119,7 +119,7 @@ export class Unit {
     this.swing = 1;
 
     if (this.activeWeapon === 'spray_gun') {
-      playSfx('shoot');
+      playSfx('weapon.throw.default', { synthetic: 'shoot' });
       this.throwArm = 1;
       const spread = 0.35;
       const bulletCount = 5;
@@ -130,12 +130,12 @@ export class Unit {
         const sy = this.y + Math.sin(bulletAng) * (this.r + 6);
         state.projectiles.push(new SprayBullet(sx, sy, bulletAng, this.atkDmg * 0.5));
       }
-      state.shake = Math.max(state.shake, 2.5);
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 2.5);
       return;
     }
 
     if (this.activeWeapon === 'samurai_sword') {
-      playSfx('hit');
+      playSfx('weapon.samurai.attack', { synthetic: 'hit' });
       const cleaveRange = 80;
       const halfArc = Math.PI * (60 / 180);
       let hit = 0;
@@ -174,6 +174,7 @@ export class Unit {
         pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
         hit++;
       }
+      if (hit > 0) playSfx('alien.hit.default', { synthetic: 'hit' });
       // Big arc slash — drawn as a brief expanding additive ring at the swing center.
       state.particles.push({
         x: this.x + Math.cos(this.facing) * 24,
@@ -182,19 +183,18 @@ export class Unit {
         life: 0.18, maxLife: 0.18,
         color: 'rgba(255, 245, 200, 1)', size: 16, realtime: true, additive: true,
       });
-      state.shake = Math.max(state.shake, hit > 1 ? 7 : 3.5);
-      if (hit > 0) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, hit > 1 ? 7 : 3.5);
+      if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
       return;
     }
 
     if (this.weaponType === 'thrownClub') {
-      playSfx('shoot');
       this.throwArm = 1;
       const dmg = this.atkDmg;
       const sx = this.x + Math.cos(this.facing) * (this.r + 6);
       const sy = this.y + Math.sin(this.facing) * (this.r + 6);
-      state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing));
-      state.shake = Math.max(state.shake, 1.5);
+      state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing, this));
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 1.5);
       return;
     }
 
@@ -203,7 +203,9 @@ export class Unit {
     }
 
     const dmg = this.atkDmg;
-    playSfx('hit');
+    const attackSfx = this.weaponType === 'dualClubs' ? 'weapon.dualClubs.attack' : 'weapon.longClub.attack';
+    playSfx(attackSfx, { fallback: 'weapon.attack.default', synthetic: 'hit' });
+    playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
     const kb = this.rageTimer > 0 ? 140 : 80;
     enemy.knockX += Math.cos(this.facing) * kb;
@@ -232,8 +234,8 @@ export class Unit {
       crit: this.rageTimer > 0,
       rgb: this.rageTimer > 0 ? [255, 120, 80] : [255, 230, 200],
     });
-    state.shake = Math.max(state.shake, this.rageTimer > 0 ? 5 : 3);
-    state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, this.rageTimer > 0 ? 5 : 3);
+    if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
   }
 
   moveTo(x, y) {
@@ -314,10 +316,9 @@ export class Unit {
         color: 'rgba(200, 240, 255, 1)', size: rand(2, 4), realtime: true, additive: true,
       });
     }
-    state.flashAlpha = Math.max(state.flashAlpha, 0.18);
-    state.flashColor = '#a0d8ff';
+    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.18); state.flashColor = '#a0d8ff'; }
     this.abilityCd = this.abilityMaxCd;
-    state.shake = Math.max(state.shake, 2);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
     return true;
   }
 
@@ -345,9 +346,8 @@ export class Unit {
         size: rand(2.5, 4.5), realtime: true, additive: true,
       });
     }
-    state.flashAlpha = Math.max(state.flashAlpha, 0.22);
-    state.flashColor = '#ff7040';
-    state.shake = Math.max(state.shake, 4);
+    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.22); state.flashColor = '#ff7040'; }
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
     return true;
   }
 
@@ -396,12 +396,11 @@ export class Unit {
     }
     if (points.length > 1) {
       state.bolts.push({ points, life: 0.4, maxLife: 0.4 });
-      state.flashAlpha = Math.max(state.flashAlpha, 0.2);
-      state.flashColor = '#a0d8ff';
-      state.hitStop = Math.max(state.hitStop, 0.04);
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.2); state.flashColor = '#a0d8ff'; }
+      if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, 0.04);
     }
     this.abilityCd = this.abilityMaxCd;
-    state.shake = Math.max(state.shake, 5);
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
     return true;
   }
 

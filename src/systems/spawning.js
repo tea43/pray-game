@@ -35,5 +35,5 @@ export function spawnBoss(kind) {
   else if (edge === 2) { x = rand(G.W * 0.2, G.W * 0.8); y = G.PLAY_BOTTOM + margin; }
   else { x = -margin; y = rand(G.PLAY_BOTTOM * 0.2, G.PLAY_BOTTOM * 0.8); }
   state.enemies.push(new Enemy(x, y, kind));
-  playSfx('boss_spawn');
+  playSfx('boss.walk.default');
 }

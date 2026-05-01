@@ -50,7 +50,9 @@ Priority order (highest first):
 - x3 is the maximum forced speed.
 - Waves advance every 22 game-seconds.
 - Spawn interval starts around 1.4 seconds and shrinks by 16% each wave to a 0.30 second floor.
-- Victory triggers after clearing wave 21.
+- After wave 21 completes, spawning stops. Once all remaining enemies are dead, a helicopter flies in from the top edge.
+- Heroes must move into the helicopter's landing zone (green circle, centre of arena) to board. When the last living hero boards, the helicopter lifts off and flies off-screen.
+- Victory screen fades in over ~3.5 s. If `public/assets/video/victory/victory.mp4` exists it plays muted as a background behind the overlay.
 - Defeat triggers when all three survivors die.
 
 ## Heroes
@@ -65,7 +67,7 @@ Priority order (highest first):
 
 - Elliot: `longClub`; melee hit with moderate knockback.
 - Dick: `dualClubs`; alternating melee swings with high attack frequency.
-- Habib: `thrownClub`; projectile attack that tracks a target, travels at 380 px/s, and expires after 280 px.
+- Habib: `thrownClub`; boomerang-style projectile that flies toward the target, hits once if it collides, then returns to Habib and disappears when caught.
 
 ## Abilities
 
@@ -106,17 +108,19 @@ Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bom
 
 ## Enemies
 
-Current internal IDs still use the legacy prototype names. Player-facing direction is alien worms and snake-like worm mutations.
+All enemies are rendered as segmented worms/crawlers using canvas primitives. Each type has a distinct silhouette and color scheme; no sprites yet.
 
-| Future Display | Legacy ID | HP | Damage | Speed | Role |
+| Display Name | ID | HP | Damage | Speed | Visual |
 |---|---|---:|---:|---:|---|
-| Worm Hatchling | `raider` | 30 | 10 | 48 | Basic early melee worm. |
-| Dart Worm | `runner` | 22 | 8 | 105 | Fast low-HP pressure worm. |
-| Husk Crawler | `ghoul` | 50 | 14 | 58 | Midweight infected crawler. |
-| Burrow Brute | `mutant` | 90 | 22 | 32 | Slow durable worm mutation with better drops. |
-| Phase Worm | `blinker` | 45 | 18 | 38 | Teleports behind survivors after a telegraph. |
-| Brood Warden | `miniboss` | 600 | 32 | 40 | Boss-class worm, knockback resistant. |
-| Elder Worm | `bigboss` | 2000 | 48 | 28 | Major worm boss with slam shockwave attack. |
+| Worm Hatchling | `raider` | 30 | 10 | 48 | 4-segment brown worm, red dot eyes |
+| Dart Worm | `runner` | 22 | 8 | 105 | 3-segment elongated amber worm, pointed snout, speed stripes |
+| Husk Crawler | `ghoul` | 50 | 14 | 58 | 5-segment fat grub, sickly green, tiny legs on each segment |
+| Burrow Brute | `mutant` | 90 | 22 | 32 | 4-segment dark-green armored worm with forward claws |
+| Phase Worm | `blinker` | 45 | 18 | 38 | 3-segment purple ghost worm, glowing eyes, ethereal tendrils |
+| Brood Warden | `miniboss` | 600 | 32 | 40 | 5-segment red-brown boss worm with horns and armor ridges |
+| Elder Worm | `bigboss` | 2000 | 48 | 28 | 6-segment colossal green worm, open maw with teeth, bioluminescent spines |
+
+All types animate with sinusoidal lateral body wobble keyed to `walkCycle`. Drawing rotates to `facing` angle; +X = forward, segments extend in −X direction.
 
 Enemy entry by wave:
 
@@ -127,6 +131,25 @@ Enemy entry by wave:
 - Every 4th wave: miniboss.
 - Every 9th wave: bigboss takes priority over miniboss.
 
+## Difficulty Modes
+
+Five options on the difficulty screen:
+
+| ID | Label | Notes |
+|---|---|---|
+| `cavity-cadet` | Cavity Cadet | Fewer/weaker enemies, generous loot |
+| `brood-hunter` | Brood Hunter | Balanced, intended experience |
+| `crack-knight` | The Crack Knight | Harder enemies, scarcer loot |
+| `rear-admiral` | Rear Admiral | Brutal, multiple bosses per wave |
+| `dev-mode` | Dev Mode | Starts directly at wave 21; all enemy types + both bosses from the first spawn tick; single wave then extraction |
+
+Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves` and initialises `state.wave` to the first entry (21), recalculates spawn interval for that wave, and immediately spawns the configured bosses (1 miniboss + 1 bigboss). All regular enemy types are available because the spawn table gates by wave number. After the 22 s wave timer the game clears to allWavesCleared and the extraction phase begins.
+
+## UI
+
+- **HOW TO PLAY button**: small button at bottom-right during gameplay. Clicking it toggles a controls reference panel. Clicking anywhere else closes it.
+- Controls panel is hidden by default; wired in `main.js` after `initMenu()`.
+
 ## World And Rendering
 
 - Static screen-space arena, no camera and no world-coordinate layer yet.
@@ -135,6 +158,19 @@ Enemy entry by wave:
 - Terrain is procedural decoration: debris, cracks, dust, soil variation, blood stains, vignette, and warm tint.
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
 - Asset injection is planned but not implemented yet. See `asset_injection_plan.md`.
+
+## Audio
+
+- The modular source has a first-pass Web Audio layer in `src/systems/audio.js`.
+- Audio initializes after player interaction from the menu/pause controls to satisfy browser autoplay rules.
+- The pause menu exposes master volume and mute controls backed by localStorage.
+- Initial asset folders, `catalog.json`, and generated `manifest.json` exist under `public/assets/audio/`; run `npm run audio:manifest` after adding files.
+- `src/systems/audio.js` loads `manifest.json`, randomly chooses loaded variants, applies per-event volume/pitch/cooldown settings, and follows fallback chains.
+- Current manifest-driven SFX hooks cover character death, alien attack/hit/death, melee weapon attacks, thrown weapon launch/impact, spray impacts, boss ability/attack/death, abilities (blink/rage/lightning), loot pickups, and explosions.
+- Music hooks exist for menu/game transitions and loop tracks while active. Browser autoplay rules mean menu music starts after the first player interaction, not before.
+- **Synthetic fallback policy**: explosion and boss-spawn oscillators have been removed. If real audio files are absent for those events the game is silent. Other events (hit, shoot, loot, ability, death for heroes) still have synthetic fallbacks. Missing files never crash or block play.
+- To add or replace sounds: drop files in the matching folder under `public/assets/audio/`, run `npm run audio:manifest`, done — no code change needed.
+- Phase 6 still needs alien death variants, boss movement/slam cues, hero death cues per-character, and menu/UI sounds. See `audio_plan.md`.
 
 ## Current Architecture
 
@@ -179,4 +215,4 @@ src/
     canvas.js          # canvas helpers
 ```
 
-Next planned phases: Menu + Score (Phase 5), Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.
+Next planned phases: finish Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.

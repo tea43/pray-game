@@ -65,37 +65,7 @@ export function drawExplosions() {
   const { ctx } = G;
   if (!state.explosions.length) return;
 
-  // Additive layer for the bright core + flames.
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  for (const ex of state.explosions) {
-    const t = 1 - ex.life / ex.maxLife;
-    const alpha = ex.life / ex.maxLife;
-
-    // Outer flash bloom.
-    const bloomR = ex.r * 1.35;
-    const bloom = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, bloomR);
-    bloom.addColorStop(0, `rgba(255, 240, 200, ${0.85 * alpha})`);
-    bloom.addColorStop(0.35, `rgba(255, 170, 80, ${0.55 * alpha})`);
-    bloom.addColorStop(0.7, `rgba(220, 80, 30, ${0.25 * alpha})`);
-    bloom.addColorStop(1, 'rgba(80, 20, 10, 0)');
-    ctx.fillStyle = bloom;
-    ctx.fillRect(ex.x - bloomR, ex.y - bloomR, bloomR * 2, bloomR * 2);
-
-    // Hot core during the early flash.
-    if (t < 0.45) {
-      const fa = 1 - t / 0.45;
-      const coreR = ex.maxR * 0.55 * fa;
-      const core = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, coreR);
-      core.addColorStop(0, `rgba(255, 255, 235, ${0.95 * fa})`);
-      core.addColorStop(1, 'rgba(255, 200, 140, 0)');
-      ctx.fillStyle = core;
-      ctx.fillRect(ex.x - coreR, ex.y - coreR, coreR * 2, coreR * 2);
-    }
-  }
-  ctx.restore();
-
-  // Smoke ring (regular blend, drawn under flame for dimension).
+  // Expanding smoke/dust ring — no additive blend, no bright core.
   for (const ex of state.explosions) {
     const alpha = ex.life / ex.maxLife;
     ctx.strokeStyle = `rgba(40, 25, 18, ${alpha * 0.55})`;
@@ -103,7 +73,7 @@ export function drawExplosions() {
     ctx.beginPath();
     ctx.arc(ex.x, ex.y, ex.r * 0.95, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = `rgba(255, 220, 140, ${alpha * 0.8})`;
+    ctx.strokeStyle = `rgba(160, 80, 30, ${alpha * 0.5})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
@@ -229,7 +199,7 @@ export function drawFloatingTexts() {
 
 export function drawScreenFlash() {
   const { ctx, W, H } = G;
-  if (state.flashAlpha <= 0.01) return;
+  if (state.flashAlpha <= 0.01 || state.settings.noLightning) return;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = state.flashColor;

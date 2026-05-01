@@ -1,6 +1,6 @@
 # P-RAY: The Game
 
-A single-file browser RTS survival game. Guide three survivors through 21 waves of an ever-deepening worm brood. No install, no build step — just open the file.
+A Canvas 2D survival tactics game. Guide three survivors through 21 waves of an ever-deepening worm brood, then board the extraction helicopter before the brood claims the last of them.
 
 ---
 
@@ -13,9 +13,16 @@ git clone git@github.com:tea43/pray-game.git
 cd pray-game
 ```
 
-Or download the ZIP from the repository page and extract it.
+### Start (modular dev build)
 
-### Start
+```
+npm install
+npm run dev
+```
+
+Then open the local URL printed by Vite (usually `http://localhost:5173`).
+
+### Start (single-file, no build step)
 
 Open `wasteland_survivors-v4.html` in any modern browser (Chrome, Firefox, Safari, Edge).  
 No server needed — double-click the file or drag it into a browser tab.
@@ -158,7 +165,7 @@ Enemies drop supplies on death. Walk a survivor over a pickup to collect it.
 | Bomb | Rare drop / boss drop | Detonates on pickup — kills all enemies within 280 px |
 | Spray Gun | Hard enemies / bosses | Gives the picking survivor rapid-fire spread shot (5 bullets, 70° cone) for 15 s |
 | Samurai Sword | Hard enemies / bosses | Gives the picking survivor a 120° cleave attack hitting all nearby enemies for 20 s |
-| Banana Bomb | Extreme rarity (~2%) / Elder Worm | Detonates on pickup — larger blast (420 px), heavier screen shake, stuns survivors of the edge |
+| Banana Bomb | Extreme rarity (~2%) / Elder Worm | Detonates on pickup — larger blast (420 px), heavier screen shake, stuns enemies at the edge of the blast |
 
 ---
 
@@ -166,6 +173,20 @@ Enemies drop supplies on death. Walk a survivor over a pickup to collect it.
 
 21 waves stand between the survivors and a chance at escape. Each wave lasts 22 seconds of game time. The brood grows denser and faster as the waves progress — spawn intervals shrink by 16% per wave. Wave 3 and wave 6 bring burst spawns that send multiple enemies in quick succession.
 
-Surviving all 21 waves is a victory. Every survivor dead before then is a defeat.
+Surviving all 21 waves clears the brood — but the fight is not over. Once the last wave ends and all remaining enemies are killed, an extraction helicopter arrives. Move your survivors into the landing zone to board. When the last living hero boards, the helicopter lifts off and the victory screen fades in.
+
+Every survivor dead before that is a defeat.
+
+---
+
+### Difficulty
+
+| Mode | Notes |
+|---|---|
+| Cavity Cadet | Easier enemies, generous loot, fast ability cooldowns |
+| Brood Hunter | Balanced, intended experience |
+| The Crack Knight | Harder enemies, scarcer loot |
+| Rear Admiral | Brutal — multiple bosses per wave |
+| Dev Mode | Starts at wave 21 with all enemy types and both bosses; single wave, then extraction |
 
 > *"The brood stirs."*

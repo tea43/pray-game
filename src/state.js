@@ -33,6 +33,9 @@ export const state = {
   spawnInterval: 1.4,
   gameOver: false,
   victory: false,
+  allWavesCleared: false,
+  extractionPhase: false,
+  helicopter: null,
   timeFlow: 0,
   timeSpeed: 1,
   manualPause: false,
@@ -42,6 +45,12 @@ export const state = {
   score: 0,
   difficulty: 'brood-hunter',
   menuPhase: 'main',
+  settings: (() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('praySettings') || '{}');
+      return { noShake: !!s.noShake, noLightning: !!s.noLightning };
+    } catch { return { noShake: false, noLightning: false }; }
+  })(),
 };
 
 export function generateTerrain() {
