@@ -1,7 +1,8 @@
 const MANIFEST_URL = '/assets/audio/manifest.json';
 
 let audioCtx = null;
-let masterVolume = 0.5;
+let musicVolume = 0.5;
+let sfxVolume = 0.5;
 let musicEl = null;
 let musicBufferNode = null;
 let currentMusic = null;
@@ -16,7 +17,8 @@ const manifestJsonPromise = preloadManifestJson();
 
 export const audioState = {
   muted: false,
-  volume: 0.5
+  musicVolume: 0.5,
+  sfxVolume: 0.5
 };
 
 export function isAudioInitialized() {
@@ -70,10 +72,16 @@ export function initAudio() {
   if (initialized) return;
 
   try {
-    const savedVol = localStorage.getItem('pray_volume');
-    if (savedVol !== null) {
-      audioState.volume = parseFloat(savedVol);
-      masterVolume = audioState.volume;
+    const savedMusic = localStorage.getItem('pray_music_volume');
+    if (savedMusic !== null) {
+      audioState.musicVolume = parseFloat(savedMusic);
+      musicVolume = audioState.musicVolume;
+    }
+
+    const savedSfx = localStorage.getItem('pray_sfx_volume');
+    if (savedSfx !== null) {
+      audioState.sfxVolume = parseFloat(savedSfx);
+      sfxVolume = audioState.sfxVolume;
     }
 
     const savedMute = localStorage.getItem('pray_muted');
@@ -129,28 +137,34 @@ function ensureAudioContext() {
   }
 }
 
-export function setVolume(vol) {
-  audioState.volume = Math.max(0, Math.min(1, vol));
-  masterVolume = audioState.volume;
-  localStorage.setItem('pray_volume', masterVolume.toString());
+export function setMusicVolume(vol) {
+  audioState.musicVolume = Math.max(0, Math.min(1, vol));
+  musicVolume = audioState.musicVolume;
+  localStorage.setItem('pray_music_volume', musicVolume.toString());
 
   if (musicEl) {
-    musicEl.volume = audioState.muted ? 0 : masterVolume * (musicEl.dataset.volume ?? 0.4);
+    musicEl.volume = audioState.muted ? 0 : musicVolume * (musicEl.dataset.volume ?? 0.4);
   }
   if (musicBufferNode) {
-    musicBufferNode.gain.gain.value = audioState.muted ? 0 : masterVolume * (musicBufferNode.volume ?? 0.4);
+    musicBufferNode.gain.gain.value = audioState.muted ? 0 : musicVolume * (musicBufferNode.volume ?? 0.4);
   }
+}
+
+export function setSfxVolume(vol) {
+  audioState.sfxVolume = Math.max(0, Math.min(1, vol));
+  sfxVolume = audioState.sfxVolume;
+  localStorage.setItem('pray_sfx_volume', sfxVolume.toString());
 }
 
 export function toggleMute() {
   audioState.muted = !audioState.muted;
   localStorage.setItem('pray_muted', audioState.muted.toString());
-  setVolume(audioState.volume);
+  setMusicVolume(audioState.musicVolume);
   return audioState.muted;
 }
 
 function playSyntheticSfx(type) {
-  if (!audioCtx || audioState.muted || masterVolume <= 0) return;
+  if (!audioCtx || audioState.muted || sfxVolume <= 0) return;
   ensureAudioContext();
 
   const t = audioCtx.currentTime;
@@ -160,7 +174,7 @@ function playSyntheticSfx(type) {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
 
-  const vol = masterVolume * 0.3;
+  const vol = sfxVolume * 0.3;
 
   if (type === 'hit') {
     osc.type = 'triangle';
@@ -252,7 +266,7 @@ function applyCooldown(id, entry, options = {}) {
 }
 
 export function playSfx(id, options = {}, visited = new Set()) {
-  if (!audioCtx || audioState.muted || masterVolume <= 0) return;
+  if (!audioCtx || audioState.muted || sfxVolume <= 0) return;
   ensureAudioContext();
 
   const resolvedId = resolveSfxId(id);
@@ -279,7 +293,7 @@ export function playSfx(id, options = {}, visited = new Set()) {
     }
 
     const gain = audioCtx.createGain();
-    gain.gain.value = masterVolume * (options.volume ?? entry?.volume ?? 1);
+    gain.gain.value = sfxVolume * (options.volume ?? entry?.volume ?? 1);
     source.connect(gain);
     gain.connect(audioCtx.destination);
     source.start(0);
@@ -342,7 +356,7 @@ export function playMusic(id) {
     audio.loop = entry?.loop !== false;
     audio.preload = 'auto';
     audio.dataset.volume = String(volume);
-    audio.volume = audioState.muted ? 0 : masterVolume * volume;
+    audio.volume = audioState.muted ? 0 : musicVolume * volume;
     musicEl = audio;
     audio.play().catch(() => {
       if (initialized) {
@@ -357,7 +371,7 @@ export function playMusic(id) {
 }
 
 async function playBufferedMusic(id, url, entry) {
-  if (!audioCtx || audioState.muted || masterVolume <= 0) return;
+  if (!audioCtx || audioState.muted || musicVolume <= 0) return;
   ensureAudioContext();
 
   try {
@@ -373,7 +387,7 @@ async function playBufferedMusic(id, url, entry) {
 
     const gain = audioCtx.createGain();
     const volume = entry?.volume ?? 0.4;
-    gain.gain.value = masterVolume * volume;
+    gain.gain.value = musicVolume * volume;
     source.connect(gain);
     gain.connect(audioCtx.destination);
     source.start(0);

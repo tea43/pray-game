@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
-import { initAudio, isAudioInitialized, playMusic, playSfx, setVolume, toggleMute, audioState } from './audio.js';
+import { initAudio, isAudioInitialized, playMusic, playSfx, setMusicVolume, setSfxVolume, toggleMute, audioState } from './audio.js';
 
 let _newGame = null;
 let _startGame = null;
@@ -46,6 +46,7 @@ function showSettingsScreen() {
   document.getElementById('difficultyScreen').classList.remove('active');
   document.getElementById('settingsScreen').classList.add('active');
   syncSettingsUI();
+  updateAudioUI();
 }
 
 function syncSettingsUI() {
@@ -210,34 +211,44 @@ export function initMenu() {
   showTitleScreen();
   playMusic('menu');
 
-  // Audio controls
-  const volSlider = document.getElementById('volumeSlider');
-  const muteBtn = document.getElementById('muteBtn');
-  
-  if (volSlider && muteBtn) {
-    // Initial UI state setup will happen when paused (so audioState is loaded)
-    volSlider.addEventListener('input', (e) => {
+  // Audio sliders — menu settings screen
+  const menuMusicSlider = document.getElementById('menuMusicSlider');
+  const menuSfxSlider   = document.getElementById('menuSfxSlider');
+  if (menuMusicSlider) {
+    menuMusicSlider.addEventListener('input', (e) => {
       initAudio();
-      setVolume(parseFloat(e.target.value));
-      if (audioState.muted && parseFloat(e.target.value) > 0) {
-        toggleMute(); // un-mute if user changes volume
-        muteBtn.textContent = 'MUTE';
-      }
+      setMusicVolume(parseFloat(e.target.value));
     });
-
-    muteBtn.addEventListener('click', () => {
+  }
+  if (menuSfxSlider) {
+    menuSfxSlider.addEventListener('input', (e) => {
       initAudio();
-      const isMuted = toggleMute();
-      muteBtn.textContent = isMuted ? 'UNMUTE' : 'MUTE';
+      setSfxVolume(parseFloat(e.target.value));
+    });
+  }
+
+  // Audio sliders — pause menu
+  const pauseMusicSlider = document.getElementById('pauseMusicSlider');
+  const pauseSfxSlider   = document.getElementById('pauseSfxSlider');
+  if (pauseMusicSlider) {
+    pauseMusicSlider.addEventListener('input', (e) => {
+      setMusicVolume(parseFloat(e.target.value));
+    });
+  }
+  if (pauseSfxSlider) {
+    pauseSfxSlider.addEventListener('input', (e) => {
+      setSfxVolume(parseFloat(e.target.value));
     });
   }
 }
 
 export function updateAudioUI() {
-  const volSlider = document.getElementById('volumeSlider');
-  const muteBtn = document.getElementById('muteBtn');
-  if (volSlider && muteBtn) {
-    volSlider.value = audioState.volume;
-    muteBtn.textContent = audioState.muted ? 'UNMUTE' : 'MUTE';
+  for (const id of ['menuMusicSlider', 'pauseMusicSlider']) {
+    const el = document.getElementById(id);
+    if (el) el.value = audioState.musicVolume;
+  }
+  for (const id of ['menuSfxSlider', 'pauseSfxSlider']) {
+    const el = document.getElementById(id);
+    if (el) el.value = audioState.sfxVolume;
   }
 }

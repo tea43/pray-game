@@ -27,7 +27,11 @@
   },
   "sfx": {
     "character.damaged.default": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/characters/damaged/default/character_hit_1.mp3",
+        "/assets/audio/characters/damaged/default/character_hit_5.mp3",
+        "/assets/audio/characters/damaged/default/character_hit_6.mp3"
+      ],
       "fallback": "synthetic.hit",
       "volume": 0.6,
       "pitchJitter": 0.06,

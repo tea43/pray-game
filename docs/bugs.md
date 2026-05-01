@@ -19,7 +19,4 @@
 
 
 ## List of current bugs
-[DON] The lighning of habib doe not work, the animation does not appear
-[DON] Once the  speed is changed to x3 music starts from the scratch
-[DON] The boss sound seems playing only first 1 second on repeat, it sounds like transformator
-[DON] Once the boss apears and user switch back to menu, the sound of stomps does not stop
+

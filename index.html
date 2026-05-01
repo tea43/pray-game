@@ -306,11 +306,14 @@
         <hr class="pause-sep">
         <button id="pauseMainMenu" class="game-btn">MAIN MENU</button>
         <div class="pause-difficulty">difficulty — <span id="pauseDiffLabel">Brood Hunter</span></div>
-        <div class="audio-controls" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          <div style="font-size: 11px; letter-spacing: 2px; color: #a89470;">VOLUME</div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572;">
-            <button id="muteBtn" class="game-btn" style="padding: 4px 10px; font-size: 10px;">MUTE</button>
+        <div class="audio-controls" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
+          <div class="settings-row">
+            <span class="settings-label">MUSIC</span>
+            <input type="range" id="pauseMusicSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">EFFECTS</span>
+            <input type="range" id="pauseSfxSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
           </div>
         </div>
         <hr class="pause-sep">
@@ -398,6 +401,14 @@
           <div class="settings-row">
             <span class="settings-label">LIGHTNING EFFECTS</span>
             <button id="toggleLightning" class="toggle-btn on">ON</button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">MUSIC</span>
+            <input type="range" id="menuMusicSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">EFFECTS</span>
+            <input type="range" id="menuSfxSlider" min="0" max="1" step="0.05" value="0.5" style="accent-color: #c5a572; width: 100px;">
           </div>
         </div>
         <div class="diff-actions" style="margin-top:8px">
