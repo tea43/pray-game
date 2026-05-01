@@ -225,7 +225,9 @@
       "pitchJitter": 0.03
     },
     "loot.medkit": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/loot/medkit/heal_1.mp3"
+      ],
       "fallback": "synthetic.loot",
       "volume": 0.7,
       "pitchJitter": 0.05
@@ -255,7 +257,13 @@
       "pitchJitter": 0.04
     },
     "explosion.bomb": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/explosions/bomb/bomb_1.mp3",
+        "/assets/audio/explosions/bomb/bomb_2.mp3",
+        "/assets/audio/explosions/bomb/bomb_3.mp3",
+        "/assets/audio/explosions/bomb/bomb_4.mp3",
+        "/assets/audio/explosions/bomb/bomb_5.mp3"
+      ],
       "fallback": "synthetic.explosion",
       "volume": 0.9,
       "pitchJitter": 0.06
