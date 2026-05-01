@@ -107,17 +107,19 @@ Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bom
 
 ## Enemies
 
-Current internal IDs still use the legacy prototype names. Player-facing direction is alien worms and snake-like worm mutations.
+All enemies are rendered as segmented worms/crawlers using canvas primitives. Each type has a distinct silhouette and color scheme; no sprites yet.
 
-| Future Display | Legacy ID | HP | Damage | Speed | Role |
+| Display Name | ID | HP | Damage | Speed | Visual |
 |---|---|---:|---:|---:|---|
-| Worm Hatchling | `raider` | 30 | 10 | 48 | Basic early melee worm. |
-| Dart Worm | `runner` | 22 | 8 | 105 | Fast low-HP pressure worm. |
-| Husk Crawler | `ghoul` | 50 | 14 | 58 | Midweight infected crawler. |
-| Burrow Brute | `mutant` | 90 | 22 | 32 | Slow durable worm mutation with better drops. |
-| Phase Worm | `blinker` | 45 | 18 | 38 | Teleports behind survivors after a telegraph. |
-| Brood Warden | `miniboss` | 600 | 32 | 40 | Boss-class worm, knockback resistant. |
-| Elder Worm | `bigboss` | 2000 | 48 | 28 | Major worm boss with slam shockwave attack. |
+| Worm Hatchling | `raider` | 30 | 10 | 48 | 4-segment brown worm, red dot eyes |
+| Dart Worm | `runner` | 22 | 8 | 105 | 3-segment elongated amber worm, pointed snout, speed stripes |
+| Husk Crawler | `ghoul` | 50 | 14 | 58 | 5-segment fat grub, sickly green, tiny legs on each segment |
+| Burrow Brute | `mutant` | 90 | 22 | 32 | 4-segment dark-green armored worm with forward claws |
+| Phase Worm | `blinker` | 45 | 18 | 38 | 3-segment purple ghost worm, glowing eyes, ethereal tendrils |
+| Brood Warden | `miniboss` | 600 | 32 | 40 | 5-segment red-brown boss worm with horns and armor ridges |
+| Elder Worm | `bigboss` | 2000 | 48 | 28 | 6-segment colossal green worm, open maw with teeth, bioluminescent spines |
+
+All types animate with sinusoidal lateral body wobble keyed to `walkCycle`. Drawing rotates to `facing` angle; +X = forward, segments extend in −X direction.
 
 Enemy entry by wave:
 
