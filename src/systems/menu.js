@@ -19,6 +19,11 @@ function showTitleScreen() {
 }
 
 function unlockMenuAudio() {
+  // Whichever listener fires first (pointerdown or keydown), remove the other
+  // so a key press during gameplay never re-triggers this.
+  document.removeEventListener('pointerdown', unlockMenuAudio, { capture: true });
+  document.removeEventListener('keydown',     unlockMenuAudio, { capture: true });
+
   const splash = document.getElementById('splashScreen');
   if (splash) {
     splash.classList.add('hidden');

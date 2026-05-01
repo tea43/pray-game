@@ -267,9 +267,9 @@ export function playSfx(id, options = {}, visited = new Set()) {
 
   const entry = audioManifest.sfx[resolvedId];
   const entryBuffers = buffers.sfx[resolvedId] || [];
-  if (entryBuffers.length > 0) {
-    if (applyCooldown(resolvedId, entry, options)) return;
+  if (applyCooldown(resolvedId, entry, options)) return;
 
+  if (entryBuffers.length > 0) {
     const source = audioCtx.createBufferSource();
     source.buffer = entryBuffers[Math.floor(Math.random() * entryBuffers.length)];
 

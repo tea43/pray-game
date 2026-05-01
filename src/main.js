@@ -102,6 +102,7 @@ function frame(now) {
                    : anyMoving ? state.timeSpeed
                    : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
+  if (state.timeFlow < 0.001) state.timeFlow = 0;
   let gameDt = realDt * state.timeFlow;
 
   // Hit-stop: brief world freeze on heavy impacts. Decays in real time so playback feels responsive.
@@ -173,7 +174,7 @@ function frame(now) {
   }
   state.particles = state.particles.filter(p => p.life > 0);
 
-  if (gameDt > 0 && !state.gameOver) {
+  if (gameDt > 0 && !state.gameOver && state.menuPhase === 'playing') {
     state.survivedSeconds += gameDt;
     for (const u of state.units) u.update(gameDt);
     for (const e of state.enemies) e.update(gameDt);
@@ -369,7 +370,7 @@ function frame(now) {
   for (const ent of drawables) ent.draw(ctx);
   for (const pr of state.projectiles) pr.draw(ctx);
 
-  if (!state.settings.noLightning) drawBolts();
+  drawBolts();
   drawExplosions();
   if (!state.settings.noLightning) drawShockwaves();
   drawParticles();

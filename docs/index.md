@@ -14,6 +14,7 @@ This is the navigation hub for agents. Read this first, then open only the file 
 - `asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, worm enemies, weapons, loot, and comic assets.
 - `audio_plan.md`: Phase 6 implementation plan for music, sound effects, event naming, variant pools, and missing-asset fallbacks.
 - `future_development_plan.md`: Suggested development roadmap for gameplay, content, tooling, packaging, and eventual Steam readiness.
+- `bugs.md`: Active bug tracker. Statuses: TBD → IPG → VAL → DON. Take the first TBD bug, mark IPG, fix it, mark VAL, commit, remove entry.
 - `smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
 - `backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). This is the backlog — not immediate work.
 - `wasteland_survivors_feature_plan.md`: Historical/completed feature ledger plus near-term backlog.
