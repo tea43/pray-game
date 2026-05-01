@@ -4,9 +4,9 @@ import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { playSfx } from './audio.js';
 
 export function applyLoot(loot, unit) {
-  playSfx('loot');
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   if (loot.type === 'medkit') {
+    playSfx('loot.medkit');
     const heal = diff.loot.healAmount;
     const before = unit.hp;
     unit.hp = Math.min(unit.maxHp, unit.hp + heal);
@@ -24,6 +24,7 @@ export function applyLoot(loot, unit) {
     }
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + actual });
   } else if (loot.type === 'stimpack') {
+    playSfx('loot.stimpack');
     unit.rageTimer = Math.max(unit.rageTimer, diff.loot.stimDuration);
     unit.abilityCd = Math.max(unit.abilityCd - 2, 0);
     for (let i = 0; i < 22; i++) {
@@ -42,6 +43,7 @@ export function applyLoot(loot, unit) {
   } else if (loot.type === 'bomb') {
     detonateBomb(loot.x, loot.y);
   } else if (loot.type === 'spray_gun') {
+    playSfx('loot.weapon.spray-gun');
     unit.activeWeapon = 'spray_gun';
     unit.activeWeaponTimer = 15;
     for (let i = 0; i < 20; i++) {
@@ -58,6 +60,7 @@ export function applyLoot(loot, unit) {
     if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: 'SPRAY GUN!' });
   } else if (loot.type === 'samurai_sword') {
+    playSfx('loot.weapon.samurai-sword');
     unit.activeWeapon = 'samurai_sword';
     unit.activeWeaponTimer = 20;
     for (let i = 0; i < 22; i++) {
@@ -79,7 +82,7 @@ export function applyLoot(loot, unit) {
 }
 
 export function detonateBomb(x, y) {
-  playSfx('explosion');
+  playSfx('explosion.bomb');
   const radius = 280;
   for (const e of state.enemies) {
     if (e.dead) continue;
@@ -123,7 +126,7 @@ export function detonateBomb(x, y) {
 }
 
 export function detonateBananaBomb(x, y) {
-  playSfx('explosion');
+  playSfx('explosion.banana-bomb');
   const radius = 420;
   for (const e of state.enemies) {
     if (e.dead) continue;

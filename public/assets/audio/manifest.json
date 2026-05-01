@@ -189,22 +189,82 @@
       "pitchJitter": 0.03
     },
     "ability.blink": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/characters/abilities/blink/blink_1.mp3",
+        "/assets/audio/characters/abilities/blink/blink_2.mp3",
+        "/assets/audio/characters/abilities/blink/blink_3.mp3",
+        "/assets/audio/characters/abilities/blink/blink_4.mp3",
+        "/assets/audio/characters/abilities/blink/blink_5.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
       "pitchJitter": 0.05
     },
     "ability.rage": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/characters/abilities/rage/rage_1.mp3",
+        "/assets/audio/characters/abilities/rage/rage_2.mp3",
+        "/assets/audio/characters/abilities/rage/rage_3.mp3",
+        "/assets/audio/characters/abilities/rage/rage_5.mp3",
+        "/assets/audio/characters/abilities/rage/rege_4.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.8,
       "pitchJitter": 0.04
     },
     "ability.lightning": {
-      "variants": [],
+      "variants": [
+        "/assets/audio/characters/abilities/lightning/lightning_1.mp3",
+        "/assets/audio/characters/abilities/lightning/lightning_2.mp3",
+        "/assets/audio/characters/abilities/lightning/lightning_3.mp3",
+        "/assets/audio/characters/abilities/lightning/lightning_4.mp3",
+        "/assets/audio/characters/abilities/lightning/lightning_5.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.75,
       "pitchJitter": 0.03
+    },
+    "loot.medkit": {
+      "variants": [],
+      "fallback": "synthetic.loot",
+      "volume": 0.7,
+      "pitchJitter": 0.05
+    },
+    "loot.stimpack": {
+      "variants": [],
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "loot.weapon": {
+      "variants": [],
+      "fallback": "synthetic.loot",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "loot.weapon.spray-gun": {
+      "variants": [],
+      "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "loot.weapon.samurai-sword": {
+      "variants": [],
+      "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "explosion.bomb": {
+      "variants": [],
+      "fallback": "synthetic.explosion",
+      "volume": 0.9,
+      "pitchJitter": 0.06
+    },
+    "explosion.banana-bomb": {
+      "variants": [],
+      "fallback": "explosion.bomb",
+      "volume": 1,
+      "pitchJitter": 0.04
     }
   }
 }

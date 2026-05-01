@@ -165,6 +165,48 @@
       "fallback": "synthetic.ability",
       "volume": 0.75,
       "pitchJitter": 0.03
+    },
+    "loot.medkit": {
+      "dir": "loot/medkit",
+      "fallback": "synthetic.loot",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "loot.stimpack": {
+      "dir": "loot/stimpack",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "loot.weapon": {
+      "dir": "loot/weapon/default",
+      "fallback": "synthetic.loot",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "loot.weapon.spray-gun": {
+      "dir": "loot/weapon/spray-gun",
+      "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "loot.weapon.samurai-sword": {
+      "dir": "loot/weapon/samurai-sword",
+      "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "explosion.bomb": {
+      "dir": "explosions/bomb",
+      "fallback": "synthetic.explosion",
+      "volume": 0.90,
+      "pitchJitter": 0.06
+    },
+    "explosion.banana-bomb": {
+      "dir": "explosions/banana-bomb",
+      "fallback": "explosion.bomb",
+      "volume": 1.00,
+      "pitchJitter": 0.04
     }
   }
 }
