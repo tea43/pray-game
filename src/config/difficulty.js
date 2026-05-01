@@ -158,6 +158,41 @@ export const DIFFICULTY_DEFS = {
     },
   },
 
+  'dev-mode': {
+    label: 'Dev Mode',
+    devWaves: [1, 15, 21],   // only these waves are played; others are skipped
+
+    hero: {
+      hpMult:        2.00,
+      armorMult:     2.00,
+      abilityCdMult: 0.50,
+    },
+
+    enemy: {
+      hpMult:          0.30,
+      dmgMult:         0.30,
+      speedMult:       0.70,
+      spawnMult:       0.50,
+      burstChanceMult: 0.30,
+      bosses: {
+        miniboss: { 15: 1 },
+        bigboss:  { 21: 1 },
+      },
+    },
+
+    loot: {
+      dropChanceMult:  3.00,
+      healAmount:      999,
+      stimDuration:    15,
+      itemChances: {
+        medkit:   1.00,
+        stimpack: 0.80,
+        bomb:     0.40,
+      },
+      specialDropMult: 3.00,
+    },
+  },
+
   'rear-admiral': {
     label: 'Rear Admiral',
 
@@ -195,7 +230,7 @@ export const DIFFICULTY_DEFS = {
 
 };
 
-export const DIFFICULTY_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral'];
+export const DIFFICULTY_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral', 'dev-mode'];
 
 // Rolls each item independently using the active difficulty's itemChances.
 // Returns an array of loot type strings (may be empty, may contain multiple).

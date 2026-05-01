@@ -44,12 +44,31 @@
   #hudTL { top: 10px; left: 10px; }
   #hudTR { top: 10px; right: 10px; text-align: right; }
   #timeBar { bottom: 100px; left: 10px; min-width: 220px; }
-  #controls {
+  #htpBtn {
+    position: absolute;
     bottom: 10px; right: 10px;
-    font-size: 10px; line-height: 1.6;
-    color: #a89470; text-align: right;
-    background: rgba(10, 6, 4, 0.65);
+    padding: 4px 10px;
+    font-size: 10px; letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+    background: rgba(10, 6, 4, 0.75);
+    border: 1px solid #3a2a18;
+    color: #a89470;
+    cursor: pointer;
+    z-index: 5;
+    user-select: none;
   }
+  #htpBtn:hover { border-color: #8a6b3a; color: #d9c7a0; }
+  #controls {
+    bottom: 44px; right: 10px;
+    font-size: 10px; line-height: 1.8;
+    color: #a89470; text-align: right;
+    background: rgba(10, 6, 4, 0.92);
+    border: 1px solid #3a2a18;
+    padding: 10px 14px;
+    display: none;
+    z-index: 5;
+  }
+  #controls.visible { display: block; }
   #title {
     top: 10px; left: 50%; transform: translateX(-50%);
     font-family: 'Georgia', serif;
@@ -281,10 +300,12 @@
     <div class="hud paused" id="timeBar">
       <span class="flow-indicator"></span><span id="timeLabel">TIME x0 — MOVE UNITS</span>
     </div>
-    <div class="hud" id="controls">
+    <button id="htpBtn">? HOW TO PLAY</button>
+    <div id="controls">
       LEFT-CLICK: select &nbsp;&middot;&nbsp; DRAG: box-select<br>
-      RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add<br>
-      S: stop &nbsp;&middot;&nbsp; CTRL+A: all &nbsp;&middot;&nbsp; +/-: speed &nbsp;&middot;&nbsp; SPACE: pause/hold &nbsp;&middot;&nbsp; ESC: menu
+      RIGHT-CLICK: move / attack &nbsp;&middot;&nbsp; SHIFT: add to selection<br>
+      S: stop &nbsp;&middot;&nbsp; CTRL+A: select all<br>
+      +/-: time speed &nbsp;&middot;&nbsp; SPACE: pause/hold &nbsp;&middot;&nbsp; ESC: menu
     </div>
 
     <!-- Game over / victory -->
@@ -382,6 +403,10 @@
           <button class="diff-btn" data-diff="rear-admiral">
             <span class="diff-label">REAR ADMIRAL</span>
             <span class="diff-hint">brutal · multiple bosses · barely any healing</span>
+          </button>
+          <button class="diff-btn" data-diff="dev-mode">
+            <span class="diff-label">DEV MODE</span>
+            <span class="diff-hint">waves 1 · 15 · 21 only · for testing end-game</span>
           </button>
         </div>
         <div class="diff-actions">

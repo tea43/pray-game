@@ -50,7 +50,8 @@ Priority order (highest first):
 - x3 is the maximum forced speed.
 - Waves advance every 22 game-seconds.
 - Spawn interval starts around 1.4 seconds and shrinks by 16% each wave to a 0.30 second floor.
-- Victory triggers after clearing wave 21.
+- After wave 21 completes, spawning stops. Once all remaining enemies are dead, a helicopter flies in.
+- Heroes must move into the helicopter's landing zone (green circle, center of arena) to board. All living heroes must board for victory.
 - Defeat triggers when all three survivors die.
 
 ## Heroes
@@ -126,6 +127,25 @@ Enemy entry by wave:
 - Wave 4: burrow brutes enter.
 - Every 4th wave: miniboss.
 - Every 9th wave: bigboss takes priority over miniboss.
+
+## Difficulty Modes
+
+Five options on the difficulty screen:
+
+| ID | Label | Notes |
+|---|---|---|
+| `cavity-cadet` | Cavity Cadet | Fewer/weaker enemies, generous loot |
+| `brood-hunter` | Brood Hunter | Balanced, intended experience |
+| `crack-knight` | The Crack Knight | Harder enemies, scarcer loot |
+| `rear-admiral` | Rear Admiral | Brutal, multiple bosses per wave |
+| `dev-mode` | Dev Mode | Plays only waves 1, 15, and 21; easy settings for end-game testing |
+
+Dev mode skips between waves 1→15→21 automatically. Defined by `devWaves: [1, 15, 21]` in `difficulty.js`; wave-advance logic in `main.js` jumps to the next listed wave and recalculates spawn interval.
+
+## UI
+
+- **HOW TO PLAY button**: small button at bottom-right during gameplay. Clicking it toggles a controls reference panel. Clicking anywhere else closes it.
+- Controls panel is hidden by default; wired in `main.js` after `initMenu()`.
 
 ## World And Rendering
 
