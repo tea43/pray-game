@@ -98,6 +98,12 @@
       "pitchJitter": 0.08,
       "cooldown": 0.04
     },
+    "weapon.samurai.attack": {
+      "variants": [],
+      "fallback": "weapon.longClub.attack",
+      "volume": 0.6,
+      "pitchJitter": 0.05
+    },
     "weapon.longClub.attack": {
       "variants": [
         "/assets/audio/weapons/attack/long-club/melee_1.mp3",
@@ -265,7 +271,7 @@
         "/assets/audio/explosions/bomb/bomb_5.mp3"
       ],
       "fallback": "synthetic.explosion",
-      "volume": 0.9,
+      "volume": 3,
       "pitchJitter": 0.06
     },
     "explosion.banana-bomb": {

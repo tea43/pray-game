@@ -76,6 +76,12 @@
       "pitchJitter": 0.08,
       "cooldown": 0.04
     },
+    "weapon.samurai.attack": {
+      "dir": "weapons/attack/samurai-sword",
+      "fallback": "weapon.longClub.attack",
+      "volume": 0.6,
+      "pitchJitter": 0.05
+    },
     "weapon.longClub.attack": {
       "dir": "weapons/attack/long-club",
       "fallback": "weapon.attack.default",
@@ -199,7 +205,7 @@
     "explosion.bomb": {
       "dir": "explosions/bomb",
       "fallback": "synthetic.explosion",
-      "volume": 0.90,
+      "volume": 3.0,
       "pitchJitter": 0.06
     },
     "explosion.banana-bomb": {

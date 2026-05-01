@@ -135,7 +135,7 @@ export class Unit {
     }
 
     if (this.activeWeapon === 'samurai_sword') {
-      playSfx('weapon.attack.default', { synthetic: 'hit' });
+      playSfx('weapon.samurai.attack', { synthetic: 'hit' });
       const cleaveRange = 80;
       const halfArc = Math.PI * (60 / 180);
       let hit = 0;
