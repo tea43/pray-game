@@ -50,8 +50,9 @@ Priority order (highest first):
 - x3 is the maximum forced speed.
 - Waves advance every 22 game-seconds.
 - Spawn interval starts around 1.4 seconds and shrinks by 16% each wave to a 0.30 second floor.
-- After wave 21 completes, spawning stops. Once all remaining enemies are dead, a helicopter flies in.
-- Heroes must move into the helicopter's landing zone (green circle, center of arena) to board. All living heroes must board for victory.
+- After wave 21 completes, spawning stops. Once all remaining enemies are dead, a helicopter flies in from the top edge.
+- Heroes must move into the helicopter's landing zone (green circle, centre of arena) to board. When the last living hero boards, the helicopter lifts off and flies off-screen.
+- Victory screen fades in over ~3.5 s. If `public/assets/video/victory/victory.mp4` exists it plays muted as a background behind the overlay.
 - Defeat triggers when all three survivors die.
 
 ## Heroes
@@ -140,9 +141,9 @@ Five options on the difficulty screen:
 | `brood-hunter` | Brood Hunter | Balanced, intended experience |
 | `crack-knight` | The Crack Knight | Harder enemies, scarcer loot |
 | `rear-admiral` | Rear Admiral | Brutal, multiple bosses per wave |
-| `dev-mode` | Dev Mode | Plays only waves 1, 15, and 21; easy settings for end-game testing |
+| `dev-mode` | Dev Mode | Starts directly at wave 21; all enemy types + both bosses from the first spawn tick; single wave then extraction |
 
-Dev mode skips between waves 1→15→21 automatically. Defined by `devWaves: [1, 15, 21]` in `difficulty.js`; wave-advance logic in `main.js` jumps to the next listed wave and recalculates spawn interval.
+Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves` and initialises `state.wave` to the first entry (21), recalculates spawn interval for that wave, and immediately spawns the configured bosses (1 miniboss + 1 bigboss). All regular enemy types are available because the spawn table gates by wave number. After the 22 s wave timer the game clears to allWavesCleared and the extraction phase begins.
 
 ## UI
 
@@ -165,10 +166,11 @@ Dev mode skips between waves 1→15→21 automatically. Defined by `devWaves: [1
 - The pause menu exposes master volume and mute controls backed by localStorage.
 - Initial asset folders, `catalog.json`, and generated `manifest.json` exist under `public/assets/audio/`; run `npm run audio:manifest` after adding files.
 - `src/systems/audio.js` loads `manifest.json`, randomly chooses loaded variants, applies per-event volume/pitch/cooldown settings, and follows fallback chains.
-- Current manifest-driven SFX hooks cover character death, alien attack, melee weapon attacks, thrown weapon launch/impact, spray impacts, boss ability/attack/death, plus legacy synthetic fallbacks for effects that do not have files yet.
+- Current manifest-driven SFX hooks cover character death, alien attack/hit/death, melee weapon attacks, thrown weapon launch/impact, spray impacts, boss ability/attack/death, abilities (blink/rage/lightning), loot pickups, and explosions.
 - Music hooks exist for menu/game transitions and loop tracks while active. Browser autoplay rules mean menu music starts after the first player interaction, not before.
-- Missing files are intended to fail silently; synthetic SFX provide fallback coverage.
-- Phase 6 still needs manifest-driven sound variants, richer menu/UI sounds, boss movement/attack/death cues, hero death cues, and golden/single-file parity decisions. See `audio_plan.md`.
+- **Synthetic fallback policy**: explosion and boss-spawn oscillators have been removed. If real audio files are absent for those events the game is silent. Other events (hit, shoot, loot, ability, death for heroes) still have synthetic fallbacks. Missing files never crash or block play.
+- To add or replace sounds: drop files in the matching folder under `public/assets/audio/`, run `npm run audio:manifest`, done — no code change needed.
+- Phase 6 still needs alien death variants, boss movement/slam cues, hero death cues per-character, and menu/UI sounds. See `audio_plan.md`.
 
 ## Current Architecture
 

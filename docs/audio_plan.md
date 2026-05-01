@@ -132,7 +132,7 @@ Audio is stored as many small named files, grouped by purpose, and referenced th
 
 1. Multiple effects for the same action: one event ID points to a `variants` array. `alien.hit.default` can have two files today and ten files later.
 2. Additional effects later: add a new event ID to `manifest.json`, then call `playSfx("new.event.id")` from the gameplay boundary where it belongs.
-3. Missing effect safety: every event either falls back to another event or to a synthetic fallback. If no file loads, gameplay continues and the current simple oscillator sound plays.
+3. Missing effect safety: events fall back to another real event, or to silence. Synthetic oscillator fallbacks have been **removed** for explosion and boss-spawn events — those are silent when no file is present. Other events (hit, shoot, loot, ability, hero death) retain synthetic fallbacks because silence would remove important gameplay feedback.
 
 The runtime loader should build two maps:
 
@@ -157,10 +157,11 @@ playSfx(`character.death.${unit.id}`, {
 });
 ```
 
-For boss events:
+For boss and explosion events, **do not pass a `synthetic` option** — these should be silent when no file is present:
 
 ```js
-playSfx("boss.ability.default", { synthetic: "boss_spawn" });
+playSfx("boss.ability.default");
+playSfx("explosion.bomb");
 ```
 
 This keeps the game code expressive while letting the manifest decide how rich the sound library is.
