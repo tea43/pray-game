@@ -87,6 +87,28 @@ function startGame() {
   newGame();
 }
 
+// ==================== VICTORY SCREEN ====================
+function triggerVictoryScreen() {
+  const overlay = document.getElementById('overlay');
+  overlay.style.opacity = '0';
+  overlay.style.display = 'flex';
+  overlay.style.pointerEvents = 'auto';
+
+  const video = document.getElementById('victoryBg');
+  if (video) {
+    video.src = '/assets/video/victory/victory.mp4';
+    video.load();
+    video.play().then(() => {
+      video.style.display = 'block';
+    }).catch(() => {});
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    overlay.style.transition = 'opacity 3.5s ease-in';
+    overlay.style.opacity = '1';
+  }));
+}
+
 // ==================== HELICOPTER ====================
 function drawHelicopter(ctx) {
   const heli = state.helicopter;
@@ -485,6 +507,16 @@ function frame(now) {
         }
         const living = state.units.filter(u => !u.dead);
         if (living.length > 0 && living.every(u => heli.boarded.has(u))) {
+          heli.flightState = 'departing';
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
+          playSfx('boss_spawn');
+        }
+      }
+
+      if (heli.flightState === 'departing') {
+        heli.y -= 220 * gameDt;
+        if (heli.y < -160) {
+          heli.flightState = 'gone';
           state.gameOver = true;
           state.victory = true;
           playMusic('menu');
@@ -494,7 +526,7 @@ function frame(now) {
           document.getElementById('gameOverText').classList.add('victory');
           document.getElementById('finalStats').textContent =
             `ALL ${WAVE_DEFS.maxWave} WAVES CLEARED · KILLS ${state.kills} · SCORE ${state.score} · TIME ${total}s`;
-          document.getElementById('overlay').classList.add('show');
+          triggerVictoryScreen();
         }
       }
     }
