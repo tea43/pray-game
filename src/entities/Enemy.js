@@ -206,7 +206,7 @@ export class Enemy {
 
   _die() {
     this.dead = true;
-    playSfx(this.kind === 'bigboss' || this.kind === 'miniboss' ? 'boss.death.default' : 'synthetic.death', { synthetic: 'death' });
+    playSfx(this.kind === 'bigboss' || this.kind === 'miniboss' ? 'boss.death.default' : 'alien.death.default');
     state.kills++;
     addKillScore(this.kind);
     this._spawnBloodBurst();

@@ -66,6 +66,12 @@
       "volume": 0.85,
       "pitchJitter": 0.03
     },
+    "alien.death.default": {
+      "variants": [],
+      "volume": 0.55,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
     "alien.attack.default": {
       "variants": [
         "/assets/audio/aliens/attack/default/bite_1.mp3",
