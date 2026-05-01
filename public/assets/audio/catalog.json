@@ -123,20 +123,17 @@
     },
     "boss.walk.default": {
       "dir": "boss/walk/default",
-      "fallback": "synthetic.boss_move",
       "volume": 0.5,
       "pitchJitter": 0.04,
       "cooldown": 1.5
     },
     "boss.ability.default": {
       "dir": "boss/ability/default",
-      "fallback": "synthetic.boss_charge",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
     "boss.attack.default": {
       "dir": "boss/attack/default",
-      "fallback": "synthetic.explosion",
       "volume": 0.85,
       "pitchJitter": 0.04,
       "cooldown": 0.2
@@ -204,7 +201,6 @@
     },
     "explosion.bomb": {
       "dir": "explosions/bomb",
-      "fallback": "synthetic.explosion",
       "volume": 3.0,
       "pitchJitter": 0.06
     },

@@ -160,14 +160,12 @@
     },
     "boss.walk.default": {
       "variants": [],
-      "fallback": "synthetic.boss_move",
       "volume": 0.5,
       "pitchJitter": 0.04,
       "cooldown": 1.5
     },
     "boss.ability.default": {
       "variants": [],
-      "fallback": "synthetic.boss_charge",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
@@ -176,7 +174,6 @@
         "/assets/audio/boss/attack/default/bite_boss_1.mp3",
         "/assets/audio/boss/attack/default/bite_boss_2.mp3"
       ],
-      "fallback": "synthetic.explosion",
       "volume": 0.85,
       "pitchJitter": 0.04,
       "cooldown": 0.2
@@ -270,7 +267,6 @@
         "/assets/audio/explosions/bomb/bomb_4.mp3",
         "/assets/audio/explosions/bomb/bomb_5.mp3"
       ],
-      "fallback": "synthetic.explosion",
       "volume": 3,
       "pitchJitter": 0.06
     },
