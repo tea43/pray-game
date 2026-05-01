@@ -33,9 +33,9 @@ const SFX_ALIASES = {
   explosion: 'synthetic.explosion',
   loot: 'synthetic.loot',
   wave: 'synthetic.wave',
-  ability_blink: 'synthetic.ability',
-  ability_rage: 'synthetic.ability',
-  ability_lightning: 'synthetic.ability'
+  ability_blink: 'ability.blink',
+  ability_rage: 'ability.rage',
+  ability_lightning: 'ability.lightning'
 };
 
 const SYNTHETIC_ALIASES = {

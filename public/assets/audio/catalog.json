@@ -147,6 +147,24 @@
       "fallback": "character.death.default",
       "volume": 1.0,
       "pitchJitter": 0.03
+    },
+    "ability.blink": {
+      "dir": "characters/abilities/blink",
+      "fallback": "synthetic.ability",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "ability.rage": {
+      "dir": "characters/abilities/rage",
+      "fallback": "synthetic.ability",
+      "volume": 0.80,
+      "pitchJitter": 0.04
+    },
+    "ability.lightning": {
+      "dir": "characters/abilities/lightning",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.03
     }
   }
 }
