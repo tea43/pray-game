@@ -55,6 +55,14 @@ function newGame() {
   state.waveTimer = 0;
   state.spawnTimer = 1.5;
   state.spawnInterval = WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult;
+
+  // Dev mode: jump to the starting wave immediately so all enemy types are live
+  if (diff.devWaves?.length > 0) {
+    state.wave = diff.devWaves[0];
+    let iv = WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult;
+    for (let i = 1; i < state.wave; i++) iv = Math.max(WAVE_DEFS.spawnIntervalMin, iv * WAVE_DEFS.spawnIntervalScale);
+    state.spawnInterval = iv;
+  }
   state.gameOver = false;
   state.victory = false;
   state.allWavesCleared = false;
@@ -78,7 +86,24 @@ function newGame() {
   state.units.push(new Unit(cx, cy - 10, 'dick'));
   state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
 
-  document.getElementById('overlay').classList.remove('show');
+  // Spawn bosses configured for the starting wave (dev mode)
+  if (diff.devWaves?.length > 0) {
+    const bossMap = diff.enemy.bosses;
+    const bigCount  = bossMap.bigboss?.[state.wave]  ?? 0;
+    const miniCount = bossMap.miniboss?.[state.wave] ?? 0;
+    for (let i = 0; i < bigCount;  i++) spawnBoss('bigboss');
+    for (let i = 0; i < miniCount; i++) spawnBoss('miniboss');
+  }
+
+  const overlayEl = document.getElementById('overlay');
+  overlayEl.classList.remove('show');
+  overlayEl.style.display = '';
+  overlayEl.style.opacity = '';
+  overlayEl.style.pointerEvents = '';
+  overlayEl.style.transition = '';
+  const videoBg = document.getElementById('victoryBg');
+  if (videoBg) { videoBg.pause(); videoBg.src = ''; videoBg.style.display = 'none'; }
+
   document.getElementById('survCount').textContent = state.units.length;
   updateHUD();
 }
@@ -226,12 +251,13 @@ function frame(now) {
   if (state.spaceHeld) state.spaceHoldDuration += realDt;
 
   const anyMoving = state.units.some(u => !u.dead && !u.boarded && u.moving);
+  const heliDeparting = state.helicopter?.flightState === 'departing';
   const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
   const targetFlow = state.menuPhase !== 'playing' ? 0
                    : state.gameOver ? 0
                    : spaceHoldDriving ? state.timeSpeed
                    : state.manualPause ? 0
-                   : anyMoving ? state.timeSpeed
+                   : (anyMoving || heliDeparting) ? state.timeSpeed
                    : 0;
   state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
   if (state.timeFlow < 0.001) state.timeFlow = 0;

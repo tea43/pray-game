@@ -160,7 +160,7 @@ export const DIFFICULTY_DEFS = {
 
   'dev-mode': {
     label: 'Dev Mode',
-    devWaves: [1, 15, 21],   // only these waves are played; others are skipped
+    devWaves: [21],   // start directly at wave 21 — all enemy types + bosses, single wave to clear
 
     hero: {
       hpMult:        2.00,
@@ -175,7 +175,7 @@ export const DIFFICULTY_DEFS = {
       spawnMult:       0.50,
       burstChanceMult: 0.30,
       bosses: {
-        miniboss: { 15: 1 },
+        miniboss: { 21: 1 },
         bigboss:  { 21: 1 },
       },
     },
