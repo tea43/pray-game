@@ -236,6 +236,33 @@
     padding-left: 32px;
   }
   #difficultyScreen, #settingsScreen { padding-left: 32px; }
+
+  /* ---- splash screen (first-load gate) ---- */
+  #splashScreen {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(6,3,1,0.88);
+    transition: opacity 0.5s ease;
+  }
+  #splashScreen.hidden { opacity: 0; pointer-events: none; }
+  .splash-title {
+    font-size: 72px; letter-spacing: 14px;
+    color: #d9c7a0;
+    text-shadow: 0 0 40px rgba(197,165,114,0.45);
+  }
+  .splash-sub {
+    font-size: 14px; letter-spacing: 8px;
+    color: #a89470; margin-bottom: 48px;
+  }
+  .splash-prompt {
+    font-size: 12px; letter-spacing: 5px; color: #7a6040;
+    animation: splash-pulse 2s ease-in-out infinite;
+  }
+  @keyframes splash-pulse {
+    0%, 100% { opacity: 1;    color: #a89470; }
+    50%       { opacity: 0.4; color: #5a4020; }
+  }
 </style>
 </head>
 <body>
@@ -309,6 +336,13 @@
       </video>
       <!-- Left-to-right darkening gradient -->
       <div id="menuGradient"></div>
+
+      <!-- First-load splash gate — dismissed by any click or key press -->
+      <div id="splashScreen">
+        <div class="splash-title">P-RAY</div>
+        <div class="splash-sub">T H E &nbsp; G A M E</div>
+        <div class="splash-prompt">— CLICK OR PRESS ANY KEY —</div>
+      </div>
 
       <!-- Screen 1: Title -->
       <div id="titleScreen" class="menu-box">

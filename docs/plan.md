@@ -245,13 +245,18 @@ Commit:
 
 ## Phase 6: Audio System
 
+Status: partially started in modular source. `src/systems/audio.js` exists with a first-pass Web Audio wrapper, synthetic fallbacks, basic event hooks, and pause-menu volume controls. Phase 6 is not complete until real/missing-asset manifest behavior, richer event coverage, boss-specific cues, and documentation-backed smoke tests are in place.
+
 Goal:
 
 - Add music and sound effects that respond to game events.
+- Support multiple interchangeable sound variants for repeated events such as enemy deaths, attacks, menu clicks, and boss cues.
 
 Implementation:
 
 - `src/systems/audio.js` wrapping Web Audio API or `<audio>` elements.
+- Audio manifest/config with event IDs and variant arrays; see [`audio_plan.md`](audio_plan.md).
+- Store fetched audio under `public/assets/audio/`; `catalog.json` maps event IDs to folders and `npm run audio:manifest` generates `manifest.json`.
 - Music tracks:
   - Menu / ambient track.
   - Combat loop that intensifies on later waves.
@@ -263,15 +268,28 @@ Implementation:
   - (Optional) Loot pickup.
   - Wave start announcement.
   - Boss spawn.
+- Expanded sound events:
+  - Menu/UI: hover, click, back, start, pause, resume.
+  - Enemy deaths by kind, each with multiple variants and a generic fallback.
+  - Hero hurt/death by character.
+  - Boss movement, slam charge, slam impact, spawn, and death by boss kind.
+  - Weapon and loot-specific cues where they add clarity.
+- `playSfx(id, options)` should support random variants, small pitch/gain variation, cooldown/throttle keys, and fallback IDs.
+- Missing specific events must fall back in order: specific event → generic event → current synthetic oscillator sound → silence.
 - Volume controlled via settings; defaults to 50%.
+- Internally separate master/music/SFX/UI volumes even if only master volume is exposed initially.
 - Audio must be optional: missing files are silently skipped, no crash.
 - Pause menu (Phase 5) exposes master volume slider.
+- Add a small debug/log summary for loaded versus missing audio assets.
 
 Manual test:
 
 - Game runs silently if no audio files are present.
 - With placeholder tracks, music switches at boss spawn.
 - Volume slider takes effect immediately.
+- Repeated enemy deaths choose varied death sounds.
+- Boss movement, slam charge, slam impact, and death sounds fire once at their event boundaries.
+- Menu/settings buttons produce UI sounds after audio is unlocked by user interaction.
 
 Commit:
 

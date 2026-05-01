@@ -65,7 +65,7 @@ Priority order (highest first):
 
 - Elliot: `longClub`; melee hit with moderate knockback.
 - Dick: `dualClubs`; alternating melee swings with high attack frequency.
-- Habib: `thrownClub`; projectile attack that tracks a target, travels at 380 px/s, and expires after 280 px.
+- Habib: `thrownClub`; boomerang-style projectile that flies toward the target, hits once if it collides, then returns to Habib and disappears when caught.
 
 ## Abilities
 
@@ -136,6 +136,18 @@ Enemy entry by wave:
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
 - Asset injection is planned but not implemented yet. See `asset_injection_plan.md`.
 
+## Audio
+
+- The modular source has a first-pass Web Audio layer in `src/systems/audio.js`.
+- Audio initializes after player interaction from the menu/pause controls to satisfy browser autoplay rules.
+- The pause menu exposes master volume and mute controls backed by localStorage.
+- Initial asset folders, `catalog.json`, and generated `manifest.json` exist under `public/assets/audio/`; run `npm run audio:manifest` after adding files.
+- `src/systems/audio.js` loads `manifest.json`, randomly chooses loaded variants, applies per-event volume/pitch/cooldown settings, and follows fallback chains.
+- Current manifest-driven SFX hooks cover character death, alien attack, melee weapon attacks, thrown weapon launch/impact, spray impacts, boss ability/attack/death, plus legacy synthetic fallbacks for effects that do not have files yet.
+- Music hooks exist for menu/game transitions and loop tracks while active. Browser autoplay rules mean menu music starts after the first player interaction, not before.
+- Missing files are intended to fail silently; synthetic SFX provide fallback coverage.
+- Phase 6 still needs manifest-driven sound variants, richer menu/UI sounds, boss movement/attack/death cues, hero death cues, and golden/single-file parity decisions. See `audio_plan.md`.
+
 ## Current Architecture
 
 Phase 4 modular build is complete. The game runs from `src/` via `npm run dev`. `wasteland_survivors-v4.html` is retained as the golden single-file reference.
@@ -179,4 +191,4 @@ src/
     canvas.js          # canvas helpers
 ```
 
-Next planned phases: Menu + Score (Phase 5), Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.
+Next planned phases: finish Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.

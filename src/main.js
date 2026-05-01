@@ -241,6 +241,7 @@ function frame(now) {
     for (const u of state.units) {
       if (u.hp <= 0 && !u.dead) {
         u.dead = true;
+        playSfx(`character.death.${u.type}`, { fallback: 'character.death.default', synthetic: 'death' });
         addDeathPenalty();
         const idx = state.selected.indexOf(u);
         if (idx >= 0) state.selected.splice(idx, 1);

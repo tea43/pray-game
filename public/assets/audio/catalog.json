@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "supportedExtensions": [".mp3", ".ogg", ".wav", ".m4a"],
+  "naming": {
+    "warnOnly": true,
+    "safePattern": "^[a-z0-9][a-z0-9._-]*\\.(mp3|ogg|wav|m4a)$"
+  },
+  "music": {
+    "menu": {
+      "dir": "music/menu",
+      "loop": true,
+      "volume": 0.4
+    },
+    "game": {
+      "dir": "music/game",
+      "fallback": "combat",
+      "loop": true,
+      "volume": 0.45
+    },
+    "combat": {
+      "dir": "music/game",
+      "loop": true,
+      "volume": 0.45
+    }
+  },
+  "sfx": {
+    "character.damaged.default": {
+      "dir": "characters/damaged/default",
+      "fallback": "synthetic.hit",
+      "volume": 0.6,
+      "pitchJitter": 0.06,
+      "cooldown": 0.08
+    },
+    "character.death.default": {
+      "dir": "characters/death/default",
+      "fallback": "synthetic.death",
+      "volume": 0.8,
+      "pitchJitter": 0.04
+    },
+    "character.death.elliot": {
+      "dir": "characters/death/elliot",
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "character.death.dick": {
+      "dir": "characters/death/dick",
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "character.death.habib": {
+      "dir": "characters/death/habib",
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "alien.attack.default": {
+      "dir": "aliens/attack/default",
+      "fallback": "synthetic.hit",
+      "volume": 0.55,
+      "pitchJitter": 0.08,
+      "cooldown": 0.12
+    },
+    "alien.hit.default": {
+      "dir": "aliens/hit/default",
+      "fallback": "synthetic.hit",
+      "volume": 0.45,
+      "pitchJitter": 0.1,
+      "cooldown": 0.05
+    },
+    "weapon.attack.default": {
+      "dir": "weapons/attack/default",
+      "fallback": "synthetic.hit",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.longClub.attack": {
+      "dir": "weapons/attack/long-club",
+      "fallback": "weapon.attack.default",
+      "volume": 0.55,
+      "pitchJitter": 0.06
+    },
+    "weapon.dualClubs.attack": {
+      "dir": "weapons/attack/dual-clubs",
+      "fallback": "weapon.attack.default",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.03
+    },
+    "weapon.throw.default": {
+      "dir": "weapons/throw/default",
+      "fallback": "synthetic.shoot",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.thrownClub.throw": {
+      "dir": "weapons/throw/thrown-club",
+      "fallback": "weapon.throw.default",
+      "volume": 0.55,
+      "pitchJitter": 0.06
+    },
+    "weapon.impact.default": {
+      "dir": "weapons/impact/default",
+      "fallback": "synthetic.hit",
+      "volume": 0.55,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.thrownClub.impact": {
+      "dir": "weapons/impact/thrown-club",
+      "fallback": "weapon.impact.default",
+      "volume": 0.6,
+      "pitchJitter": 0.06
+    },
+    "boss.walk.default": {
+      "dir": "boss/walk/default",
+      "fallback": "synthetic.boss_move",
+      "volume": 0.5,
+      "pitchJitter": 0.04,
+      "cooldown": 1.5
+    },
+    "boss.ability.default": {
+      "dir": "boss/ability/default",
+      "fallback": "synthetic.boss_charge",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "boss.attack.default": {
+      "dir": "boss/attack/default",
+      "fallback": "synthetic.explosion",
+      "volume": 0.85,
+      "pitchJitter": 0.04,
+      "cooldown": 0.2
+    },
+    "boss.hit.default": {
+      "dir": "boss/hit/default",
+      "fallback": "alien.hit.default",
+      "volume": 0.65,
+      "pitchJitter": 0.06,
+      "cooldown": 0.08
+    },
+    "boss.death.default": {
+      "dir": "boss/death/default",
+      "fallback": "character.death.default",
+      "volume": 1.0,
+      "pitchJitter": 0.03
+    }
+  }
+}

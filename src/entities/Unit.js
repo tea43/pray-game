@@ -119,7 +119,7 @@ export class Unit {
     this.swing = 1;
 
     if (this.activeWeapon === 'spray_gun') {
-      playSfx('shoot');
+      playSfx('weapon.throw.default', { synthetic: 'shoot' });
       this.throwArm = 1;
       const spread = 0.35;
       const bulletCount = 5;
@@ -135,7 +135,7 @@ export class Unit {
     }
 
     if (this.activeWeapon === 'samurai_sword') {
-      playSfx('hit');
+      playSfx('weapon.attack.default', { synthetic: 'hit' });
       const cleaveRange = 80;
       const halfArc = Math.PI * (60 / 180);
       let hit = 0;
@@ -174,6 +174,7 @@ export class Unit {
         pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
         hit++;
       }
+      if (hit > 0) playSfx('alien.hit.default', { synthetic: 'hit' });
       // Big arc slash — drawn as a brief expanding additive ring at the swing center.
       state.particles.push({
         x: this.x + Math.cos(this.facing) * 24,
@@ -188,12 +189,11 @@ export class Unit {
     }
 
     if (this.weaponType === 'thrownClub') {
-      playSfx('shoot');
       this.throwArm = 1;
       const dmg = this.atkDmg;
       const sx = this.x + Math.cos(this.facing) * (this.r + 6);
       const sy = this.y + Math.sin(this.facing) * (this.r + 6);
-      state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing));
+      state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing, this));
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 1.5);
       return;
     }
@@ -203,7 +203,9 @@ export class Unit {
     }
 
     const dmg = this.atkDmg;
-    playSfx('hit');
+    const attackSfx = this.weaponType === 'dualClubs' ? 'weapon.dualClubs.attack' : 'weapon.longClub.attack';
+    playSfx(attackSfx, { fallback: 'weapon.attack.default', synthetic: 'hit' });
+    playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
     const kb = this.rageTimer > 0 ? 140 : 80;
     enemy.knockX += Math.cos(this.facing) * kb;

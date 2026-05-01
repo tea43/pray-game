@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run audio:manifest",
     "dev": "vite",
+    "prebuild": "npm run audio:manifest",
     "build": "vite build",
+    "prebuild:single": "npm run audio:manifest",
     "build:single": "vite build --mode single",
     "preview": "vite preview",
-    "check": "node scripts/check-game-data.js"
+    "check": "node scripts/check-game-data.js",
+    "audio:manifest": "node scripts/generate-audio-manifest.js"
   },
   "devDependencies": {
     "vite": "^5.4.0"

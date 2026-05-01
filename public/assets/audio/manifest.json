@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "generatedFrom": "/assets/audio/catalog.json",
+  "music": {
+    "menu": {
+      "variants": [
+        "/assets/audio/music/menu/menu1.mp3"
+      ],
+      "loop": true,
+      "volume": 0.4
+    },
+    "game": {
+      "variants": [
+        "/assets/audio/music/game/wasteland-mood.mp3"
+      ],
+      "fallback": "combat",
+      "loop": true,
+      "volume": 0.45
+    },
+    "combat": {
+      "variants": [
+        "/assets/audio/music/game/wasteland-mood.mp3"
+      ],
+      "loop": true,
+      "volume": 0.45
+    }
+  },
+  "sfx": {
+    "character.damaged.default": {
+      "variants": [],
+      "fallback": "synthetic.hit",
+      "volume": 0.6,
+      "pitchJitter": 0.06,
+      "cooldown": 0.08
+    },
+    "character.death.default": {
+      "variants": [
+        "/assets/audio/characters/death/default/character_death_1.mp3",
+        "/assets/audio/characters/death/default/character_death_2.mp3",
+        "/assets/audio/characters/death/default/character_death_3.mp3",
+        "/assets/audio/characters/death/default/character_death_4.mp3"
+      ],
+      "fallback": "synthetic.death",
+      "volume": 0.8,
+      "pitchJitter": 0.04
+    },
+    "character.death.elliot": {
+      "variants": [],
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "character.death.dick": {
+      "variants": [],
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "character.death.habib": {
+      "variants": [],
+      "fallback": "character.death.default",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "alien.attack.default": {
+      "variants": [
+        "/assets/audio/aliens/attack/default/bite_1.mp3",
+        "/assets/audio/aliens/attack/default/bite_2.mp3",
+        "/assets/audio/aliens/attack/default/bite_3.mp3",
+        "/assets/audio/aliens/attack/default/bite_4.mp3",
+        "/assets/audio/aliens/attack/default/bite_5.mp3",
+        "/assets/audio/aliens/attack/default/bite_6.mp3"
+      ],
+      "fallback": "synthetic.hit",
+      "volume": 0.55,
+      "pitchJitter": 0.08,
+      "cooldown": 0.12
+    },
+    "alien.hit.default": {
+      "variants": [
+        "/assets/audio/aliens/hit/default/alien_hit_1.mp3",
+        "/assets/audio/aliens/hit/default/alien_hit_2.mp3",
+        "/assets/audio/aliens/hit/default/alien_hit_3.mp3"
+      ],
+      "fallback": "synthetic.hit",
+      "volume": 0.45,
+      "pitchJitter": 0.1,
+      "cooldown": 0.05
+    },
+    "weapon.attack.default": {
+      "variants": [],
+      "fallback": "synthetic.hit",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.longClub.attack": {
+      "variants": [
+        "/assets/audio/weapons/attack/long-club/melee_1.mp3",
+        "/assets/audio/weapons/attack/long-club/melee_2.mp3",
+        "/assets/audio/weapons/attack/long-club/melee_3.mp3",
+        "/assets/audio/weapons/attack/long-club/melee_4.mp3"
+      ],
+      "fallback": "weapon.attack.default",
+      "volume": 0.55,
+      "pitchJitter": 0.06
+    },
+    "weapon.dualClubs.attack": {
+      "variants": [
+        "/assets/audio/weapons/attack/dual-clubs/melee_5.mp3",
+        "/assets/audio/weapons/attack/dual-clubs/melee_6.mp3",
+        "/assets/audio/weapons/attack/dual-clubs/melee_7.mp3"
+      ],
+      "fallback": "weapon.attack.default",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.03
+    },
+    "weapon.throw.default": {
+      "variants": [],
+      "fallback": "synthetic.shoot",
+      "volume": 0.5,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.thrownClub.throw": {
+      "variants": [
+        "/assets/audio/weapons/throw/thrown-club/boomerang.mp3"
+      ],
+      "fallback": "weapon.throw.default",
+      "volume": 0.55,
+      "pitchJitter": 0.06
+    },
+    "weapon.impact.default": {
+      "variants": [],
+      "fallback": "synthetic.hit",
+      "volume": 0.55,
+      "pitchJitter": 0.08,
+      "cooldown": 0.04
+    },
+    "weapon.thrownClub.impact": {
+      "variants": [
+        "/assets/audio/weapons/impact/thrown-club/sword_1.mp3",
+        "/assets/audio/weapons/impact/thrown-club/sword_2.mp3",
+        "/assets/audio/weapons/impact/thrown-club/sword_3.mp3"
+      ],
+      "fallback": "weapon.impact.default",
+      "volume": 0.6,
+      "pitchJitter": 0.06
+    },
+    "boss.walk.default": {
+      "variants": [],
+      "fallback": "synthetic.boss_move",
+      "volume": 0.5,
+      "pitchJitter": 0.04,
+      "cooldown": 1.5
+    },
+    "boss.ability.default": {
+      "variants": [],
+      "fallback": "synthetic.boss_charge",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "boss.attack.default": {
+      "variants": [
+        "/assets/audio/boss/attack/default/bite_boss_1.mp3",
+        "/assets/audio/boss/attack/default/bite_boss_2.mp3"
+      ],
+      "fallback": "synthetic.explosion",
+      "volume": 0.85,
+      "pitchJitter": 0.04,
+      "cooldown": 0.2
+    },
+    "boss.hit.default": {
+      "variants": [],
+      "fallback": "alien.hit.default",
+      "volume": 0.65,
+      "pitchJitter": 0.06,
+      "cooldown": 0.08
+    },
+    "boss.death.default": {
+      "variants": [],
+      "fallback": "character.death.default",
+      "volume": 1,
+      "pitchJitter": 0.03
+    }
+  }
+}

@@ -124,6 +124,7 @@ export class Enemy {
       if (this.slamCharge > 0) {
         this.slamCharge += dt;
         if (this.slamCharge >= 1.2) {
+          playSfx('boss.attack.default', { synthetic: 'explosion' });
           state.shockwaves.push({
             x: this.slamX, y: this.slamY,
             r: this.r + 4, maxR: 320,
@@ -152,6 +153,7 @@ export class Enemy {
           this.slamX = this.x;
           this.slamY = this.y;
           this.slamCharge = 0.001;
+          playSfx('boss.ability.default', { synthetic: 'boss_spawn' });
         }
       }
       if (this.slamCharge > 0) {
@@ -176,11 +178,15 @@ export class Enemy {
         this.x += (dx / d) * this.speed * dt;
         this.y += (dy / d) * this.speed * dt;
         this.walkCycle += dt * 7;
+        if (this.kind === 'bigboss' || this.kind === 'miniboss') {
+          playSfx('boss.walk.default', { synthetic: 'boss_spawn', cooldownKey: `boss.walk.${this.kind}` });
+        }
       } else if (this.dmgCd <= 0) {
         target.hp -= this.dmg;
         target.hurtFlash = 1;
         this.dmgCd = 0.75;
-        playSfx('hit');
+        playSfx('alien.attack.default', { synthetic: 'hit' });
+        playSfx('character.damaged.default', { synthetic: 'hit' });
         if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
         for (let i = 0; i < 6; i++) {
           state.particles.push({
@@ -200,7 +206,7 @@ export class Enemy {
 
   _die() {
     this.dead = true;
-    playSfx('death');
+    playSfx(this.kind === 'bigboss' || this.kind === 'miniboss' ? 'boss.death.default' : 'synthetic.death', { synthetic: 'death' });
     state.kills++;
     addKillScore(this.kind);
     this._spawnBloodBurst();

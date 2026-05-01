@@ -120,7 +120,7 @@ Each frame (per `gameDt`):
 |---|---|
 | `activeWeapon === 'spray_gun'` | Fires 5 `SprayBullet` in a ±0.35 rad cone. Each bullet travels at 480 px/s up to 320 px. Damage = `atkDmg * 0.5`. Slight screen shake. |
 | `activeWeapon === 'samurai_sword'` | Instant AoE cleave: all enemies within 80 px and within 120° arc take `atkDmg` (×2.2 base), get knocked back 120 px/s, and receive gold spark particles. |
-| `weaponType === 'thrownClub'` | Creates a `Projectile` tracking at 380 px/s up to 280 px. Hits the first enemy it collides with. |
+| `weaponType === 'thrownClub'` | Creates a boomerang-style `Projectile` that flies toward the target point, hits once on outbound collision, then returns to Habib and disappears when caught. |
 | `weaponType === 'dualClubs'` | Toggles `dualSide`, applies melee damage + knockback directly. Rage doubles knockback (80 → 140) and particle count. |
 | default (`longClub`) | Melee: direct `hp -= dmg`, knockback vector from `this.facing`. |
 
