@@ -175,6 +175,16 @@
   .diff-btn .diff-label { font-size: 11px; letter-spacing: 3px; font-weight: bold; }
   .diff-btn .diff-hint  { font-size: 9px; letter-spacing: 1px; color: #5a4020; transition: color 0.12s; }
   .diff-btn.active .diff-hint { color: #a89060; }
+  .diff-btn[data-diff="dev-mode"] {
+    border-color: #5a1010; color: #c04040;
+    background: #1a0808; border-style: dashed;
+    margin-top: 6px;
+    font-family: 'Courier New', monospace;
+  }
+  .diff-btn[data-diff="dev-mode"] .diff-hint { color: #6a2020; }
+  .diff-btn[data-diff="dev-mode"]:hover { border-color: #a03030; color: #e06060; background: #2a0e0e; }
+  .diff-btn[data-diff="dev-mode"].active { border-color: #e04040; color: #ff8080; background: #2a1010; box-shadow: inset 0 0 12px rgba(200,40,40,0.12); }
+  .diff-btn[data-diff="dev-mode"].active .diff-hint { color: #c06060; }
   .diff-actions { display: flex; gap: 12px; width: 100%; }
   .diff-actions .game-btn { flex: 1; text-align: center; font-size: 12px; }
 
