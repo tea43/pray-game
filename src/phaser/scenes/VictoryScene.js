@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { playMusic } from '../../systems/audio.js';
 
 export class VictoryScene extends Phaser.Scene {
   constructor() { super({ key: 'VictoryScene' }); }
@@ -7,6 +8,7 @@ export class VictoryScene extends Phaser.Scene {
 
   create() {
     const { width: W, height: H } = this.scale;
+    playMusic('menu');
 
     const bg = this.add.graphics();
     bg.fillStyle(0x0a0a02, 0.9);

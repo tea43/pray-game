@@ -9,6 +9,7 @@ import { spawnEnemy, spawnBoss } from '../../systems/spawning.js';
 import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2 } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
+import { playMusic } from '../../systems/audio.js';
 import { drawBackground } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
@@ -29,13 +30,18 @@ export class GameScene extends Phaser.Scene {
     // ── Canvas 2D texture bridge ───────────────────────────────────────────────
     // All existing render code (background.js, effects.js, entity draw methods)
     // writes to G.ctx which points to this CanvasTexture's 2D context.
+    // Canvas is sized at physical pixels (DPR × CSS) so it maps 1:1 to the WebGL
+    // framebuffer; ctx.scale(dpr, dpr) keeps all drawing coordinates in CSS space.
     // After each frame we call refresh() to upload to the GPU.
-    this._canvasTex = this.textures.createCanvas('game-layer', G.W, G.H);
+    this._dpr = window.devicePixelRatio || 1;
+    if (this.textures.exists('game-layer')) this.textures.remove('game-layer');
+    this._canvasTex = this.textures.createCanvas('game-layer', G.W * this._dpr, G.H * this._dpr);
     G.ctx    = this._canvasTex.getContext();
+    G.ctx.scale(this._dpr, this._dpr);
     G.canvas = this._canvasTex.getCanvas();
 
-    // Single full-screen image displays the rendered frame
-    this._renderImg = this.add.image(0, 0, 'game-layer').setOrigin(0, 0);
+    // Single full-screen image displays the rendered frame at CSS dimensions
+    this._renderImg = this.add.image(0, 0, 'game-layer').setOrigin(0, 0).setDisplaySize(G.W, G.H);
 
     this._input = new InputSystem(this, state);
     this._input.init();
@@ -59,8 +65,9 @@ export class GameScene extends Phaser.Scene {
   _onResize() {
     this._syncG();
     if (this._canvasTex) {
-      this._canvasTex.setSize(G.W, G.H);
-      G.ctx    = this._canvasTex.getContext();
+      this._canvasTex.setSize(G.W * this._dpr, G.H * this._dpr);
+      G.ctx = this._canvasTex.getContext();
+      G.ctx.scale(this._dpr, this._dpr);
       G.canvas = this._canvasTex.getCanvas();
       this._renderImg.setDisplaySize(G.W, G.H);
     }
@@ -108,6 +115,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.scene.launch('HUDScene');
+    playMusic('game');
   }
 
   // ── Main update loop ─────────────────────────────────────────────────────────

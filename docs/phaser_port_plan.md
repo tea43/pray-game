@@ -43,21 +43,27 @@ Port `P-RAY: The Game` from vanilla Canvas 2D + Vite to **Phaser 4.1**.
 | 3 | Rendering | Canvas 2D bridge via CanvasTexture; all existing render code works unchanged | ✅ DONE |
 | 4 | Game Loop | Time-flow, wave spawning, win/loss in `update()` | ✅ DONE |
 | 5 | HUD + Menu | Scene stack: MenuScene, HUDScene, PauseScene, VictoryScene, GameOverScene | ✅ DONE |
-| 6 | Audio | Web Audio → Phaser Sound Manager | ⬜ TODO |
-| 7 | Polish | Camera shake, Phaser particle emitters, tweens, per-entity Graphics | ⬜ TODO |
+| 6 | Audio | Web Audio → Phaser Sound Manager | ✅ DONE |
+| 7 | Polish | Camera shake, Phaser particle emitters, tweens, per-entity Graphics | ✅ DONE (DPR fix) |
 
-### Architecture note (Phases 0–5)
+### Architecture note (Phases 0–7)
 
 Phases 0–5 were completed together. Key discovery: the existing render code (background, effects, entity `draw(ctx)`) is dense Canvas 2D with gradients, shadows, and composite ops that don't map to Phaser Graphics. Rather than rewriting ~2000 lines of drawing code, we use a **CanvasTexture bridge**:
 
-- `this.textures.createCanvas('game-layer', W, H)` creates a CanvasTexture backed by a real `<canvas>`.
-- `G.ctx = canvasTex.getContext()` points the existing render pipeline at that canvas.
-- A full-screen `this.add.image(0, 0, 'game-layer')` displays the rendered frame each tick.
+- `this.textures.createCanvas('game-layer', W*dpr, H*dpr)` creates a CanvasTexture at physical pixel dimensions.
+- `G.ctx = canvasTex.getContext(); G.ctx.scale(dpr, dpr)` points the existing render pipeline at that canvas; drawing coordinates stay in CSS pixel space.
+- A full-screen `this.add.image(0,0,'game-layer').setDisplaySize(W,H)` displays the rendered frame at CSS size each tick.
 - `canvasTex.refresh()` uploads the canvas pixels to the GPU texture after each draw pass.
 - All existing render files (`render/background.js`, `render/effects.js`, `render/hud.js`, entity `draw(ctx)`) work completely unchanged.
 - Gradients, shadows, composite operations, `setLineDash` — all preserved.
+- Physical-pixel canvas eliminates blurriness on retina / HiDPI displays (Phase 7 DPR fix).
 
-Phase 7 can incrementally replace individual render routines with native Phaser Graphics for sprite injection / lighting support when needed.
+**Phase 6 audio**: `src/systems/audio.js` (Web Audio API) was kept as-is — its lazy-init, variant-pool, cooldown, and synthetic-fallback logic are battle-tested. The Phaser scenes simply import `initAudio`, `playSfx`, and `playMusic` from it:
+- `MenuScene._showTitle()` calls `initAudio()` + `playMusic('menu')`.
+- `GameScene._startNewGame()` calls `playMusic('game')`.
+- `VictoryScene.create()` and `GameOverScene.create()` call `playMusic('menu')`.
+
+Future Phase 8+ can incrementally replace individual render routines with native Phaser Graphics for sprite injection / lighting support when needed.
 
 ---
 

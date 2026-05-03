@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
+import { initAudio, playMusic } from '../../systems/audio.js';
 
 const PAL = {
   bg:        0x0a0604,
@@ -41,6 +42,8 @@ export class MenuScene extends Phaser.Scene {
   _showTitle() {
     this._screen = 'title';
     this._clearScreen();
+    initAudio();
+    playMusic('menu');
     const W = this.scale.width, H = this.scale.height;
 
     this._bg.fillStyle(PAL.bg, 1).fillRect(0, 0, W, H);
