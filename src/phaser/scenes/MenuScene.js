@@ -47,6 +47,7 @@ const LAYOUT = {
     rowH:       44,
   },
   videoBg: {
+    coverWidth: 300,          // fixed px width of the solid dark panel
     fadeStep:   20,           // px width of each fade strip
     panelAlpha: 0.85,
     fadeAlphas: [0.55, 0.30, 0.12],  // one entry = one fade strip
@@ -96,7 +97,7 @@ const DIFF_HINTS = {
   'brood-hunter': 'balanced · intended experience',
   'crack-knight': 'faster · harder · scarcer loot',
   'rear-admiral': 'brutal · multiple bosses · barely any healing',
-  'dev-mode':     'wave 21 only · all enemies · for testing end-game',
+  'dev-mode':     'a single wave only · all enemies · for testing end-game',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,16 +150,16 @@ export class MenuScene extends Phaser.Scene {
     this._bg = this.add.graphics();
   }
 
-  // Dark panel exactly over the button column, then pixel-width fade strips.
-  _drawVideoBg(panelX, panelW) {
+  // Fixed-width dark panel on the left, then pixel-width fade strips.
+  // Adjust LAYOUT.videoBg.coverWidth to widen or narrow the dark area.
+  _drawVideoBg() {
     const H = this.scale.height;
-    const { fadeStep, panelAlpha, fadeAlphas } = LAYOUT.videoBg;
-    const edge = panelX + panelW;
+    const { coverWidth, fadeStep, panelAlpha, fadeAlphas } = LAYOUT.videoBg;
 
-    this._bg.fillStyle(COLORS.videoBgPanel, panelAlpha).fillRect(0, 0, edge, H);
+    this._bg.fillStyle(COLORS.videoBgPanel, panelAlpha).fillRect(0, 0, coverWidth, H);
     fadeAlphas.forEach((alpha, i) =>
       this._bg.fillStyle(COLORS.videoBgPanel, alpha)
-        .fillRect(edge + i * fadeStep, 0, fadeStep, H)
+        .fillRect(coverWidth + i * fadeStep, 0, fadeStep, H)
     );
   }
 
@@ -171,12 +172,12 @@ export class MenuScene extends Phaser.Scene {
     playMusic('menu');
 
     const { x: panelX, w: panelW, y: panelY } = this._panelDims();
-    this._drawVideoBg(panelX, panelW);
+    this._drawVideoBg();
 
     this._txt(panelX, panelY,       'P-RAY',                                { fontSize: '42px', color: TC.gold, fontFamily: 'Georgia, serif' });
-    this._txt(panelX, panelY + 60,  'T H E   G A M E',                     { fontSize: '11px', color: TC.dark });
-    this._txt(panelX, panelY + 96,  'Endoserpents at your door.',           { fontSize: '11px', color: TC.dim });
-    this._txt(panelX, panelY + 118, 'P-RAY is all that can save the world.',{ fontSize: '11px', color: TC.dim });
+    this._txt(panelX, panelY + 60,  'T H E   G A M E',                     { fontSize: '20px', color: TC.dark });
+    this._txt(panelX, panelY + 96,  'Endoserpents at your door.',           { fontSize: '15px', color: TC.dim });
+    this._txt(panelX, panelY + 118, 'P-RAY is all that can save the world.',{ fontSize: '15px', color: TC.dim });
 
     // ── To add a title-screen button: append an entry to this array ───────
     const buttons = [
@@ -195,7 +196,7 @@ export class MenuScene extends Phaser.Scene {
     this._clearScreen();
 
     const { x: panelX, w: panelW, y: panelY } = this._panelDims();
-    this._drawVideoBg(panelX, panelW);
+    this._drawVideoBg();
 
     this._txt(panelX, panelY, 'SELECT DIFFICULTY',
       { fontSize: '20px', color: TC.gold, fontFamily: 'Georgia, serif' });
@@ -221,7 +222,7 @@ export class MenuScene extends Phaser.Scene {
 
     const { x: panelX, w: panelW, y: panelY } = this._panelDims();
     const sliderW = Math.min(LAYOUT.slider.maxWidth, Math.round(this.scale.width * LAYOUT.slider.wFrac));
-    this._drawVideoBg(panelX, panelW);
+    this._drawVideoBg();
 
     this._txt(panelX, panelY, 'SETTINGS',
       { fontSize: '20px', color: TC.gold, fontFamily: 'Georgia, serif' });
