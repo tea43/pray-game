@@ -11,7 +11,7 @@ export class GameOverScene extends Phaser.Scene {
     playMusic('menu');
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x0a0302, 0.9);
+    bg.fillStyle(0x0a0302, 1);
     bg.fillRect(0, 0, W, H);
 
     this.add.text(W / 2, H / 2 - 60, 'ALL SURVIVORS DEAD', {

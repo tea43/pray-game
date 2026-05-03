@@ -25,6 +25,20 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    this._videoEl = document.getElementById('menuVideo');
+    if (this._videoEl) {
+      if (!this._videoEl.src) {
+        this._videoEl.src = '/heavy/pray.menu.2.mp4';
+        this._videoEl.load();
+      }
+      this._videoEl.style.display = 'block';
+      this._videoEl.play().catch(() => {});
+    }
+
+    this.events.on('shutdown', () => {
+      if (this._videoEl) this._videoEl.style.display = 'none';
+    }, this);
+
     this._showTitle();
     this.scale.on('resize', () => {
       if (this._screen === 'title') this._showTitle();
@@ -39,6 +53,14 @@ export class MenuScene extends Phaser.Scene {
     this._bg = this.add.graphics();
   }
 
+  // Simulate the legacy CSS gradient: rgba(6,3,1,0.88) left → transparent right
+  _drawVideoBg() {
+    const W = this.scale.width, H = this.scale.height;
+    this._bg.fillStyle(0x060301, 0.20).fillRect(0, 0, W, H);
+    this._bg.fillStyle(0x060301, 0.56).fillRect(0, 0, W * 0.65, H);
+    this._bg.fillStyle(0x060301, 0.22).fillRect(0, 0, W * 0.35, H);
+  }
+
   _showTitle() {
     this._screen = 'title';
     this._clearScreen();
@@ -46,7 +68,7 @@ export class MenuScene extends Phaser.Scene {
     playMusic('menu');
     const W = this.scale.width, H = this.scale.height;
 
-    this._bg.fillStyle(PAL.bg, 1).fillRect(0, 0, W, H);
+    this._drawVideoBg();
 
     const panelW = Math.min(400, W * 0.45);
     const panelX = W * 0.06;
@@ -69,7 +91,7 @@ export class MenuScene extends Phaser.Scene {
     this._clearScreen();
     const W = this.scale.width, H = this.scale.height;
 
-    this._bg.fillStyle(PAL.bg, 1).fillRect(0, 0, W, H);
+    this._drawVideoBg();
 
     const panelW = Math.min(400, W * 0.45);
     const panelX = W * 0.06;

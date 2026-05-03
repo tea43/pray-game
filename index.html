@@ -12,9 +12,19 @@
     overflow: hidden;
   }
   canvas { display: block; cursor: crosshair; }
+  #menuVideo {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.35) saturate(0.55);
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+  }
 </style>
 </head>
 <body>
+<video id="menuVideo" loop muted playsinline></video>
 <script type="module" src="/src/phaser/game.js"></script>
 </body>
 </html>

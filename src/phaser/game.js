@@ -9,7 +9,7 @@ import { GameOverScene } from './scenes/GameOverScene.js';
 
 const config = {
   type: Phaser.WEBGL,
-  backgroundColor: '#0a0604',
+  transparent: true,
   scene: [BootScene, MenuScene, GameScene, HUDScene, PauseScene, VictoryScene, GameOverScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
