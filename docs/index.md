@@ -10,6 +10,7 @@ This is the navigation hub for agents. Read this first, then open only the file 
 
 ## Planning
 
+- `phaser_port_plan.md`: Phased plan to port the game from vanilla Canvas 2D to Phaser 3, with scene layout, system mapping, and risk log.
 - `modularization_plan.md`: Safe path from one large HTML file to a maintainable modular codebase without breaking the current playable file.
 - `asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, worm enemies, weapons, loot, and comic assets.
 - `audio_plan.md`: Phase 6 implementation plan for music, sound effects, event naming, variant pools, and missing-asset fallbacks.

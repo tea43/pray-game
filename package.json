@@ -14,6 +14,9 @@
     "audio:manifest": "node scripts/generate-audio-manifest.js"
   },
   "devDependencies": {
-    "vite": "^5.4.0"
+    "vite": "^8.0.10"
+  },
+  "dependencies": {
+    "phaser": "^4.1.0"
   }
 }
