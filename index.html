@@ -11,15 +11,24 @@
     background: #0a0604;
     overflow: hidden;
   }
-  canvas { display: block; cursor: crosshair; }
   #menuVideo {
     position: fixed; inset: 0;
     width: 100%; height: 100%;
     object-fit: cover;
     filter: brightness(0.35) saturate(0.55);
-    z-index: -1;
+    /* stay below static canvas in normal stacking (negative z keeps it behind body bg too,
+       so body bg must be transparent when video should show) */
+    z-index: 0;
     pointer-events: none;
     display: none;
+  }
+  canvas {
+    display: block;
+    cursor: crosshair;
+    /* relative positioning gives z-index effect without disrupting Phaser's size management */
+    position: relative;
+    z-index: 1;
+    background: transparent;
   }
 </style>
 </head>
