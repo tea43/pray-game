@@ -18,10 +18,10 @@ export class HUDScene extends Phaser.Scene {
 
     // Wave / kill / time labels sit above the canvas panel area
     const topY = 14;
-    this._waveText  = this.add.text(W / 2, topY, '',  { fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5, 0);
-    this._killText  = this.add.text(W - 14, topY, '', { fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#a89470' }).setOrigin(1, 0);
-    this._timeText  = this.add.text(14, topY, '',     { fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#a89470' }).setOrigin(0, 0);
-    this._pauseText = this.add.text(W / 2, topY + 18, '', { fontFamily: "'Courier New', monospace", fontSize: '10px', color: '#8bc34a', letterSpacing: 4 }).setOrigin(0.5, 0);
+    this._waveText  = this.add.text(W / 2, topY, '',  { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5, 0);
+    this._killText  = this.add.text(W - 14, topY, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#a89470' }).setOrigin(1, 0);
+    this._timeText  = this.add.text(14, topY, '',     { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#a89470' }).setOrigin(0, 0);
+    this._pauseText = this.add.text(W / 2, topY + 18, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '10px', color: '#8bc34a', letterSpacing: 4 }).setOrigin(0.5, 0);
   }
 
   update() {

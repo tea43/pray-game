@@ -111,6 +111,7 @@ export class MenuScene extends Phaser.Scene {
       fontFamily: "'Courier New', monospace",
       fontSize: '12px',
       color: '#d9c7a0',
+      resolution: window.devicePixelRatio,
       ...style,
     });
   }

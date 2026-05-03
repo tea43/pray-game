@@ -24,6 +24,7 @@ export class PauseScene extends Phaser.Scene {
 
     this.add.text(W / 2, by + 28, 'PAUSED', {
       fontFamily: 'Georgia, serif', fontSize: '22px', color: '#c5a050', letterSpacing: 8,
+      resolution: window.devicePixelRatio,
     }).setOrigin(0.5);
 
     this._makeBtn(W / 2, by + 90, 'RESUME', () => {
@@ -56,10 +57,11 @@ export class PauseScene extends Phaser.Scene {
     draw(false);
     const txt = this.add.text(x, y, label, {
       fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 3,
+      resolution: window.devicePixelRatio,
     }).setOrigin(0.5);
     const zone = this.add.zone(x - w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
     zone.on('pointerover',  () => draw(true));
     zone.on('pointerout',   () => draw(false));
-    zone.on('pointerup',    () => cb());
+    zone.on('pointerdown',  () => cb());
   }
 }

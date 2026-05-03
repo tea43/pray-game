@@ -13,13 +13,13 @@ export class VictoryScene extends Phaser.Scene {
     bg.fillRect(0, 0, W, H);
 
     this.add.text(W / 2, H / 2 - 60, 'EXTRACTION COMPLETE', {
-      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#a0d040', letterSpacing: 6,
+      fontFamily: 'Georgia, serif', resolution: window.devicePixelRatio, fontSize: '36px', color: '#a0d040', letterSpacing: 6,
     }).setOrigin(0.5).setAlpha(0);
 
     const s = this._state;
     const statLine = s ? `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s` : '';
     this.add.text(W / 2, H / 2 + 10, statLine, {
-      fontFamily: "'Courier New', monospace", fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
+      fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);
 
     this.tweens.add({ targets: this.children.list, alpha: 1, duration: 3500, ease: 'Linear' });
@@ -38,10 +38,10 @@ export class VictoryScene extends Phaser.Scene {
       g.strokeRect(x - w / 2, y - h / 2, w, h);
     };
     draw(false);
-    this.add.text(x, y, label, { fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5);
+    this.add.text(x, y, label, { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '13px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5);
     const zone = this.add.zone(x - w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
     zone.on('pointerover', () => draw(true));
     zone.on('pointerout',  () => draw(false));
-    zone.on('pointerup',   () => cb());
+    zone.on('pointerdown', () => cb());
   }
 }
