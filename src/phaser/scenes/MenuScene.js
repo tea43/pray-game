@@ -55,14 +55,19 @@ export class MenuScene extends Phaser.Scene {
     this._bg = this.add.graphics();
   }
 
-  // Dark-left gradient: heavy cover over the panel column, fades to transparent
+  // Solid dark panel behind the button column, then a short pixel fade to transparent.
+  // The cover width is computed from the same panelX/panelW as the content, so it
+  // never extends beyond the right edge of the buttons.
   _drawVideoBg() {
     const W = this.scale.width, H = this.scale.height;
-    // Three stacked strips; combined alpha approximates the legacy CSS gradient:
-    // rgba(6,3,1,0.88) at 0% → rgba(6,3,1,0.20) at ~45% → transparent at ~60%
-    this._bg.fillStyle(0x060301, 0.18).fillRect(0, 0, W * 0.55, H);  // faint base
-    this._bg.fillStyle(0x060301, 0.50).fillRect(0, 0, W * 0.38, H);  // medium
-    this._bg.fillStyle(0x060301, 0.22).fillRect(0, 0, W * 0.24, H);  // darkest on far left
+    const panelX = Math.round(W * 0.06);
+    const panelW = Math.min(400, Math.round(W * 0.45));
+    const edge   = panelX + panelW;
+
+    this._bg.fillStyle(0x060301, 0.85).fillRect(0,        0, edge,  H);
+    this._bg.fillStyle(0x060301, 0.55).fillRect(edge,     0, 20,    H);
+    this._bg.fillStyle(0x060301, 0.30).fillRect(edge + 20, 0, 20,   H);
+    this._bg.fillStyle(0x060301, 0.12).fillRect(edge + 40, 0, 20,   H);
   }
 
   _showTitle() {
