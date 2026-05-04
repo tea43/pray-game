@@ -8,6 +8,15 @@ Ground gradient, soil mottling, soil patches, cracks, and debris are rendered on
 ### Remove `shadowBlur` from bolt and floating-text rendering (`src/render/effects.js`)
 `ctx.shadowBlur` forces a full software blur pass in Canvas 2D — the single most expensive per-call operation. Replaced bolt outer glow with two stacked low-opacity thick strokes (lineWidth 30 and 14). Replaced per-junction radial gradient spark nodes with solid `arc` fills. Removed `shadowBlur` from floating damage numbers (the 1 px dark offset already provides contrast).
 
+### DPR cap at 2× (`src/phaser/scenes/GameScene.js`)
+`window.devicePixelRatio` capped at 2 so 3× screens upload at most a 4× pixel canvas rather than 9×. One-line change: `Math.min(window.devicePixelRatio || 1, 2)`.
+
+### Remove `shadowBlur` from shockwave ring (`src/render/effects.js`)
+Replaced `shadowBlur 18` on the shockwave stroke with a wide low-opacity outer stroke (lineWidth 14, alpha 0.25) to simulate the halo.
+
+### Particle emission throttle (`src/phaser/scenes/GameScene.js`, `src/render/effects.js`)
+Walking dust and shockwave sparks are skipped when `state.particles.length >= 350`. Prevents unbounded particle growth during multi-shockwave + lightning moments.
+
 ---
 
 ## Remaining — ordered by estimated impact

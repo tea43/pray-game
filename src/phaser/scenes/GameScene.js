@@ -33,7 +33,7 @@ export class GameScene extends Phaser.Scene {
     // Canvas is sized at physical pixels (DPR × CSS) so it maps 1:1 to the WebGL
     // framebuffer; ctx.scale(dpr, dpr) keeps all drawing coordinates in CSS space.
     // After each frame we call refresh() to upload to the GPU.
-    this._dpr = window.devicePixelRatio || 1;
+    this._dpr = Math.min(window.devicePixelRatio || 1, 2);
     if (this.textures.exists('game-layer')) this.textures.remove('game-layer');
     this._canvasTex = this.textures.createCanvas('game-layer', G.W * this._dpr, G.H * this._dpr);
     G.ctx    = this._canvasTex.getContext();
@@ -171,18 +171,20 @@ export class GameScene extends Phaser.Scene {
     for (const ft of state.floatingTexts) ft.life -= realDt;
     state.floatingTexts = state.floatingTexts.filter(ft => ft.life > 0);
 
-    // Walking dust under survivors
-    for (const u of state.units) {
-      if (u.dead || !u.moving) continue;
-      if (Math.random() < realDt * 14) {
-        const ang = u.facing + Math.PI + rand(-0.5, 0.5);
-        const v = rand(20, 50);
-        state.particles.push({
-          x: u.x + rand(-3, 3), y: u.y + u.r - 1 + rand(-1, 1),
-          vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - rand(10, 30),
-          life: rand(0.25, 0.55), maxLife: 0.55,
-          color: 'rgba(220, 195, 150, 0.6)', size: rand(1.6, 2.6), realtime: true,
-        });
+    // Walking dust under survivors (throttled under particle load)
+    if (state.particles.length < 350) {
+      for (const u of state.units) {
+        if (u.dead || !u.moving) continue;
+        if (Math.random() < realDt * 14) {
+          const ang = u.facing + Math.PI + rand(-0.5, 0.5);
+          const v = rand(20, 50);
+          state.particles.push({
+            x: u.x + rand(-3, 3), y: u.y + u.r - 1 + rand(-1, 1),
+            vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - rand(10, 30),
+            life: rand(0.25, 0.55), maxLife: 0.55,
+            color: 'rgba(220, 195, 150, 0.6)', size: rand(1.6, 2.6), realtime: true,
+          });
+        }
       }
     }
 

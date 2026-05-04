@@ -101,14 +101,18 @@ export function drawShockwaves() {
     ctx.fill();
 
     ctx.globalCompositeOperation = 'source-over';
-    ctx.strokeStyle = `rgba(255, 220, 80, ${alpha * 0.95})`;
-    ctx.lineWidth = 5;
-    ctx.shadowColor = '#ffe060';
-    ctx.shadowBlur = 18;
+    // Outer soft ring (replaces shadowBlur 18)
+    ctx.strokeStyle = `rgba(255, 220, 80, ${alpha * 0.25})`;
+    ctx.lineWidth = 14;
     ctx.beginPath();
     ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.shadowBlur = 0;
+    // Bright ring
+    ctx.strokeStyle = `rgba(255, 220, 80, ${alpha * 0.95})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+    ctx.stroke();
 
     ctx.strokeStyle = `rgba(180, 240, 80, ${alpha * 0.6})`;
     ctx.lineWidth = 2;
@@ -116,7 +120,7 @@ export function drawShockwaves() {
     ctx.arc(sw.x, sw.y, sw.r - 4, 0, Math.PI * 2);
     ctx.stroke();
 
-    if (Math.random() < 0.6) {
+    if (state.particles.length < 350 && Math.random() < 0.6) {
       const a = rand(0, Math.PI * 2);
       state.particles.push({
         x: sw.x + Math.cos(a) * sw.r,
