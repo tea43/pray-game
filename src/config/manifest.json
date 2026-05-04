@@ -1,40 +1,135 @@
 {
   "enemies": {
-    "raider":   "./assets/sprites/enemies/raider.png",
-    "runner":   "./assets/sprites/enemies/runner.png",
-    "ghoul":    "./assets/sprites/enemies/ghoul.png",
-    "mutant":   "./assets/sprites/enemies/mutant.png",
-    "blinker":  "./assets/sprites/enemies/blinker.png",
-    "miniboss": "./assets/sprites/enemies/miniboss.png",
-    "bigboss":  "./assets/sprites/enemies/bigboss.png"
+    "raider": {
+      "src": "./assets/sprites/enemies/raider.png",
+      "frameW": 48, "frameH": 48,
+      "animations": {
+        "walk":   { "row": 0, "frames": 6, "fps": 10 },
+        "attack": { "row": 1, "frames": 4, "fps": 14 },
+        "hurt":   { "row": 2, "frames": 2, "fps": 12 },
+        "death":  { "row": 3, "frames": 5, "fps": 10 }
+      }
+    },
+    "runner": {
+      "src": "./assets/sprites/enemies/runner.png",
+      "frameW": 48, "frameH": 48,
+      "animations": {
+        "walk":   { "row": 0, "frames": 6, "fps": 16 },
+        "attack": { "row": 1, "frames": 4, "fps": 14 },
+        "hurt":   { "row": 2, "frames": 2, "fps": 12 },
+        "death":  { "row": 3, "frames": 5, "fps": 10 }
+      }
+    },
+    "ghoul": {
+      "src": "./assets/sprites/enemies/ghoul.png",
+      "frameW": 48, "frameH": 48,
+      "animations": {
+        "walk":   { "row": 0, "frames": 6, "fps": 10 },
+        "attack": { "row": 1, "frames": 4, "fps": 12 },
+        "hurt":   { "row": 2, "frames": 2, "fps": 12 },
+        "death":  { "row": 3, "frames": 5, "fps": 10 }
+      }
+    },
+    "mutant": {
+      "src": "./assets/sprites/enemies/mutant.png",
+      "frameW": 48, "frameH": 48,
+      "animations": {
+        "walk":   { "row": 0, "frames": 5, "fps": 8 },
+        "attack": { "row": 1, "frames": 4, "fps": 10 },
+        "hurt":   { "row": 2, "frames": 2, "fps": 12 },
+        "death":  { "row": 3, "frames": 6, "fps": 10 }
+      }
+    },
+    "blinker": {
+      "src": "./assets/sprites/enemies/blinker.png",
+      "frameW": 48, "frameH": 48,
+      "animations": {
+        "walk":   { "row": 0, "frames": 4, "fps": 8 },
+        "blink":  { "row": 1, "frames": 3, "fps": 14 },
+        "attack": { "row": 2, "frames": 4, "fps": 14 },
+        "hurt":   { "row": 3, "frames": 2, "fps": 12 },
+        "death":  { "row": 4, "frames": 5, "fps": 10 }
+      }
+    },
+    "miniboss": {
+      "src": "./assets/sprites/enemies/miniboss.png",
+      "frameW": 96, "frameH": 96,
+      "animations": {
+        "walk":   { "row": 0, "frames": 6, "fps": 8 },
+        "attack": { "row": 1, "frames": 5, "fps": 10 },
+        "hurt":   { "row": 2, "frames": 2, "fps": 10 },
+        "death":  { "row": 3, "frames": 7, "fps": 8 }
+      }
+    },
+    "bigboss": {
+      "src": "./assets/sprites/enemies/bigboss.png",
+      "frameW": 96, "frameH": 96,
+      "animations": {
+        "walk":   { "row": 0, "frames": 6, "fps": 7 },
+        "slam":   { "row": 1, "frames": 5, "fps": 10 },
+        "attack": { "row": 2, "frames": 5, "fps": 10 },
+        "hurt":   { "row": 3, "frames": 2, "fps": 10 },
+        "death":  { "row": 4, "frames": 8, "fps": 7 }
+      }
+    }
   },
   "heroes": {
-    "elliot": "./assets/sprites/heroes/elliot.png",
-    "dick":   "./assets/sprites/heroes/dick.png",
-    "habib":  "./assets/sprites/heroes/habib.png"
+    "elliot": {
+      "src": "./assets/sprites/heroes/elliot.png",
+      "frameW": 64, "frameH": 64,
+      "animations": {
+        "idle":   { "row": 0, "frames": 4, "fps": 5 },
+        "walk":   { "row": 1, "frames": 6, "fps": 12 },
+        "attack": { "row": 2, "frames": 4, "fps": 18 },
+        "blink":  { "row": 3, "frames": 3, "fps": 20 },
+        "death":  { "row": 4, "frames": 6, "fps": 8 }
+      }
+    },
+    "dick": {
+      "src": "./assets/sprites/heroes/dick.png",
+      "frameW": 64, "frameH": 64,
+      "animations": {
+        "idle":   { "row": 0, "frames": 4, "fps": 5 },
+        "walk":   { "row": 1, "frames": 6, "fps": 12 },
+        "attack": { "row": 2, "frames": 4, "fps": 16 },
+        "rage":   { "row": 3, "frames": 4, "fps": 18 },
+        "death":  { "row": 4, "frames": 6, "fps": 8 }
+      }
+    },
+    "habib": {
+      "src": "./assets/sprites/heroes/habib.png",
+      "frameW": 64, "frameH": 64,
+      "animations": {
+        "idle":    { "row": 0, "frames": 4, "fps": 5 },
+        "walk":    { "row": 1, "frames": 6, "fps": 12 },
+        "attack":  { "row": 2, "frames": 5, "fps": 16 },
+        "casting": { "row": 3, "frames": 4, "fps": 14 },
+        "death":   { "row": 4, "frames": 6, "fps": 8 }
+      }
+    }
   },
   "loot": {
-    "medkit":        "./assets/sprites/loot/medkit.png",
-    "stimpack":      "./assets/sprites/loot/stimpack.png",
-    "bomb":          "./assets/sprites/loot/bomb.png",
-    "banana_bomb":   "./assets/sprites/loot/banana_bomb.png",
-    "spray_gun":     "./assets/sprites/loot/spray_gun.png",
-    "samurai_sword": "./assets/sprites/loot/samurai_sword.png"
+    "medkit":        { "src": "./assets/sprites/loot/medkit.png",        "frameW": 32, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 2, "fps": 4 } } },
+    "stimpack":      { "src": "./assets/sprites/loot/stimpack.png",      "frameW": 32, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 2, "fps": 4 } } },
+    "bomb":          { "src": "./assets/sprites/loot/bomb.png",          "frameW": 32, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 3, "fps": 6 } } },
+    "banana_bomb":   { "src": "./assets/sprites/loot/banana_bomb.png",   "frameW": 32, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 3, "fps": 6 } } },
+    "spray_gun":     { "src": "./assets/sprites/loot/spray_gun.png",     "frameW": 32, "frameH": 32 },
+    "samurai_sword": { "src": "./assets/sprites/loot/samurai_sword.png", "frameW": 32, "frameH": 32 }
   },
   "world": {
-    "block_house_a": "./assets/sprites/world/block_house_a.png",
-    "block_house_b": "./assets/sprites/world/block_house_b.png",
-    "garage":        "./assets/sprites/world/garage.png",
-    "fence_section": "./assets/sprites/world/fence_section.png",
-    "dumpster":      "./assets/sprites/world/dumpster.png",
-    "car_wreck":     "./assets/sprites/world/car_wreck.png"
+    "block_house_a": { "src": "./assets/sprites/world/block_house_a.png" },
+    "block_house_b": { "src": "./assets/sprites/world/block_house_b.png" },
+    "garage":        { "src": "./assets/sprites/world/garage.png" },
+    "fence_section": { "src": "./assets/sprites/world/fence_section.png" },
+    "dumpster":      { "src": "./assets/sprites/world/dumpster.png" },
+    "car_wreck":     { "src": "./assets/sprites/world/car_wreck.png" }
   },
   "comicPanels": {
-    "intro_raiders":    "./assets/sprites/story/intro_raiders.png",
-    "intro_snakes":     "./assets/sprites/story/intro_snakes.png",
-    "intro_metal_plate":"./assets/sprites/story/intro_metal_plate.png",
-    "flashback_hui":    "./assets/sprites/story/flashback_hui.png",
-    "dick_decision":    "./assets/sprites/story/dick_decision.png",
-    "garage_exterior":  "./assets/sprites/story/garage_exterior.png"
+    "intro_raiders":     { "src": "./assets/sprites/story/intro_raiders.png" },
+    "intro_snakes":      { "src": "./assets/sprites/story/intro_snakes.png" },
+    "intro_metal_plate": { "src": "./assets/sprites/story/intro_metal_plate.png" },
+    "flashback_hui":     { "src": "./assets/sprites/story/flashback_hui.png" },
+    "dick_decision":     { "src": "./assets/sprites/story/dick_decision.png" },
+    "garage_exterior":   { "src": "./assets/sprites/story/garage_exterior.png" }
   }
 }

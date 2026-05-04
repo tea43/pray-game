@@ -47,6 +47,7 @@ export class Enemy {
     this.name = def.name;
 
     this.bigbossMutantTorso = false; // config flag as requested
+    this._anim = { name: 'walk', frame: 0, timer: 0 };
   }
 
   update(dt) {
@@ -202,6 +203,39 @@ export class Enemy {
     this.dmgCd -= dt;
 
     if (this.hp <= 0) this._die();
+
+    this._tickAnim(dt);
+  }
+
+  _animName() {
+    if (this.dead) return 'death';
+    if (this.hurtFlash > 0.6) return 'hurt';
+    if (this.kind === 'blinker' && this.blinkTelegraph > 0) return 'blink';
+    if (this.kind === 'bigboss' && this.slamCharge > 0) return 'slam';
+    if (this.dmgCd > 0.5) return 'attack';
+    return 'walk';
+  }
+
+  _tickAnim(dt) {
+    const sprite = resolveAsset('enemies', this.kind);
+    if (!sprite?.isAnimated) return;
+    const name = this._animName();
+    const anim = sprite.animations[name] || sprite.animations.walk;
+    if (!anim) return;
+    if (this._anim.name !== name) {
+      this._anim.name  = name;
+      this._anim.frame = 0;
+      this._anim.timer = 0;
+    }
+    this._anim.timer += dt;
+    const frameDur = 1 / anim.fps;
+    while (this._anim.timer >= frameDur) {
+      this._anim.timer -= frameDur;
+      const loop = name !== 'death';
+      this._anim.frame = loop
+        ? (this._anim.frame + 1) % anim.frames
+        : Math.min(this._anim.frame + 1, anim.frames - 1);
+    }
   }
 
   _die() {
@@ -358,7 +392,7 @@ export class Enemy {
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.facing);
-      ctx.drawImage(sprite, -this.r, -this.r, this.r * 2, this.r * 2);
+      sprite.draw(ctx, this._anim, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
       ctx.restore();
       this._drawHpBar(ctx);
       return;

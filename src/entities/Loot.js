@@ -9,11 +9,24 @@ export class Loot {
     this.spawnTime = 0;
     this.picked = false;
     this.r = 9;
+    this._anim = { name: 'idle', frame: 0, timer: 0 };
   }
 
   update(dt) {
     this.bob += dt * 2.5;
     this.spawnTime += dt;
+    const sprite = resolveAsset('loot', this.type);
+    if (sprite?.isAnimated) {
+      const anim = sprite.animations.idle;
+      if (anim) {
+        this._anim.timer += dt;
+        const frameDur = 1 / anim.fps;
+        while (this._anim.timer >= frameDur) {
+          this._anim.timer -= frameDur;
+          this._anim.frame = (this._anim.frame + 1) % anim.frames;
+        }
+      }
+    }
   }
 
   draw(ctx) {
@@ -45,7 +58,7 @@ export class Loot {
 
     const sprite = resolveAsset('loot', this.type);
     if (sprite) {
-      ctx.drawImage(sprite, -this.r, -this.r, this.r * 2, this.r * 2);
+      sprite.draw(ctx, this._anim, -this.r, -this.r, this.r * 2, this.r * 2);
       ctx.restore();
       return;
     }

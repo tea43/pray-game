@@ -36,6 +36,7 @@ export class Unit {
     this.throwArm = 0;
     this.activeWeapon = null;
     this.activeWeaponTimer = 0;
+    this._anim = { name: 'idle', frame: 0, timer: 0 };
 
     const def = HERO_DEFS[type] || HERO_DEFS.elliot;
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
@@ -111,6 +112,40 @@ export class Unit {
 
     if (target && dist2(this.x, this.y, target.x, target.y) < this.atkRange && this.atkCd <= 0) {
       this.attack(target);
+    }
+
+    this._tickAnim(dt);
+  }
+
+  _animName() {
+    if (this.dead)        return 'death';
+    if (this.swing > 0.5) return 'attack';
+    if (this.type === 'elliot' && this.blinkFlash > 0.5) return 'blink';
+    if (this.type === 'dick'   && this.rageTimer  > 0)   return 'rage';
+    if (this.type === 'habib'  && this.throwArm   > 0.5) return 'casting';
+    if (this.moving)      return 'walk';
+    return 'idle';
+  }
+
+  _tickAnim(dt) {
+    const sprite = resolveAsset('heroes', this.type);
+    if (!sprite?.isAnimated) return;
+    const name = this._animName();
+    const anim = sprite.animations[name] || sprite.animations.idle;
+    if (!anim) return;
+    if (this._anim.name !== name) {
+      this._anim.name  = name;
+      this._anim.frame = 0;
+      this._anim.timer = 0;
+    }
+    this._anim.timer += dt;
+    const frameDur = 1 / anim.fps;
+    while (this._anim.timer >= frameDur) {
+      this._anim.timer -= frameDur;
+      const loop = name !== 'death';
+      this._anim.frame = loop
+        ? (this._anim.frame + 1) % anim.frames
+        : Math.min(this._anim.frame + 1, anim.frames - 1);
     }
   }
 
@@ -473,7 +508,7 @@ export class Unit {
     if (sprite) {
       ctx.rotate(this.facing);
       if (flashBoost > 0) { ctx.globalAlpha = 0.7 + flashBoost * 0.3; ctx.filter = 'brightness(2)'; }
-      ctx.drawImage(sprite, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
+      sprite.draw(ctx, this._anim, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
       ctx.filter = 'none';
       ctx.globalAlpha = 1;
     } else if (this.type === 'elliot') {

@@ -4,15 +4,49 @@ All visual assets are registered in `src/config/manifest.json`. Every renderer c
 
 ## Manifest structure
 
+Static image (no animation):
 ```json
-{
-  "category": {
-    "key": "./assets/sprites/category/key.png"
+"key": { "src": "./assets/sprites/category/key.png" }
+```
+
+Animated spritesheet (rows = animations, columns = frames):
+```json
+"key": {
+  "src": "./assets/sprites/category/key.png",
+  "frameW": 64, "frameH": 64,
+  "animations": {
+    "idle":   { "row": 0, "frames": 4, "fps": 5 },
+    "walk":   { "row": 1, "frames": 6, "fps": 12 },
+    "attack": { "row": 2, "frames": 4, "fps": 18 },
+    "death":  { "row": 3, "frames": 6, "fps": 8 }
   }
 }
 ```
 
-Loaded at boot via `loadAssets(manifest)` in `src/main.js`. Each image is fetched, decoded, and stored in `ASSET_REGISTRY[category][key]`. Failed loads are silently ignored (fallback renderer activates).
+Loaded at boot via `loadAssets(manifest)` in `src/main.js`. Each entry becomes a `SpriteSheet` instance in `ASSET_REGISTRY[category][key]`. Failed loads are silently ignored — the primitive renderer activates.
+
+## Sprite sizes
+
+| Category | Frame size | Sheet example |
+|---|---|---|
+| Heroes | **64 × 64 px** | 384 × 320 (6 frames × 5 anims) |
+| Regular enemies | **48 × 48 px** | 288 × 192 (6 frames × 4 anims) |
+| Bosses (miniboss, bigboss) | **96 × 96 px** | 576 × 384 (6 frames × 4 anims) |
+| Loot | **32 × 32 px** | 96 × 32 (3 frames, 1 anim) |
+| World objects | any (static) | — |
+| Comic panels | any (static) | — |
+
+## Animation states
+
+**Heroes** — driven by `Unit._animName()`:
+`idle` → `walk` → `attack` / `blink` (Elliot) / `rage` (Dick) / `casting` (Habib) → `death`
+
+**Enemies** — driven by `Enemy._animName()`:
+`walk` → `attack` / `hurt` / `blink` (Blinker) / `slam` (Bigboss) → `death`
+
+**Loot** — single looping `idle` animation ticked in `Loot.update()`.
+
+Death animations play once (hold last frame). All others loop.
 
 ## Categories
 
