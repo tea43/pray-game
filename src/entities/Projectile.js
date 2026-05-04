@@ -8,6 +8,7 @@ export class Projectile {
   constructor(x, y, target, dmg, facing, owner = null, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
+    this.z = 12;
     this.owner = owner;
     this.target = target;
     this.targetX = target.x;
@@ -164,7 +165,7 @@ export class Projectile {
     ctx.stroke();
 
     ctx.save();
-    ctx.translate(this.x, this.y);
+    ctx.translate(this.x, this.y - this.z);
     ctx.rotate(this.rot);
 
     ctx.fillStyle = 'rgba(0,0,0,0.25)';

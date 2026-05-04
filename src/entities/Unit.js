@@ -14,6 +14,8 @@ export class Unit {
   constructor(x, y, type) {
     this.x = x; this.y = y;
     this.tx = x; this.ty = y;
+    this.z = 0;
+    this.vz = 0;
     this.r = 11;
     this.speed = 78;
     this.hp = 100; this.maxHp = 100;
@@ -64,6 +66,15 @@ export class Unit {
 
   update(dt) {
     if (this.dead) return;
+
+    if (this.z > 0 || this.vz !== 0) {
+      this.vz -= 800 * dt;
+      this.z += this.vz * dt;
+      if (this.z <= 0) {
+        this.z = 0;
+        this.vz = 0;
+      }
+    }
 
     this.rageTimer = Math.max(0, this.rageTimer - dt);
     this.abilityCd = Math.max(0, this.abilityCd - dt);
@@ -165,6 +176,7 @@ export class Unit {
 
   _attackMelee(wDef, enemy) {
     if (wDef.dual) this.dualSide = !this.dualSide;
+    if (this.z === 0) this.vz = 120;
     const dmg = this.atkDmg;
     const kb = (wDef.knockback ?? 80) * (this.rageTimer > 0 ? 1.75 : 1);
     playSfx(wDef.sfxAttack || 'weapon.attack.default', { fallback: wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
@@ -302,6 +314,8 @@ export class Unit {
     }
     this.x = nx; this.y = ny;
     this.tx = nx; this.ty = ny;
+    this.z = 0;
+    this.vz = 220;
     this.blinkFlash = 1;
     for (let i = 0; i < 22; i++) {
       state.particles.push({
@@ -408,19 +422,8 @@ export class Unit {
   }
 
   draw(ctx) {
-    const shadowScale = 1 + Math.sin(state.time * 4 + this.x * 0.1) * 0.05;
     ctx.save();
-    ctx.translate(this.x, this.y + this.r - 1);
-    ctx.scale(1, 0.4);
-    const shadowR = this.r * 1.4 * shadowScale;
-    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, shadowR);
-    grd.addColorStop(0, 'rgba(15,10,5,0.7)');
-    grd.addColorStop(1, 'rgba(15,10,5,0)');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(0, 0, shadowR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    ctx.translate(0, -this.z);
 
     if (this.blinkFlash > 0) {
       ctx.strokeStyle = `rgba(128, 200, 255, ${this.blinkFlash})`;
@@ -538,6 +541,7 @@ export class Unit {
       ctx.fillText(`${icon} ${this.weaponTimer.toFixed(0)}s`, this.x, barY - 4);
       ctx.textAlign = 'left';
     }
+    ctx.restore();
   }
 
   _drawElliot(ctx, flashBoost) {
