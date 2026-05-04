@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 import { initAudio, playMusic, setMusicVolume, setSfxVolume, audioState } from '../../systems/audio.js';
 import { state } from '../../state.js';
+import { COLORS as W_COLORS, TC, txt as wTxt, btn as wBtn, slider as wSlider, toggle as wToggle } from '../ui/widgets.js';
 
 // ── Per-screen panel geometry ─────────────────────────────────────────────────
 // Each screen declares where its panel starts and how wide it is.
@@ -12,11 +13,11 @@ const SCREENS = {
     yFrac: 0.18,
   },
   difficulty: {
-    panel: { xFrac: 0.06, maxWidth: 400, wFrac: 0.45 },
+    panel: { xFrac: 0.03, maxWidth: 300, wFrac: 0.45 },
     yFrac: 0.10,
   },
   settings: {
-    panel: { xFrac: 0.06, maxWidth: 380, wFrac: 0.40 },
+    panel: { xFrac: 0.03, maxWidth: 380, wFrac: 0.40 },
     yFrac: 0.10,
   },
 };
@@ -47,47 +48,21 @@ const LAYOUT = {
     rowH:       44,
   },
   videoBg: {
-    coverWidth: 300,          // fixed px width of the solid dark panel
+    coverWidth: 400,          // fixed px width of the solid dark panel
     fadeStep:   20,           // px width of each fade strip
-    panelAlpha: 0.85,
-    fadeAlphas: [0.55, 0.30, 0.12],  // one entry = one fade strip
+    panelAlpha: 0.60,
+    fadeAlphas: [0.45, 0.30, 0.15],  // one entry = one fade strip
   },
 };
 
 // ── Colour palette ────────────────────────────────────────────────────────────
+// Widget colours live in ui/widgets.js; only scene-specific colours here.
 const COLORS = {
-  videoBgPanel:      0x060301,
-
-  btnBg:             0x2a1a0a,
-  btnBgHover:        0x3a2a1a,
-  btnBorder:         0x8a6b3a,
-  btnBorderHover:    0xc5a572,
-
-  sliderTrack:       0x2a1a0a,
-  sliderFill:        0xc5a050,
-  sliderThumb:       0xd9c7a0,
-  sliderThumbBorder: 0x8a6b3a,
-
-  toggleOnBg:        0x1a2a0a,
-  toggleOffBg:       0x1a0a0a,
-  toggleOnBorder:    0x6a9a30,
-  toggleOffBorder:   0x5a1010,
-
-  diffSelectedBg:    0x2a1a0a,
-  diffDefaultBg:     0x140e08,
-  diffDevBg:         0x1a0808,
-};
-
-// ── Text colours ──────────────────────────────────────────────────────────────
-const TC = {
-  primary: '#d9c7a0',
-  gold:    '#c5a050',
-  muted:   '#a89470',
-  dim:     '#7a5a30',
-  dark:    '#5a4020',
-  faint:   '#2a1a0a',
-  green:   '#8bc34a',
-  red:     '#c04040',
+  ...W_COLORS,
+  videoBgPanel:   0x060301,
+  diffSelectedBg: 0x2a1a0a,
+  diffDefaultBg:  0x140e08,
+  diffDevBg:      0x1a0808,
 };
 
 // ── Difficulty content ────────────────────────────────────────────────────────
@@ -291,99 +266,10 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerdown', () => { this._selectedDiff = id; this._showDifficulty(); });
   }
 
-  // ── Primitive widgets ─────────────────────────────────────────────────────
+  // ── Primitive widgets — delegate to shared ui/widgets.js ─────────────────
 
-  _txt(x, y, str, style = {}) {
-    return this.add.text(Math.round(x), Math.round(y), str, {
-      fontFamily: "'Courier New', monospace",
-      fontSize:   '12px',
-      color:      TC.primary,
-      resolution: window.devicePixelRatio,
-      ...style,
-    });
-  }
-
-  _btn(x, y, w, h, label, cb, disabled = false) {
-    const g = this.add.graphics();
-    const redraw = hover => {
-      g.clear();
-      g.fillStyle(hover ? COLORS.btnBgHover : COLORS.btnBg, 1).fillRect(x, y, w, h);
-      g.lineStyle(1, hover ? COLORS.btnBorderHover : COLORS.btnBorder, disabled ? 0.3 : 1).strokeRect(x, y, w, h);
-    };
-    redraw(false);
-
-    this._txt(x + w / 2, y + h / 2, label, { fontSize: '13px', color: TC.primary })
-      .setOrigin(0.5, 0.5)
-      .setAlpha(disabled ? 0.3 : 1);
-
-    if (!disabled && cb) {
-      this.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive()
-        .on('pointerover',  () => redraw(true))
-        .on('pointerout',   () => redraw(false))
-        .on('pointerdown',  () => cb());
-    }
-  }
-
-  _slider(x, y, w, label, getValue, onChange) {
-    const { trackH, thumbR, labelAbove, valueRight } = LAYOUT.slider;
-    const cy = Math.round(y + thumbR);
-    const g  = this.add.graphics();
-    let valTxt;
-
-    const redraw = v => {
-      const fillW = Math.round(w * v);
-      g.clear();
-      g.fillStyle(COLORS.sliderTrack, 1)
-        .fillRect(x, cy - Math.ceil(trackH / 2), w, trackH);
-      if (v > 0) g.fillStyle(COLORS.sliderFill, 1)
-        .fillRect(x, cy - Math.ceil(trackH / 2), fillW, trackH);
-      g.fillStyle(COLORS.sliderThumb, 1).fillCircle(x + fillW, cy, thumbR);
-      g.lineStyle(1, COLORS.sliderThumbBorder, 1).strokeCircle(x + fillW, cy, thumbR);
-      if (valTxt) valTxt.setText(Math.round(v * 100) + '%');
-    };
-
-    this._txt(x, y - labelAbove, label, { fontSize: '9px', color: TC.muted, letterSpacing: 2 });
-    valTxt = this._txt(x + w + valueRight, cy - 6, '', { fontSize: '10px', color: TC.primary });
-    redraw(getValue());
-
-    const apply = ptr => {
-      const v = Math.max(0, Math.min(1, (ptr.x - x) / w));
-      onChange(v);
-      redraw(v);
-    };
-    this.add.zone(x - thumbR, cy - thumbR - 2, w + thumbR * 2, thumbR * 2 + 4)
-      .setOrigin(0, 0).setInteractive()
-      .on('pointerdown', apply)
-      .on('pointermove', ptr => { if (ptr.isDown) apply(ptr); });
-  }
-
-  _toggle(x, y, label, getState, onToggle) {
-    const { width: btnW, height: btnH, btnOffsetX } = LAYOUT.toggle;
-    const g = this.add.graphics();
-
-    const redraw = () => {
-      const on = getState();
-      g.clear();
-      g.fillStyle(on ? COLORS.toggleOnBg : COLORS.toggleOffBg, 1)
-        .fillRect(x + btnOffsetX, y, btnW, btnH);
-      g.lineStyle(1, on ? COLORS.toggleOnBorder : COLORS.toggleOffBorder, 1)
-        .strokeRect(x + btnOffsetX, y, btnW, btnH);
-    };
-
-    this._txt(x, y + Math.round(btnH / 2) - 6, label,
-      { fontSize: '10px', color: TC.muted, letterSpacing: 2 });
-
-    const stateTxt = this._txt(x + btnOffsetX + btnW / 2, y + btnH / 2, '',
-      { fontSize: '10px', color: TC.primary }).setOrigin(0.5, 0.5);
-
-    const refresh = () => {
-      redraw();
-      const on = getState();
-      stateTxt.setText(on ? 'ON' : 'OFF').setColor(on ? TC.green : TC.red);
-    };
-    refresh();
-
-    this.add.zone(x + btnOffsetX, y, btnW, btnH).setOrigin(0, 0).setInteractive()
-      .on('pointerdown', () => { onToggle(!getState()); refresh(); });
-  }
+  _txt(x, y, str, style = {})                           { return wTxt(this, x, y, str, style); }
+  _btn(x, y, w, h, label, cb, disabled = false)         { return wBtn(this, x, y, w, h, label, cb, disabled); }
+  _slider(x, y, w, label, getValue, onChange)           { return wSlider(this, x, y, w, label, getValue, onChange); }
+  _toggle(x, y, label, getState, onToggle)              { return wToggle(this, x, y, label, getState, onToggle); }
 }

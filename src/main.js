@@ -121,7 +121,7 @@ function triggerVictoryScreen() {
 
   const video = document.getElementById('victoryBg');
   if (video) {
-    video.src = '/assets/video/victory/victory.mp4';
+    video.src = './assets/video/victory/victory.mp4';
     video.load();
     video.play().then(() => {
       video.style.display = 'block';

@@ -1,4 +1,4 @@
-const MANIFEST_URL = '/assets/audio/manifest.json';
+const MANIFEST_URL = './assets/audio/manifest.json';
 
 let audioCtx = null;
 let musicVolume = 0.5;

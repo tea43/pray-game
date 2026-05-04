@@ -1,11 +1,11 @@
 {
   "enemies": {
-    "raider": "/assets/sprites/raider.png",
-    "runner": "/assets/sprites/runner.png",
-    "ghoul": "/assets/sprites/ghoul.png",
-    "mutant": "/assets/sprites/mutant.png",
-    "blinker": "/assets/sprites/blinker.png",
-    "miniboss": "/assets/sprites/miniboss.png",
-    "bigboss": "/assets/sprites/bigboss.png"
+    "raider": "./assets/sprites/raider.png",
+    "runner": "./assets/sprites/runner.png",
+    "ghoul": "./assets/sprites/ghoul.png",
+    "mutant": "./assets/sprites/mutant.png",
+    "blinker": "./assets/sprites/blinker.png",
+    "miniboss": "./assets/sprites/miniboss.png",
+    "bigboss": "./assets/sprites/bigboss.png"
   }
 }
