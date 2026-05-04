@@ -1,11 +1,40 @@
 {
   "enemies": {
-    "raider": "./assets/sprites/raider.png",
-    "runner": "./assets/sprites/runner.png",
-    "ghoul": "./assets/sprites/ghoul.png",
-    "mutant": "./assets/sprites/mutant.png",
-    "blinker": "./assets/sprites/blinker.png",
-    "miniboss": "./assets/sprites/miniboss.png",
-    "bigboss": "./assets/sprites/bigboss.png"
+    "raider":   "./assets/sprites/enemies/raider.png",
+    "runner":   "./assets/sprites/enemies/runner.png",
+    "ghoul":    "./assets/sprites/enemies/ghoul.png",
+    "mutant":   "./assets/sprites/enemies/mutant.png",
+    "blinker":  "./assets/sprites/enemies/blinker.png",
+    "miniboss": "./assets/sprites/enemies/miniboss.png",
+    "bigboss":  "./assets/sprites/enemies/bigboss.png"
+  },
+  "heroes": {
+    "elliot": "./assets/sprites/heroes/elliot.png",
+    "dick":   "./assets/sprites/heroes/dick.png",
+    "habib":  "./assets/sprites/heroes/habib.png"
+  },
+  "loot": {
+    "medkit":        "./assets/sprites/loot/medkit.png",
+    "stimpack":      "./assets/sprites/loot/stimpack.png",
+    "bomb":          "./assets/sprites/loot/bomb.png",
+    "banana_bomb":   "./assets/sprites/loot/banana_bomb.png",
+    "spray_gun":     "./assets/sprites/loot/spray_gun.png",
+    "samurai_sword": "./assets/sprites/loot/samurai_sword.png"
+  },
+  "world": {
+    "block_house_a": "./assets/sprites/world/block_house_a.png",
+    "block_house_b": "./assets/sprites/world/block_house_b.png",
+    "garage":        "./assets/sprites/world/garage.png",
+    "fence_section": "./assets/sprites/world/fence_section.png",
+    "dumpster":      "./assets/sprites/world/dumpster.png",
+    "car_wreck":     "./assets/sprites/world/car_wreck.png"
+  },
+  "comicPanels": {
+    "intro_raiders":    "./assets/sprites/story/intro_raiders.png",
+    "intro_snakes":     "./assets/sprites/story/intro_snakes.png",
+    "intro_metal_plate":"./assets/sprites/story/intro_metal_plate.png",
+    "flashback_hui":    "./assets/sprites/story/flashback_hui.png",
+    "dick_decision":    "./assets/sprites/story/dick_decision.png",
+    "garage_exterior":  "./assets/sprites/story/garage_exterior.png"
   }
 }

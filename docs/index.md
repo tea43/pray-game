@@ -8,6 +8,11 @@ This is the navigation hub for agents. Read this first, then open only the file 
 - `implementation_notes.md`: Deeper technical reference for current `wasteland_survivors-v4.html` behavior and code locations.
 - `lore/PRAY_ the game.md`: User-authored lore source for the P-RAY setting, alien worms, heroes, and story tone.
 
+## Art & Sprites
+
+- `sprites.md`: Sprite registry — manifest structure, categories, fallback chain, and how to add new art.
+- `future_world_sprites.md`: Eastern European environment sprites (block houses, garages) — design spec and occlusion system.
+
 ## Planning
 
 - `phaser_port_plan.md`: Phased plan to port the game from vanilla Canvas 2D to Phaser 3, with scene layout, system mapping, and risk log.

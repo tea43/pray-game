@@ -3,6 +3,7 @@ import { rand, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { resolveAsset } from '../config/assets.js';
 import { Projectile } from './Projectile.js';
 import { SprayBullet } from './SprayBullet.js';
 import { playSfx } from '../systems/audio.js';
@@ -468,9 +469,20 @@ export class Unit {
     ctx.save();
     ctx.translate(this.x, this.y + wobble);
 
-    if (this.type === 'elliot')      this._drawElliot(ctx, flashBoost);
-    else if (this.type === 'dick')   this._drawDick(ctx, flashBoost);
-    else if (this.type === 'habib')  this._drawHabib(ctx, flashBoost);
+    const sprite = resolveAsset('heroes', this.type);
+    if (sprite) {
+      ctx.rotate(this.facing);
+      if (flashBoost > 0) { ctx.globalAlpha = 0.7 + flashBoost * 0.3; ctx.filter = 'brightness(2)'; }
+      ctx.drawImage(sprite, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
+      ctx.filter = 'none';
+      ctx.globalAlpha = 1;
+    } else if (this.type === 'elliot') {
+      this._drawElliot(ctx, flashBoost);
+    } else if (this.type === 'dick') {
+      this._drawDick(ctx, flashBoost);
+    } else if (this.type === 'habib') {
+      this._drawHabib(ctx, flashBoost);
+    }
 
     ctx.restore();
 

@@ -1,4 +1,5 @@
 import { rand } from '../utils/math.js';
+import { resolveAsset } from '../config/assets.js';
 
 export class Loot {
   constructor(x, y, type) {
@@ -41,6 +42,13 @@ export class Loot {
     ctx.save();
     ctx.translate(this.x, this.y + yOff);
     ctx.scale(easedPop, easedPop);
+
+    const sprite = resolveAsset('loot', this.type);
+    if (sprite) {
+      ctx.drawImage(sprite, -this.r, -this.r, this.r * 2, this.r * 2);
+      ctx.restore();
+      return;
+    }
 
     if (this.type === 'medkit') {
       ctx.fillStyle = '#e8e0c8';
