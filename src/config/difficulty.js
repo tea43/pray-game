@@ -160,7 +160,18 @@ export const DIFFICULTY_DEFS = {
 
   'dev-mode': {
     label: 'Dev Mode',
-    devWaves: [21],   // start directly at wave 21 — all enemy types + bosses, single wave to clear
+    // Start at wave 21 so all enemy types are in the spawn pool.
+    // devSpawn pre-places one of each type on game start so they are visible immediately.
+    // Bosses are handled separately via the bosses map.
+    // K key (in-game) instantly kills all enemies to skip to extraction.
+    devWaves: [21],
+    devSpawn: [
+      { kind: 'raider',  count: 2 },
+      { kind: 'runner',  count: 2 },
+      { kind: 'ghoul',   count: 2 },
+      { kind: 'mutant',  count: 1 },
+      { kind: 'blinker', count: 1 },
+    ],
 
     hero: {
       hpMult:        2.00,

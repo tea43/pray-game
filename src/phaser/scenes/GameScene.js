@@ -5,7 +5,7 @@ import { Unit } from '../../entities/Unit.js';
 import { WAVE_DEFS } from '../../config/waves.js';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 import { DISPLAY_NAME_DEFS } from '../../config/assets.js';
-import { spawnEnemy, spawnBoss } from '../../systems/spawning.js';
+import { spawnEnemy, spawnBoss, spawnAt } from '../../systems/spawning.js';
 import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2 } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
@@ -53,6 +53,14 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', () => {
       this.scene.launch('PauseScene');
       this.scene.pause('GameScene');
+    });
+
+    // Dev-mode only: K = kill all living enemies (triggers extraction)
+    this.input.keyboard.on('keydown-K', () => {
+      if (state.difficulty !== 'dev-mode') return;
+      for (const e of state.enemies) {
+        if (!e.dead) { e.hp = 0; }
+      }
     });
   }
 
@@ -114,6 +122,17 @@ export class GameScene extends Phaser.Scene {
       const miniCount = bossMap.miniboss?.[state.wave] ?? 0;
       for (let i = 0; i < bigCount;  i++) spawnBoss('bigboss');
       for (let i = 0; i < miniCount; i++) spawnBoss('miniboss');
+
+      // Pre-spawn all regular enemy types so they are visible immediately
+      if (diff.devSpawn?.length > 0) {
+        const slots = _devSpawnSlots(G.W, G.PLAY_BOTTOM, diff.devSpawn);
+        diff.devSpawn.forEach(({ kind, count }) => {
+          for (let i = 0; i < count; i++) {
+            const pos = slots.shift() ?? { x: rand(80, G.W - 80), y: rand(80, G.PLAY_BOTTOM - 80) };
+            spawnAt(pos.x, pos.y, kind);
+          }
+        });
+      }
     }
 
     this.scene.launch('HUDScene');
@@ -463,6 +482,7 @@ export class GameScene extends Phaser.Scene {
     this._drawWaveAnnouncements(ctx);
     this._drawExtractionBanner(ctx);
     drawAbilityPanel();
+    if (state.difficulty === 'dev-mode') this._drawDevOverlay(ctx);
 
     // Upload canvas pixels to GPU texture
     this._canvasTex.refresh();
@@ -611,6 +631,45 @@ export class GameScene extends Phaser.Scene {
     ctx.shadowBlur = 0; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
 
+  // ── Dev overlay ──────────────────────────────────────────────────────────────
+
+  _drawDevOverlay(ctx) {
+    const living = state.enemies.filter(e => !e.dead);
+    if (!living.length) return;
+
+    ctx.save();
+    ctx.font = 'bold 9px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    for (const e of living) {
+      const labelY = e.y - e.r - 4;
+
+      // HP bar background
+      const barW = 36, barH = 4;
+      const hpFrac = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(e.x - barW / 2, labelY - barH - 1, barW, barH);
+      ctx.fillStyle = hpFrac > 0.5 ? '#60d840' : hpFrac > 0.25 ? '#d8a020' : '#d83020';
+      ctx.fillRect(e.x - barW / 2, labelY - barH - 1, Math.round(barW * hpFrac), barH);
+
+      // Type name badge
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(e.x - 22, labelY - barH - 14, 44, 11);
+      ctx.fillStyle = '#e0d090';
+      ctx.fillText(e.kind.toUpperCase(), e.x, labelY - barH - 4);
+    }
+
+    // Corner hint
+    ctx.font = '10px "Courier New", monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(255,220,80,0.7)';
+    ctx.fillText('DEV  ·  K = kill all', 8, 8);
+
+    ctx.restore();
+  }
+
   // ── End conditions ───────────────────────────────────────────────────────────
 
   _checkEndConditions() {
@@ -629,4 +688,31 @@ export class GameScene extends Phaser.Scene {
       });
     }
   }
+}
+
+// Generates evenly-distributed spawn positions for dev-mode pre-spawning.
+// Fills a grid across the play area, avoiding the centre cluster where units start.
+function _devSpawnSlots(W, playBottom, devSpawn) {
+  const total = devSpawn.reduce((s, e) => s + e.count, 0);
+  const cols  = Math.ceil(Math.sqrt(total * (W / playBottom)));
+  const rows  = Math.ceil(total / cols);
+  const padX  = W * 0.12, padY = playBottom * 0.14;
+  const stepX = (W - padX * 2) / Math.max(cols - 1, 1);
+  const stepY = (playBottom - padY * 2) / Math.max(rows - 1, 1);
+  const slots = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (slots.length >= total) break;
+      slots.push({
+        x: padX + c * stepX + rand(-18, 18),
+        y: padY + r * stepY + rand(-12, 12),
+      });
+    }
+  }
+  // Shuffle so enemy types are distributed rather than clustered by row
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [slots[i], slots[j]] = [slots[j], slots[i]];
+  }
+  return slots;
 }

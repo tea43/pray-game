@@ -26,6 +26,10 @@ export function spawnEnemy() {
   state.enemies.push(new Enemy(x, y, kind));
 }
 
+export function spawnAt(x, y, kind) {
+  state.enemies.push(new Enemy(x, y, kind));
+}
+
 export function spawnBoss(kind) {
   const edge = randInt(0, 3);
   let x, y;
