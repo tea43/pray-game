@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
-import { initAudio, playMusic, setMusicVolume, setSfxVolume, audioState } from '../../systems/audio.js';
+import { playMusic, setMusicVolume, setSfxVolume, audioState } from '../../systems/audio.js';
 import { state } from '../../state.js';
 import { COLORS as W_COLORS, TC, txt as wTxt, btn as wBtn, slider as wSlider, toggle as wToggle } from '../ui/widgets.js';
 
@@ -143,7 +143,6 @@ export class MenuScene extends Phaser.Scene {
   _showTitle() {
     this._screen = 'title';
     this._clearScreen();
-    initAudio();
     playMusic('menu');
 
     const { x: panelX, w: panelW, y: panelY } = this._panelDims();

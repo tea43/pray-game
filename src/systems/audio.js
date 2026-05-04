@@ -91,6 +91,8 @@ export function initAudio() {
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContext();
+    // Some browsers suspend the context even with a user gesture; resume immediately.
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     manifestLoadPromise = loadAudioManifest();
     initialized = true;
   } catch (e) {
