@@ -118,7 +118,7 @@ Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bom
 
 ## Enemies
 
-All enemies are rendered as segmented worms/crawlers using canvas primitives. Each type has a distinct silhouette and color scheme; no sprites yet.
+All enemies are rendered as segmented worms/crawlers using 2.5D shaded canvas primitives. Each type has a distinct silhouette and color scheme; no sprites yet.
 
 | Display Name | ID | HP | Damage | Speed | Visual |
 |---|---|---:|---:|---:|---|
@@ -167,6 +167,7 @@ Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves
 - Bottom HUD panel reserves 74 px plus padding.
 - Terrain is procedural decoration: debris, cracks, dust, soil variation, blood stains, vignette, and warm tint.
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
+- **Pseudo-3D / 2.5D System**: Entities feature a `z` (height) axis and pseudo-gravity. They draw a decoupled ground shadow at `y`, and their main sprite is drawn at `y - z` to give them verticality. Worms use radial gradients to give segments a tubular, 3D appearance.
 - Asset injection is planned but not implemented yet. See `asset_injection_plan.md`.
 
 ## Audio

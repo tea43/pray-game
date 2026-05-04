@@ -13,6 +13,7 @@ export class Enemy {
   constructor(x, y, kind) {
     this.x = x; this.y = y;
     this.kind = kind;
+    this.z = 0; this.vz = 0;
     this.knockX = 0; this.knockY = 0;
     this.dmgCd = 0;
     this.facing = 0;
@@ -55,6 +56,15 @@ export class Enemy {
 
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 5);
     this.stunTimer = Math.max(0, this.stunTimer - dt);
+
+    if (this.z > 0 || this.vz !== 0) {
+      this.vz -= 800 * dt;
+      this.z += this.vz * dt;
+      if (this.z <= 0) {
+        this.z = 0;
+        this.vz = 0;
+      }
+    }
 
     if (Math.abs(this.knockX) > 1 || Math.abs(this.knockY) > 1) {
       this.x += this.knockX * dt * this.kbResist;
@@ -398,21 +408,6 @@ export class Enemy {
       return;
     }
 
-    // Primitive fallback: Segmented Worm
-    const shadowScale = 1 + Math.sin(state.time * 3 + this.x * 0.1) * 0.05;
-    ctx.save();
-    ctx.translate(this.x, this.y + this.r - 1);
-    ctx.scale(1, 0.4);
-    const shadowR = this.r * 1.4 * shadowScale;
-    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, shadowR);
-    grd.addColorStop(0, 'rgba(15,10,5,0.7)');
-    grd.addColorStop(1, 'rgba(15,10,5,0)');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(0, 0, shadowR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
     if (this.kind === 'blinker' && this.blinkTelegraph > 0) {
       const t = this.blinkTelegraph / 0.7;
       ctx.strokeStyle = `rgba(200, 140, 255, ${0.4 + t * 0.5})`;
@@ -465,7 +460,7 @@ export class Enemy {
     if (this.kind === 'blinker') ctx.globalAlpha = 0.78 + this.blinkAfterglow * 0.22;
 
     ctx.save();
-    ctx.translate(this.x, this.y);
+    ctx.translate(this.x, this.y - this.z);
     ctx.rotate(this.facing);
     this._drawWorm(ctx);
 
@@ -527,12 +522,24 @@ export class Enemy {
     for (let i = n - 1; i >= 0; i--) {
       const wobY = this.stunTimer > 0 ? 0 : Math.sin(this.walkCycle - i * 0.8) * wAmp;
       const sr = this.r * Math.pow(0.84, i);
-      ctx.fillStyle = hurt ? (i === 0 ? '#d97060' : '#b05040') : colors[Math.min(i, colors.length - 1)];
+      const cx = -gap * i;
+      const baseColor = hurt ? (i === 0 ? '#d97060' : '#b05040') : colors[Math.min(i, colors.length - 1)];
+      
       ctx.beginPath();
-      ctx.arc(-gap * i, wobY, sr, 0, Math.PI * 2);
+      ctx.arc(cx, wobY, sr, 0, Math.PI * 2);
+      ctx.fillStyle = baseColor;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-      ctx.lineWidth = 0.7;
+
+      // 2.5D shading overlay
+      const shadeGrd = ctx.createRadialGradient(cx - sr * 0.3, wobY - sr * 0.3, sr * 0.1, cx, wobY, sr);
+      shadeGrd.addColorStop(0, 'rgba(255,255,255,0.35)');
+      shadeGrd.addColorStop(0.5, 'rgba(0,0,0,0)');
+      shadeGrd.addColorStop(1, 'rgba(0,0,0,0.4)');
+      ctx.fillStyle = shadeGrd;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 0.8;
       ctx.stroke();
     }
   }

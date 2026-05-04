@@ -434,6 +434,7 @@ export class GameScene extends Phaser.Scene {
 
     drawBackground();
     this._drawMoveMarkers(ctx);
+    this._drawShadows(ctx);
 
     // Sort entities by Y (depth order)
     const drawables = [
@@ -499,6 +500,55 @@ export class GameScene extends Phaser.Scene {
 
     // Upload canvas pixels to GPU texture
     this._canvasTex.refresh();
+  }
+
+  _drawShadows(ctx) {
+    const shadowEntities = [
+      ...state.units.filter(u => !u.dead && !u.boarded),
+      ...state.enemies.filter(e => !e.dead),
+      ...state.loot.filter(l => !l.picked),
+      ...state.projectiles.filter(p => !p.dead)
+    ];
+
+    for (const ent of shadowEntities) {
+      const isLoot = ent.spawnTime !== undefined;
+      const isProj = ent.speed !== undefined && ent.maxRange !== undefined;
+      
+      let baseR = ent.r;
+      let shadowY = ent.y;
+      
+      if (!isLoot && !isProj) {
+        shadowY = ent.y + ent.r - 1;
+        baseR = ent.r * 1.4;
+      } else if (isLoot) {
+        shadowY = ent.y + 7;
+        baseR = 7;
+        const popIn = Math.min(1, ent.spawnTime * 5);
+        baseR *= (1 - Math.pow(1 - popIn, 3));
+      }
+      
+      const z = ent.z || 0;
+      const shadowZScale = Math.max(0.3, 1 - z / 80);
+      const shadowScale = (isLoot || isProj) ? 1 : 1 + Math.sin(state.time * 4 + ent.x * 0.1) * 0.05;
+
+      ctx.save();
+      ctx.translate(ent.x, shadowY);
+      ctx.scale(1, 0.4 * shadowZScale);
+      
+      const finalR = baseR * shadowScale;
+      if (finalR > 0) {
+        const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, finalR);
+        const alpha = isLoot ? 0.42 * shadowZScale : 0.7 * shadowZScale;
+        grd.addColorStop(0, `rgba(15,10,5,${alpha})`);
+        grd.addColorStop(1, 'rgba(15,10,5,0)');
+        
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(0, 0, finalR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   _drawMoveMarkers(ctx) {

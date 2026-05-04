@@ -8,11 +8,22 @@ export class Loot {
     this.bob = rand(0, Math.PI * 2);
     this.spawnTime = 0;
     this.picked = false;
+    this.z = 0;
+    this.vz = 160;
     this.r = 9;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
   }
 
   update(dt) {
+    if (this.z > 0 || this.vz !== 0) {
+      this.vz -= 800 * dt;
+      this.z += this.vz * dt;
+      if (this.z < 0) {
+        this.z = 0;
+        this.vz = -this.vz * 0.4;
+        if (Math.abs(this.vz) < 30) this.vz = 0;
+      }
+    }
     this.bob += dt * 2.5;
     this.spawnTime += dt;
     const sprite = resolveAsset('loot', this.type);
@@ -31,14 +42,9 @@ export class Loot {
 
   draw(ctx) {
     if (this.picked) return;
-    const yOff = Math.sin(this.bob) * 1.6;
+    const yOff = Math.sin(this.bob) * 1.6 - this.z;
     const popIn = Math.min(1, this.spawnTime * 5);
     const easedPop = 1 - Math.pow(1 - popIn, 3);
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
-    ctx.beginPath();
-    ctx.ellipse(this.x, this.y + 7, 7 * easedPop, 2.4 * easedPop, 0, 0, Math.PI * 2);
-    ctx.fill();
 
     const glowColor = this.type === 'medkit'       ? 'rgba(255, 90, 80, 0.22)'
                     : this.type === 'stimpack'      ? 'rgba(80, 240, 130, 0.22)'
