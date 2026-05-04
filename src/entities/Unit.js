@@ -2,6 +2,7 @@ import { G } from '../globals.js';
 import { rand, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
 import { HERO_DEFS } from '../config/heroes.js';
+import { WEAPON_DEFS } from '../config/weapons.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { resolveAsset } from '../config/assets.js';
 import { Projectile } from './Projectile.js';
@@ -16,9 +17,6 @@ export class Unit {
     this.r = 11;
     this.speed = 78;
     this.hp = 100; this.maxHp = 100;
-    this.atkRange = 36;
-    this.baseAtkDmg = 32;
-    this.baseAtkRate = 0.55;
     this.atkCd = 0;
     this.selected = false;
     this.swing = 0;
@@ -34,8 +32,9 @@ export class Unit {
     this.blinkFlash = 0;
     this.dualSide = false;
     this.throwArm = 0;
-    this.activeWeapon = null;
-    this.activeWeaponTimer = 0;
+    this.currentWeapon = null;    // set below from hero def
+    this.previousWeapon = null;   // starting weapon to restore when timed pickup expires
+    this.weaponTimer = 0;         // seconds remaining on a timed loot weapon
     this._anim = { name: 'idle', frame: 0, timer: 0 };
 
     const def = HERO_DEFS[type] || HERO_DEFS.elliot;
@@ -45,37 +44,35 @@ export class Unit {
     this.abilityName = def.abilityName;
     this.abilityMaxCd = def.abilityMaxCd * diff.hero.abilityCdMult;
     this.abilityColor = def.abilityColor;
-    this.weaponType = def.weaponType;
+    this.currentWeapon = def.startingWeapon || 'long_club';
     this.maxHp = Math.round(def.maxHp * diff.hero.hpMult);
     this.hp = this.maxHp;
-    this.atkRange = def.atkRange;
-    this.baseAtkDmg = def.baseAtkDmg;
-    this.baseAtkRate = def.baseAtkRate;
     this.palette = { ...def.palette };
   }
 
-  get atkDmg() {
-    let dmg = this.rageTimer > 0 ? this.baseAtkDmg * 2 : this.baseAtkDmg;
-    if (this.activeWeapon === 'samurai_sword') dmg *= 2.2;
-    return dmg;
+  get _wDef() { return WEAPON_DEFS[this.currentWeapon] ?? {}; }
+  get atkDmg()  {
+    const base = this._wDef.atkDmg ?? 24;
+    return this.rageTimer > 0 ? base * 2 : base;
   }
-  get atkRate() {
-    let rate = this.rageTimer > 0 ? this.baseAtkRate * 0.4 : this.baseAtkRate;
-    if (this.activeWeapon === 'spray_gun') rate *= 0.25;
-    return rate;
+  get atkRate()  {
+    const base = this._wDef.atkRate ?? 0.5;
+    return this.rageTimer > 0 ? base * 0.4 : base;
   }
-  get moving() { return dist2(this.x, this.y, this.tx, this.ty) > 2.5; }
+  get atkRange() { return this._wDef.atkRange ?? 50; }
+  get moving()   { return dist2(this.x, this.y, this.tx, this.ty) > 2.5; }
 
   update(dt) {
     if (this.dead) return;
 
     this.rageTimer = Math.max(0, this.rageTimer - dt);
     this.abilityCd = Math.max(0, this.abilityCd - dt);
-    if (this.activeWeaponTimer > 0) {
-      this.activeWeaponTimer -= dt;
-      if (this.activeWeaponTimer <= 0) {
-        this.activeWeapon = null;
-        this.activeWeaponTimer = 0;
+    if (this.weaponTimer > 0) {
+      this.weaponTimer -= dt;
+      if (this.weaponTimer <= 0) {
+        this.currentWeapon = this.previousWeapon || this.currentWeapon;
+        this.previousWeapon = null;
+        this.weaponTimer = 0;
       }
     }
 
@@ -122,7 +119,7 @@ export class Unit {
     if (this.swing > 0.5) return 'attack';
     if (this.type === 'elliot' && this.blinkFlash > 0.5) return 'blink';
     if (this.type === 'dick'   && this.rageTimer  > 0)   return 'rage';
-    if (this.type === 'habib'  && this.throwArm   > 0.5) return 'casting';
+    if (this.throwArm > 0.5) return 'casting';
     if (this.moving)      return 'walk';
     return 'idle';
   }
@@ -150,128 +147,98 @@ export class Unit {
   }
 
   attack(enemy) {
+    const wDef = this._wDef;
     this.atkCd = this.atkRate;
     this.facing = Math.atan2(enemy.y - this.y, enemy.x - this.x);
     this.swing = 1;
 
-    if (this.activeWeapon === 'spray_gun') {
-      playSfx('weapon.throw.default', { synthetic: 'shoot' });
-      this.throwArm = 1;
-      const spread = 0.35;
-      const bulletCount = 5;
-      for (let i = 0; i < bulletCount; i++) {
-        const angleOffset = (i / (bulletCount - 1) - 0.5) * spread * 2;
-        const bulletAng = this.facing + angleOffset;
-        const sx = this.x + Math.cos(bulletAng) * (this.r + 6);
-        const sy = this.y + Math.sin(bulletAng) * (this.r + 6);
-        state.projectiles.push(new SprayBullet(sx, sy, bulletAng, this.atkDmg * 0.5));
-      }
-      if (!state.settings.noShake) state.shake = Math.max(state.shake, 2.5);
-      return;
+    if (wDef.type === 'ranged') {
+      this._attackRanged(wDef, enemy);
+    } else if (wDef.type === 'thrown') {
+      this._attackThrown(wDef, enemy);
+    } else if (wDef.cleave) {
+      this._attackCleave(wDef);
+    } else {
+      this._attackMelee(wDef, enemy);
     }
+  }
 
-    if (this.activeWeapon === 'samurai_sword') {
-      playSfx('weapon.samurai.attack', { synthetic: 'hit' });
-      const cleaveRange = 80;
-      const halfArc = Math.PI * (60 / 180);
-      let hit = 0;
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        const d = dist2(this.x, this.y, e.x, e.y);
-        if (d > cleaveRange + e.r) continue;
-        const angToE = Math.atan2(e.y - this.y, e.x - this.x);
-        let diff = angToE - this.facing;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        if (Math.abs(diff) > halfArc) continue;
-        const dmg = this.atkDmg;
-        e.hp -= dmg;
-        e.knockX += Math.cos(this.facing) * 120;
-        e.knockY += Math.sin(this.facing) * 120;
-        e.hurtFlash = 1;
-        state.bloodStains.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), r: e.r * rand(0.6, 1.0), rot: rand(0, Math.PI), a: rand(0.3, 0.6) });
-        for (let i = 0; i < 6; i++) {
-          state.particles.push({
-            x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
-            vx: rand(-80, 80), vy: rand(-100, -10),
-            life: rand(0.3, 0.6), maxLife: 0.6,
-            color: '#e8d080', size: rand(1.2, 2.5), realtime: true,
-          });
-        }
-        // Additive sword glints.
-        for (let i = 0; i < 5; i++) {
-          state.particles.push({
-            x: e.x + rand(-4, 4), y: e.y + rand(-4, 4),
-            vx: rand(-50, 50), vy: rand(-80, -10),
-            life: rand(0.2, 0.5), maxLife: 0.5,
-            color: 'rgba(255, 240, 180, 1)', size: rand(1.5, 3), realtime: true, additive: true,
-          });
-        }
-        pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
-        hit++;
-      }
-      if (hit > 0) playSfx('alien.hit.default', { synthetic: 'hit' });
-      // Big arc slash — drawn as a brief expanding additive ring at the swing center.
-      state.particles.push({
-        x: this.x + Math.cos(this.facing) * 24,
-        y: this.y + Math.sin(this.facing) * 24,
-        vx: 0, vy: 0,
-        life: 0.18, maxLife: 0.18,
-        color: 'rgba(255, 245, 200, 1)', size: 16, realtime: true, additive: true,
-      });
-      if (!state.settings.noShake) state.shake = Math.max(state.shake, hit > 1 ? 7 : 3.5);
-      if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
-      return;
-    }
-
-    if (this.weaponType === 'thrownClub') {
-      this.throwArm = 1;
-      const dmg = this.atkDmg;
-      const sx = this.x + Math.cos(this.facing) * (this.r + 6);
-      const sy = this.y + Math.sin(this.facing) * (this.r + 6);
-      state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing, this));
-      if (!state.settings.noShake) state.shake = Math.max(state.shake, 1.5);
-      return;
-    }
-
-    if (this.weaponType === 'dualClubs') {
-      this.dualSide = !this.dualSide;
-    }
-
+  _attackMelee(wDef, enemy) {
+    if (wDef.dual) this.dualSide = !this.dualSide;
     const dmg = this.atkDmg;
-    const attackSfx = this.weaponType === 'dualClubs' ? 'weapon.dualClubs.attack' : 'weapon.longClub.attack';
-    playSfx(attackSfx, { fallback: 'weapon.attack.default', synthetic: 'hit' });
+    const kb = (wDef.knockback ?? 80) * (this.rageTimer > 0 ? 1.75 : 1);
+    playSfx(wDef.sfxAttack || 'weapon.attack.default', { fallback: wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
     playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
-    const kb = this.rageTimer > 0 ? 140 : 80;
     enemy.knockX += Math.cos(this.facing) * kb;
     enemy.knockY += Math.sin(this.facing) * kb;
     enemy.hurtFlash = 1;
     state.bloodStains.push({ x: enemy.x + rand(-6, 6), y: enemy.y + rand(-6, 6), r: enemy.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
     const hitCount = this.rageTimer > 0 ? 14 : 10;
     for (let i = 0; i < hitCount; i++) {
-      state.particles.push({
-        x: enemy.x + rand(-3, 3), y: enemy.y + rand(-3, 3),
-        vx: rand(-90, 90), vy: rand(-110, -10),
-        life: rand(0.3, 0.7), maxLife: 0.7,
-        color: enemy.bloodColor, size: rand(1.2, 2.8), realtime: true,
-      });
+      state.particles.push({ x: enemy.x + rand(-3, 3), y: enemy.y + rand(-3, 3), vx: rand(-90, 90), vy: rand(-110, -10), life: rand(0.3, 0.7), maxLife: 0.7, color: enemy.bloodColor, size: rand(1.2, 2.8), realtime: true });
     }
-    // Hit spark — additive flash at the impact point.
     const sparkX = enemy.x - Math.cos(this.facing) * (enemy.r * 0.5);
     const sparkY = enemy.y - Math.sin(this.facing) * (enemy.r * 0.5);
-    state.particles.push({
-      x: sparkX, y: sparkY, vx: 0, vy: 0,
-      life: 0.16, maxLife: 0.16,
-      color: this.rageTimer > 0 ? 'rgba(255, 160, 80, 1)' : 'rgba(255, 220, 160, 1)',
-      size: this.rageTimer > 0 ? 9 : 6, realtime: true, additive: true,
-    });
-    pushDamageNumber(enemy.x, enemy.y - enemy.r - 4, dmg, {
-      crit: this.rageTimer > 0,
-      rgb: this.rageTimer > 0 ? [255, 120, 80] : [255, 230, 200],
-    });
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, this.rageTimer > 0 ? 5 : 3);
-    if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
+    state.particles.push({ x: sparkX, y: sparkY, vx: 0, vy: 0, life: 0.16, maxLife: 0.16, color: this.rageTimer > 0 ? 'rgba(255,160,80,1)' : 'rgba(255,220,160,1)', size: this.rageTimer > 0 ? 9 : 6, realtime: true, additive: true });
+    pushDamageNumber(enemy.x, enemy.y - enemy.r - 4, dmg, { crit: this.rageTimer > 0, rgb: this.rageTimer > 0 ? [255, 120, 80] : [255, 230, 200] });
+    if (!state.settings.noShake) state.shake    = Math.max(state.shake,    this.rageTimer > 0 ? 5    : 3);
+    if (!state.settings.noShake) state.hitStop  = Math.max(state.hitStop,  this.rageTimer > 0 ? 0.04 : 0.018);
+  }
+
+  _attackCleave(wDef) {
+    playSfx(wDef.sfxAttack || 'weapon.samurai.attack', { synthetic: 'hit' });
+    const halfArc = Math.PI * ((wDef.cleaveArc ?? 60) / 180);
+    const kb = wDef.knockback ?? 120;
+    let hit = 0;
+    for (const e of state.enemies) {
+      if (e.dead) continue;
+      if (dist2(this.x, this.y, e.x, e.y) > this.atkRange + e.r) continue;
+      let da = Math.atan2(e.y - this.y, e.x - this.x) - this.facing;
+      while (da >  Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      if (Math.abs(da) > halfArc) continue;
+      const dmg = this.atkDmg;
+      e.hp -= dmg;
+      e.knockX += Math.cos(this.facing) * kb;
+      e.knockY += Math.sin(this.facing) * kb;
+      e.hurtFlash = 1;
+      state.bloodStains.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), r: e.r * rand(0.6, 1.0), rot: rand(0, Math.PI), a: rand(0.3, 0.6) });
+      for (let i = 0; i < 6; i++) {
+        state.particles.push({ x: e.x + rand(-3, 3), y: e.y + rand(-3, 3), vx: rand(-80, 80), vy: rand(-100, -10), life: rand(0.3, 0.6), maxLife: 0.6, color: '#e8d080', size: rand(1.2, 2.5), realtime: true });
+        state.particles.push({ x: e.x + rand(-4, 4), y: e.y + rand(-4, 4), vx: rand(-50, 50), vy: rand(-80, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: 'rgba(255,240,180,1)', size: rand(1.5, 3), realtime: true, additive: true });
+      }
+      pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
+      hit++;
+    }
+    if (hit > 0) playSfx('alien.hit.default', { synthetic: 'hit' });
+    state.particles.push({ x: this.x + Math.cos(this.facing) * 24, y: this.y + Math.sin(this.facing) * 24, vx: 0, vy: 0, life: 0.18, maxLife: 0.18, color: 'rgba(255,245,200,1)', size: 16, realtime: true, additive: true });
+    if (!state.settings.noShake) state.shake   = Math.max(state.shake,   hit > 1 ? 7    : 3.5);
+    if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
+  }
+
+  _attackThrown(wDef, enemy) {
+    this.throwArm = 1;
+    const sx = this.x + Math.cos(this.facing) * (this.r + 6);
+    const sy = this.y + Math.sin(this.facing) * (this.r + 6);
+    state.projectiles.push(new Projectile(sx, sy, enemy, this.atkDmg, this.facing, this, wDef));
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, 1.5);
+  }
+
+  _attackRanged(wDef, enemy) {
+    this.throwArm = 1;
+    playSfx(wDef.sfxFire || 'weapon.throw.default', { synthetic: wDef.sfxFallback || 'shoot' });
+    const count  = wDef.bulletCount ?? 1;
+    const spread = wDef.spread ?? 0;
+    const dmgPer = count > 1 ? this.atkDmg * 0.5 : this.atkDmg;
+    for (let i = 0; i < count; i++) {
+      const offset = count > 1 ? (i / (count - 1) - 0.5) * spread * 2 : 0;
+      const ang = this.facing + offset;
+      const sx = this.x + Math.cos(ang) * (this.r + 6);
+      const sy = this.y + Math.sin(ang) * (this.r + 6);
+      state.projectiles.push(new SprayBullet(sx, sy, ang, dmgPer, wDef));
+    }
+    if (!state.settings.noShake) state.shake = Math.max(state.shake, count > 1 ? 2.5 : 1.2);
   }
 
   moveTo(x, y) {
@@ -535,7 +502,7 @@ export class Unit {
 
     this._drawWeapon(ctx);
 
-    if (this.swing > 0.3 && this.weaponType !== 'thrownClub') {
+    if (this.swing > 0.3 && this._wDef.type !== 'thrown') {
       const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.2 - 1.1 : 0;
       const clubBase = this.facing - 0.4 + swingArc;
       const a = (this.swing - 0.3) * 0.8;
@@ -555,20 +522,20 @@ export class Unit {
     ctx.fillStyle = hpPct > 0.5 ? '#7aa853' : hpPct > 0.25 ? '#c5a247' : '#a83a2a';
     ctx.fillRect(barX, barY, barW * hpPct, barH);
 
-    if (this.activeWeapon) {
+    if (this.weaponTimer > 0) {
+      const wDef = this._wDef;
       const pulse = 0.6 + Math.sin(state.time * 8) * 0.4;
-      ctx.strokeStyle = this.activeWeapon === 'spray_gun'
-        ? `rgba(255, 154, 48, ${pulse})`
-        : `rgba(232, 224, 96, ${pulse})`;
+      const isRanged = wDef.type === 'ranged';
+      ctx.strokeStyle = isRanged ? `rgba(255,154,48,${pulse})` : `rgba(232,224,96,${pulse})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.r + 7, 0, Math.PI * 2);
       ctx.stroke();
       ctx.font = 'bold 8px "Courier New", monospace';
       ctx.textAlign = 'center';
-      ctx.fillStyle = this.activeWeapon === 'spray_gun' ? '#ff9a30' : '#e8e060';
-      const label = this.activeWeapon === 'spray_gun' ? '🔫' : '⚔';
-      ctx.fillText(`${label} ${this.activeWeaponTimer.toFixed(0)}s`, this.x, barY - 4);
+      ctx.fillStyle = isRanged ? '#ff9a30' : '#e8e060';
+      const icon = isRanged ? '🔫' : '⚔';
+      ctx.fillText(`${icon} ${this.weaponTimer.toFixed(0)}s`, this.x, barY - 4);
       ctx.textAlign = 'left';
     }
   }
@@ -846,9 +813,12 @@ export class Unit {
   }
 
   _drawWeapon(ctx) {
-    if (this.weaponType === 'longClub')        this._drawLongClub(ctx);
-    else if (this.weaponType === 'dualClubs')  this._drawDualClubs(ctx);
-    else if (this.weaponType === 'thrownClub') this._drawHeldClubs(ctx);
+    const wDef = this._wDef;
+    if (wDef.dual)                        this._drawDualClubs(ctx);
+    else if (wDef.type === 'thrown')      this._drawHeldClubs(ctx);
+    else if (wDef.type === 'melee')       this._drawLongClub(ctx);
+    // ranged weapons: primitive club stand-in until weapon sprites land
+    else if (wDef.type === 'ranged')      this._drawHeldClubs(ctx);
   }
 
   _drawSingleClub(ctx, baseAng, len, scale) {

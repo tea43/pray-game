@@ -116,6 +116,17 @@
     "spray_gun":     { "src": "./assets/sprites/loot/spray_gun.png",     "frameW": 32, "frameH": 32 },
     "samurai_sword": { "src": "./assets/sprites/loot/samurai_sword.png", "frameW": 32, "frameH": 32 }
   },
+  "weapons": {
+    "long_club":      { "src": "./assets/sprites/weapons/long_club.png",      "frameW": 48, "frameH": 48, "animations": { "idle": { "row": 0, "frames": 1, "fps": 1 }, "swing": { "row": 1, "frames": 4, "fps": 18 } } },
+    "dual_clubs":     { "src": "./assets/sprites/weapons/dual_clubs.png",     "frameW": 48, "frameH": 48, "animations": { "idle": { "row": 0, "frames": 1, "fps": 1 }, "swing": { "row": 1, "frames": 4, "fps": 18 } } },
+    "samurai_sword":  { "src": "./assets/sprites/weapons/samurai_sword.png",  "frameW": 48, "frameH": 48, "animations": { "idle": { "row": 0, "frames": 1, "fps": 1 }, "swing": { "row": 1, "frames": 5, "fps": 22 } } },
+    "thrown_club":    { "src": "./assets/sprites/weapons/thrown_club.png",    "frameW": 32, "frameH": 32, "animations": { "spin": { "row": 0, "frames": 6, "fps": 24 } } },
+    "boomerang":      { "src": "./assets/sprites/weapons/boomerang.png",      "frameW": 32, "frameH": 32, "animations": { "spin": { "row": 0, "frames": 6, "fps": 28 } } },
+    "throwing_stone": { "src": "./assets/sprites/weapons/throwing_stone.png", "frameW": 24, "frameH": 24 },
+    "spray_gun":      { "src": "./assets/sprites/weapons/spray_gun.png",      "frameW": 48, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 1, "fps": 1 }, "fire": { "row": 1, "frames": 3, "fps": 20 } } },
+    "bow":            { "src": "./assets/sprites/weapons/bow.png",            "frameW": 48, "frameH": 48, "animations": { "idle": { "row": 0, "frames": 2, "fps": 4 }, "draw": { "row": 1, "frames": 4, "fps": 14 }, "fire": { "row": 2, "frames": 2, "fps": 20 } } },
+    "crossbow":       { "src": "./assets/sprites/weapons/crossbow.png",       "frameW": 48, "frameH": 32, "animations": { "idle": { "row": 0, "frames": 1, "fps": 1 }, "fire": { "row": 1, "frames": 3, "fps": 18 } } }
+  },
   "world": {
     "block_house_a": { "src": "./assets/sprites/world/block_house_a.png" },
     "block_house_b": { "src": "./assets/sprites/world/block_house_b.png" },

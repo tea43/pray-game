@@ -5,16 +5,19 @@ import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
 export class Projectile {
-  constructor(x, y, target, dmg, facing, owner = null) {
+  constructor(x, y, target, dmg, facing, owner = null, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
     this.owner = owner;
     this.target = target;
     this.targetX = target.x;
     this.targetY = target.y;
-    this.maxRange = 280;
-    this.speed = 430;
-    this.returnSpeed = 520;
+    this.speed = wDef.projectileSpeed ?? 430;
+    this.returnSpeed = (wDef.projectileSpeed ?? 430) * 1.2;
+    this.maxRange = wDef.projectileMaxRange ?? 280;
+    this.returns = wDef.returns !== false;
+    this.piercing = wDef.piercing ?? false;
+    this.aoeRadius = wDef.aoeRadius ?? 0;
     this.dmg = dmg;
     this.dead = false;
     this.returning = false;
@@ -24,8 +27,12 @@ export class Projectile {
     this.facing = facing;
     this.r = 5;
     this.life = 0;
-    this.maxLife = 2.2;
-    this.flightSound = playSfx('weapon.thrownClub.throw', { synthetic: 'shoot' });
+    this.maxLife = 2.5;
+    const sfxThrow = wDef.sfxThrow || 'weapon.thrownClub.throw';
+    const sfxSynthetic = wDef.sfxFallbackThrow || 'shoot';
+    this.flightSound = playSfx(sfxThrow, { synthetic: sfxSynthetic });
+    this._sfxImpact = wDef.sfxImpact || 'weapon.thrownClub.impact';
+    this._sfxImpactFallback = wDef.sfxFallbackImpact || 'hit';
   }
 
   update(dt) {
@@ -55,7 +62,7 @@ export class Projectile {
 
     const traveled = Math.hypot(this.x - this.startX, this.y - this.startY);
     if (traveled > this.maxRange || d < 8) {
-      this.beginReturn();
+      this.returns ? this.beginReturn() : this.cleanup();
       return;
     }
 
@@ -63,8 +70,10 @@ export class Projectile {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
         this.hitEnemy(e);
-        this.beginReturn();
-        return;
+        if (!this.piercing) {
+          this.returns ? this.beginReturn() : this.cleanup();
+          return;
+        }
       }
     }
   }
@@ -88,15 +97,31 @@ export class Projectile {
   }
 
   hitEnemy(e) {
-    if (this.hasHit) return;
-    this.hasHit = true;
+    if (!this.piercing && this.hasHit) return;
+    if (this._hitSet?.has(e)) return;
+    if (!this._hitSet) this._hitSet = new Set();
+    this._hitSet.add(e);
+    if (!this.piercing) this.hasHit = true;
+
     this.stopFlightSound();
-    playSfx('weapon.thrownClub.impact', { fallback: 'weapon.impact.default', synthetic: 'hit' });
+    playSfx(this._sfxImpact, { fallback: 'weapon.impact.default', synthetic: this._sfxImpactFallback });
     playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
+
+    if (this.aoeRadius > 0) {
+      for (const ae of state.enemies) {
+        if (ae.dead || this._hitSet.has(ae)) continue;
+        if (dist2(this.x, this.y, ae.x, ae.y) < this.aoeRadius) {
+          ae.hp -= this.dmg * 0.6;
+          ae.hurtFlash = 1;
+          this._hitSet.add(ae);
+        }
+      }
+    }
 
     e.hp -= this.dmg;
     e.knockX += Math.cos(this.facing) * this.speed * 0.32;
     e.knockY += Math.sin(this.facing) * this.speed * 0.32;
+    e.hurtFlash = 1;
     state.bloodStains.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), r: e.r * rand(0.5, 0.8), rot: rand(0, Math.PI), a: rand(0.3, 0.5) });
     for (let i = 0; i < 9; i++) {
       state.particles.push({
@@ -107,7 +132,7 @@ export class Projectile {
       });
     }
     pushDamageNumber(e.x, e.y - e.r - 4, this.dmg);
-    state.shake = Math.max(state.shake, 1);
+    if (!state.settings?.noShake) state.shake = Math.max(state.shake, 1);
   }
 
   beginReturn() {

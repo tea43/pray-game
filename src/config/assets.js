@@ -41,6 +41,7 @@ export class SpriteSheet {
 const ASSET_REGISTRY = {
   heroes:      {},
   enemies:     {},
+  weapons:     {},
   loot:        {},
   world:       {},
   comicPanels: {},

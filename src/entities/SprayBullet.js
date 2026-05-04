@@ -5,13 +5,13 @@ import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
 export class SprayBullet {
-  constructor(x, y, angle, dmg) {
+  constructor(x, y, angle, dmg, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
-    const speed = 480;
+    const speed = wDef.projectileSpeed ?? 480;
     this.vx = Math.cos(angle) * speed;
     this.vy = Math.sin(angle) * speed;
-    this.maxRange = 320;
+    this.maxRange = wDef.atkRange ?? 320;
     this.dmg = dmg;
     this.dead = false;
     this.r = 3;

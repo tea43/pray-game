@@ -1,6 +1,7 @@
 import { rand, randInt, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { WEAPON_DEFS } from '../config/weapons.js';
 import { playSfx } from './audio.js';
 
 export function applyLoot(loot, unit) {
@@ -42,43 +43,30 @@ export function applyLoot(loot, unit) {
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'stim', text: 'RAGE' });
   } else if (loot.type === 'bomb') {
     detonateBomb(loot.x, loot.y);
-  } else if (loot.type === 'spray_gun') {
-    playSfx('loot.weapon.spray-gun');
-    unit.activeWeapon = 'spray_gun';
-    unit.activeWeaponTimer = 15;
-    for (let i = 0; i < 20; i++) {
-      const a = rand(0, Math.PI * 2);
-      const v = rand(30, 110);
-      state.particles.push({
-        x: loot.x, y: loot.y,
-        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60,
-        life: rand(0.3, 0.8), maxLife: 0.8,
-        color: i % 2 === 0 ? '#ffa040' : '#ffe080',
-        size: rand(1.5, 3), realtime: true,
-      });
-    }
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
-    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: 'SPRAY GUN!' });
-  } else if (loot.type === 'samurai_sword') {
-    playSfx('loot.weapon.samurai-sword');
-    unit.activeWeapon = 'samurai_sword';
-    unit.activeWeaponTimer = 20;
-    for (let i = 0; i < 22; i++) {
-      const a = rand(0, Math.PI * 2);
-      const v = rand(30, 120);
-      state.particles.push({
-        x: loot.x, y: loot.y,
-        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70,
-        life: rand(0.3, 0.9), maxLife: 0.9,
-        color: i % 2 === 0 ? '#e8e060' : '#ffffff',
-        size: rand(1.5, 3), realtime: true,
-      });
-    }
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
-    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: 'KATANA!' });
+  } else if (WEAPON_DEFS[loot.type]) {
+    _equipWeapon(unit, loot.type, loot.x, loot.y);
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
   }
+}
+
+function _equipWeapon(unit, weaponKey, lootX, lootY) {
+  const wDef = WEAPON_DEFS[weaponKey];
+  playSfx(`loot.weapon.${weaponKey}`, { synthetic: 'loot' });
+  unit.previousWeapon = unit.previousWeapon ?? unit.currentWeapon;
+  unit.currentWeapon  = weaponKey;
+  unit.weaponTimer    = wDef.lootDuration ?? 15;
+
+  const isRanged = wDef.type === 'ranged';
+  const color1   = isRanged ? '#ffa040' : '#e8e060';
+  const color2   = isRanged ? '#ffe080' : '#ffffff';
+  for (let i = 0; i < 22; i++) {
+    const a = rand(0, Math.PI * 2);
+    const v = rand(30, 120);
+    state.particles.push({ x: lootX, y: lootY, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70, life: rand(0.3, 0.9), maxLife: 0.9, color: i % 2 === 0 ? color1 : color2, size: rand(1.5, 3), realtime: true });
+  }
+  if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
+  state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: wDef.displayName.toUpperCase() + '!' });
 }
 
 export function detonateBomb(x, y) {
