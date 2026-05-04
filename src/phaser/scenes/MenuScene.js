@@ -88,7 +88,7 @@ export class MenuScene extends Phaser.Scene {
     this._videoEl = document.getElementById('menuVideo');
     if (this._videoEl) {
       if (!this._videoEl.src) {
-        this._videoEl.src = '/heavy/pray.menu.2.mp4';
+        this._videoEl.src = './assets/video/menu/pray.menu.mp4';
         this._videoEl.load();
       }
       this._videoEl.style.display = 'block';
