@@ -10,7 +10,7 @@ import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2 } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { playMusic } from '../../systems/audio.js';
-import { drawBackground } from '../../render/background.js';
+import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 
@@ -72,6 +72,7 @@ export class GameScene extends Phaser.Scene {
       this._renderImg.setDisplaySize(G.W, G.H);
     }
     generateTerrain();
+    clearBackgroundCache();
   }
 
   _startNewGame() {
@@ -100,6 +101,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     generateTerrain();
+    clearBackgroundCache();
 
     const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
     state.units.push(new Unit(cx - 44, cy + 8,  'elliot'));

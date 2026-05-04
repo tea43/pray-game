@@ -10,39 +10,41 @@ export function drawBolts() {
   for (const bolt of state.bolts) {
     const intensity = bolt.life / bolt.maxLife;
 
-    ctx.strokeStyle = `rgba(80, 150, 255, ${intensity * 0.35})`;
+    // Outer glow — two thick low-opacity strokes replace shadowBlur
+    ctx.strokeStyle = `rgba(80, 150, 255, ${intensity * 0.10})`;
+    ctx.lineWidth = 30;
+    for (let i = 0; i < bolt.points.length - 1; i++) {
+      drawZigzag(bolt.points[i].x, bolt.points[i].y, bolt.points[i + 1].x, bolt.points[i + 1].y, 14, 9);
+    }
+    ctx.strokeStyle = `rgba(120, 180, 255, ${intensity * 0.22})`;
     ctx.lineWidth = 14;
-    ctx.shadowColor = '#80c8ff';
-    ctx.shadowBlur = 22 * intensity;
     for (let i = 0; i < bolt.points.length - 1; i++) {
       drawZigzag(bolt.points[i].x, bolt.points[i].y, bolt.points[i + 1].x, bolt.points[i + 1].y, 14, 9);
     }
 
+    // Mid
     ctx.strokeStyle = `rgba(160, 210, 255, ${intensity * 0.85})`;
     ctx.lineWidth = 5;
-    ctx.shadowBlur = 14 * intensity;
     for (let i = 0; i < bolt.points.length - 1; i++) {
       drawZigzag(bolt.points[i].x, bolt.points[i].y, bolt.points[i + 1].x, bolt.points[i + 1].y, 12, 5);
     }
 
+    // Core
     ctx.strokeStyle = `rgba(255, 255, 255, ${intensity})`;
     ctx.lineWidth = 1.6;
-    ctx.shadowBlur = 8;
     for (let i = 0; i < bolt.points.length - 1; i++) {
       drawZigzag(bolt.points[i].x, bolt.points[i].y, bolt.points[i + 1].x, bolt.points[i + 1].y, 10, 3);
     }
 
-    // Spark nodes at junctions.
+    // Spark nodes — solid circles replace per-node radial gradient
     for (const p of bolt.points) {
-      const r = 6 + Math.random() * 4;
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-      g.addColorStop(0, `rgba(220, 240, 255, ${intensity * 0.95})`);
-      g.addColorStop(1, 'rgba(80, 140, 255, 0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+      const r = 5 + Math.random() * 3;
+      ctx.fillStyle = `rgba(200, 230, 255, ${intensity * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
-  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -187,12 +189,9 @@ export function drawFloatingTexts() {
     ctx.font = `bold ${size}px "Courier New", monospace`;
     ctx.fillStyle = `rgba(0,0,0,${alpha * 0.65})`;
     ctx.fillText(ft.text, ft.x + 1, ft.y + yOff + 1);
-    ctx.shadowColor = `rgb(${r},${g},${b})`;
-    ctx.shadowBlur = ft.crit ? 12 : 6;
     ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
     ctx.fillText(ft.text, ft.x, ft.y + yOff);
   }
-  ctx.shadowBlur = 0;
   ctx.textAlign = 'left';
   ctx.restore();
 }
