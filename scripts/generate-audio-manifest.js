@@ -23,7 +23,7 @@ function listAudioFiles(dir, supportedExtensions, safePattern, warnings) {
       if (safePattern && !safePattern.test(name)) {
         warnings.push(`Non-standard audio filename: ${path.posix.join(dir, name)}`);
       }
-      return `/assets/audio/${path.posix.join(dir, name)}`;
+      return `./assets/audio/${path.posix.join(dir, name)}`;
     });
 }
 
@@ -47,7 +47,7 @@ function main() {
 
   const manifest = {
     version: catalog.version || 1,
-    generatedFrom: '/assets/audio/catalog.json',
+    generatedFrom: './assets/audio/catalog.json',
     music: buildSection(catalog.music, catalog, supportedExtensions, safePattern, warnings),
     sfx: buildSection(catalog.sfx, catalog, supportedExtensions, safePattern, warnings),
   };

@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "generatedFrom": "/assets/audio/catalog.json",
+  "generatedFrom": "./assets/audio/catalog.json",
   "music": {
     "menu": {
       "variants": [
-        "/assets/audio/music/menu/menu1.mp3"
+        "./assets/audio/music/menu/menu1.mp3"
       ],
       "loop": true,
       "volume": 0.4
     },
     "game": {
       "variants": [
-        "/assets/audio/music/game/wasteland-mood.mp3"
+        "./assets/audio/music/game/wasteland-mood.mp3"
       ],
       "fallback": "combat",
       "loop": true,
@@ -19,7 +19,7 @@
     },
     "combat": {
       "variants": [
-        "/assets/audio/music/game/wasteland-mood.mp3"
+        "./assets/audio/music/game/wasteland-mood.mp3"
       ],
       "loop": true,
       "volume": 0.45
@@ -28,9 +28,9 @@
   "sfx": {
     "character.damaged.default": {
       "variants": [
-        "/assets/audio/characters/damaged/default/character_hit_1.mp3",
-        "/assets/audio/characters/damaged/default/character_hit_5.mp3",
-        "/assets/audio/characters/damaged/default/character_hit_6.mp3"
+        "./assets/audio/characters/damaged/default/character_hit_1.mp3",
+        "./assets/audio/characters/damaged/default/character_hit_5.mp3",
+        "./assets/audio/characters/damaged/default/character_hit_6.mp3"
       ],
       "fallback": "synthetic.hit",
       "volume": 0.6,
@@ -39,10 +39,10 @@
     },
     "character.death.default": {
       "variants": [
-        "/assets/audio/characters/death/default/character_death_1.mp3",
-        "/assets/audio/characters/death/default/character_death_2.mp3",
-        "/assets/audio/characters/death/default/character_death_3.mp3",
-        "/assets/audio/characters/death/default/character_death_4.mp3"
+        "./assets/audio/characters/death/default/character_death_1.mp3",
+        "./assets/audio/characters/death/default/character_death_2.mp3",
+        "./assets/audio/characters/death/default/character_death_3.mp3",
+        "./assets/audio/characters/death/default/character_death_4.mp3"
       ],
       "fallback": "synthetic.death",
       "volume": 0.8,
@@ -74,12 +74,12 @@
     },
     "alien.attack.default": {
       "variants": [
-        "/assets/audio/aliens/attack/default/bite_1.mp3",
-        "/assets/audio/aliens/attack/default/bite_2.mp3",
-        "/assets/audio/aliens/attack/default/bite_3.mp3",
-        "/assets/audio/aliens/attack/default/bite_4.mp3",
-        "/assets/audio/aliens/attack/default/bite_5.mp3",
-        "/assets/audio/aliens/attack/default/bite_6.mp3"
+        "./assets/audio/aliens/attack/default/bite_1.mp3",
+        "./assets/audio/aliens/attack/default/bite_2.mp3",
+        "./assets/audio/aliens/attack/default/bite_3.mp3",
+        "./assets/audio/aliens/attack/default/bite_4.mp3",
+        "./assets/audio/aliens/attack/default/bite_5.mp3",
+        "./assets/audio/aliens/attack/default/bite_6.mp3"
       ],
       "fallback": "synthetic.hit",
       "volume": 0.55,
@@ -88,9 +88,9 @@
     },
     "alien.hit.default": {
       "variants": [
-        "/assets/audio/aliens/hit/default/alien_hit_1.mp3",
-        "/assets/audio/aliens/hit/default/alien_hit_2.mp3",
-        "/assets/audio/aliens/hit/default/alien_hit_3.mp3"
+        "./assets/audio/aliens/hit/default/alien_hit_1.mp3",
+        "./assets/audio/aliens/hit/default/alien_hit_2.mp3",
+        "./assets/audio/aliens/hit/default/alien_hit_3.mp3"
       ],
       "fallback": "synthetic.hit",
       "volume": 0.45,
@@ -112,10 +112,10 @@
     },
     "weapon.longClub.attack": {
       "variants": [
-        "/assets/audio/weapons/attack/long-club/melee_1.mp3",
-        "/assets/audio/weapons/attack/long-club/melee_2.mp3",
-        "/assets/audio/weapons/attack/long-club/melee_3.mp3",
-        "/assets/audio/weapons/attack/long-club/melee_4.mp3"
+        "./assets/audio/weapons/attack/long-club/melee_1.mp3",
+        "./assets/audio/weapons/attack/long-club/melee_2.mp3",
+        "./assets/audio/weapons/attack/long-club/melee_3.mp3",
+        "./assets/audio/weapons/attack/long-club/melee_4.mp3"
       ],
       "fallback": "weapon.attack.default",
       "volume": 0.55,
@@ -123,9 +123,9 @@
     },
     "weapon.dualClubs.attack": {
       "variants": [
-        "/assets/audio/weapons/attack/dual-clubs/melee_5.mp3",
-        "/assets/audio/weapons/attack/dual-clubs/melee_6.mp3",
-        "/assets/audio/weapons/attack/dual-clubs/melee_7.mp3"
+        "./assets/audio/weapons/attack/dual-clubs/melee_5.mp3",
+        "./assets/audio/weapons/attack/dual-clubs/melee_6.mp3",
+        "./assets/audio/weapons/attack/dual-clubs/melee_7.mp3"
       ],
       "fallback": "weapon.attack.default",
       "volume": 0.5,
@@ -141,7 +141,7 @@
     },
     "weapon.thrownClub.throw": {
       "variants": [
-        "/assets/audio/weapons/throw/thrown-club/boomerang.mp3"
+        "./assets/audio/weapons/throw/thrown-club/boomerang.mp3"
       ],
       "fallback": "weapon.throw.default",
       "volume": 0.55,
@@ -156,9 +156,9 @@
     },
     "weapon.thrownClub.impact": {
       "variants": [
-        "/assets/audio/weapons/impact/thrown-club/sword_1.mp3",
-        "/assets/audio/weapons/impact/thrown-club/sword_2.mp3",
-        "/assets/audio/weapons/impact/thrown-club/sword_3.mp3"
+        "./assets/audio/weapons/impact/thrown-club/sword_1.mp3",
+        "./assets/audio/weapons/impact/thrown-club/sword_2.mp3",
+        "./assets/audio/weapons/impact/thrown-club/sword_3.mp3"
       ],
       "fallback": "weapon.impact.default",
       "volume": 0.6,
@@ -177,8 +177,8 @@
     },
     "boss.attack.default": {
       "variants": [
-        "/assets/audio/boss/attack/default/bite_boss_1.mp3",
-        "/assets/audio/boss/attack/default/bite_boss_2.mp3"
+        "./assets/audio/boss/attack/default/bite_boss_1.mp3",
+        "./assets/audio/boss/attack/default/bite_boss_2.mp3"
       ],
       "volume": 0.85,
       "pitchJitter": 0.04,
@@ -199,11 +199,11 @@
     },
     "ability.blink": {
       "variants": [
-        "/assets/audio/characters/abilities/blink/blink_1.mp3",
-        "/assets/audio/characters/abilities/blink/blink_2.mp3",
-        "/assets/audio/characters/abilities/blink/blink_3.mp3",
-        "/assets/audio/characters/abilities/blink/blink_4.mp3",
-        "/assets/audio/characters/abilities/blink/blink_5.mp3"
+        "./assets/audio/characters/abilities/blink/blink_1.mp3",
+        "./assets/audio/characters/abilities/blink/blink_2.mp3",
+        "./assets/audio/characters/abilities/blink/blink_3.mp3",
+        "./assets/audio/characters/abilities/blink/blink_4.mp3",
+        "./assets/audio/characters/abilities/blink/blink_5.mp3"
       ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
@@ -211,11 +211,11 @@
     },
     "ability.rage": {
       "variants": [
-        "/assets/audio/characters/abilities/rage/rage_1.mp3",
-        "/assets/audio/characters/abilities/rage/rage_2.mp3",
-        "/assets/audio/characters/abilities/rage/rage_3.mp3",
-        "/assets/audio/characters/abilities/rage/rage_5.mp3",
-        "/assets/audio/characters/abilities/rage/rege_4.mp3"
+        "./assets/audio/characters/abilities/rage/rage_1.mp3",
+        "./assets/audio/characters/abilities/rage/rage_2.mp3",
+        "./assets/audio/characters/abilities/rage/rage_3.mp3",
+        "./assets/audio/characters/abilities/rage/rage_5.mp3",
+        "./assets/audio/characters/abilities/rage/rege_4.mp3"
       ],
       "fallback": "synthetic.ability",
       "volume": 0.8,
@@ -223,11 +223,11 @@
     },
     "ability.lightning": {
       "variants": [
-        "/assets/audio/characters/abilities/lightning/lightning_1.mp3",
-        "/assets/audio/characters/abilities/lightning/lightning_2.mp3",
-        "/assets/audio/characters/abilities/lightning/lightning_3.mp3",
-        "/assets/audio/characters/abilities/lightning/lightning_4.mp3",
-        "/assets/audio/characters/abilities/lightning/lightning_5.mp3"
+        "./assets/audio/characters/abilities/lightning/lightning_1.mp3",
+        "./assets/audio/characters/abilities/lightning/lightning_2.mp3",
+        "./assets/audio/characters/abilities/lightning/lightning_3.mp3",
+        "./assets/audio/characters/abilities/lightning/lightning_4.mp3",
+        "./assets/audio/characters/abilities/lightning/lightning_5.mp3"
       ],
       "fallback": "synthetic.ability",
       "volume": 0.75,
@@ -235,7 +235,7 @@
     },
     "loot.medkit": {
       "variants": [
-        "/assets/audio/loot/medkit/heal_1.mp3"
+        "./assets/audio/loot/medkit/heal_1.mp3"
       ],
       "fallback": "synthetic.loot",
       "volume": 0.7,
@@ -267,11 +267,11 @@
     },
     "explosion.bomb": {
       "variants": [
-        "/assets/audio/explosions/bomb/bomb_1.mp3",
-        "/assets/audio/explosions/bomb/bomb_2.mp3",
-        "/assets/audio/explosions/bomb/bomb_3.mp3",
-        "/assets/audio/explosions/bomb/bomb_4.mp3",
-        "/assets/audio/explosions/bomb/bomb_5.mp3"
+        "./assets/audio/explosions/bomb/bomb_1.mp3",
+        "./assets/audio/explosions/bomb/bomb_2.mp3",
+        "./assets/audio/explosions/bomb/bomb_3.mp3",
+        "./assets/audio/explosions/bomb/bomb_4.mp3",
+        "./assets/audio/explosions/bomb/bomb_5.mp3"
       ],
       "volume": 3,
       "pitchJitter": 0.06
