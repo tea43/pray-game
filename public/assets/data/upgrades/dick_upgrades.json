@@ -1,0 +1,82 @@
+[
+  {
+    "id": "dick_adrenaline_shot",
+    "name": "Adrenaline Shot",
+    "rarity": "Common",
+    "effectType": "speed_mult",
+    "effectValue": 1.15,
+    "description": "Increases movement speed by 15%"
+  },
+  {
+    "id": "dick_thorn_mail",
+    "name": "Thorn Mail",
+    "rarity": "Epic",
+    "effectType": "reflect_dmg",
+    "effectValue": 0.5,
+    "description": "Reflects 50% of melee damage taken back to the attacker"
+  },
+  {
+    "id": "dick_heavy_swings",
+    "name": "Heavy Swings",
+    "rarity": "Rare",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.20,
+    "description": "Increases base damage by 20%"
+  },
+  {
+    "id": "dick_patched_vest",
+    "name": "Patched Vest",
+    "rarity": "Common",
+    "effectType": "heal_start",
+    "effectValue": 0.10,
+    "description": "Restores 10% HP at the start of the wave"
+  },
+  {
+    "id": "dick_reinforced_boots",
+    "name": "Reinforced Boots",
+    "rarity": "Common",
+    "effectType": "speed_mult",
+    "effectValue": 1.10,
+    "description": "Increases movement speed by 10%"
+  },
+  {
+    "id": "dick_rapid_strikes",
+    "name": "Rapid Strikes",
+    "rarity": "Rare",
+    "effectType": "atk_rate_mult",
+    "effectValue": 0.82,
+    "description": "Increases attack speed by 18%"
+  },
+  {
+    "id": "dick_battle_trance",
+    "name": "Battle Trance",
+    "rarity": "Rare",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.80,
+    "description": "Reduces RAGE cooldown by 20%"
+  },
+  {
+    "id": "dick_titans_fury",
+    "name": "Titan's Fury",
+    "rarity": "Epic",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.35,
+    "description": "Increases base damage by 35%"
+  },
+  {
+    "id": "dick_death_mirror",
+    "name": "Death Mirror",
+    "rarity": "Legendary",
+    "effectType": "reflect_dmg",
+    "effectValue": 1.0,
+    "description": "Reflects 100% of melee damage taken back to the attacker"
+  },
+  {
+    "id": "dick_undying_rage",
+    "name": "Undying Rage",
+    "rarity": "Legendary",
+    "effectType": "heal_start",
+    "effectValue": 0.50,
+    "description": "Restores 50% HP at the start of the wave"
+  }
+]

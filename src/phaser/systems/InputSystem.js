@@ -19,7 +19,7 @@ export class InputSystem {
     // ── Mouse ────────────────────────────────────────────────────────────────
 
     scene.input.on('pointerdown', (ptr) => {
-      if (state.gameOver) return;
+      if (state.gameOver || state.isUpgradeScreen) return;
       const { x, y } = ptr;
       state.mouse.x = x; state.mouse.y = y;
 
@@ -91,9 +91,10 @@ export class InputSystem {
 
     scene.input.on('pointerup', (ptr) => {
       if (ptr.rightButtonReleased()) return;
-      if (state.gameOver || state.mouse.clickedPortrait) {
+      if (state.gameOver || state.mouse.clickedPortrait || state.isUpgradeScreen) {
         state.mouse.down = false; state.mouse.clickedPortrait = false; return;
       }
+      if (!state.mouse.down) return;
       const { x, y } = ptr;
 
       if (state.selectionBox) {
@@ -136,7 +137,7 @@ export class InputSystem {
     const kb = scene.input.keyboard;
 
     kb.on('keydown', (e) => {
-      if (state.gameOver) return;
+      if (state.gameOver || state.isUpgradeScreen) return;
       const k = e.key.toLowerCase();
 
       if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {

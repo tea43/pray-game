@@ -1,0 +1,82 @@
+[
+  {
+    "id": "habib_capacitor_overload",
+    "name": "Capacitor Overload",
+    "rarity": "Rare",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.8,
+    "description": "Reduces CHAIN LTG cooldown by 20%"
+  },
+  {
+    "id": "habib_static_field",
+    "name": "Static Field",
+    "rarity": "Epic",
+    "effectType": "chain_dmg_mult",
+    "effectValue": 1.5,
+    "description": "Increases chain lightning damage by 50%"
+  },
+  {
+    "id": "habib_quick_hands",
+    "name": "Quick Hands",
+    "rarity": "Common",
+    "effectType": "atk_rate_mult",
+    "effectValue": 0.85,
+    "description": "Reduces attack cooldown by 15%"
+  },
+  {
+    "id": "habib_sharpened_edge",
+    "name": "Sharpened Edge",
+    "rarity": "Common",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.10,
+    "description": "Increases base damage by 10%"
+  },
+  {
+    "id": "habib_swift_aim",
+    "name": "Swift Aim",
+    "rarity": "Common",
+    "effectType": "speed_mult",
+    "effectValue": 1.10,
+    "description": "Increases movement speed by 10%"
+  },
+  {
+    "id": "habib_overcharged_coil",
+    "name": "Overcharged Coil",
+    "rarity": "Rare",
+    "effectType": "atk_rate_mult",
+    "effectValue": 0.75,
+    "description": "Reduces attack cooldown by 25%"
+  },
+  {
+    "id": "habib_hollow_points",
+    "name": "Hollow Points",
+    "rarity": "Rare",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.20,
+    "description": "Increases base damage by 20%"
+  },
+  {
+    "id": "habib_arc_resonance",
+    "name": "Arc Resonance",
+    "rarity": "Epic",
+    "effectType": "chain_dmg_mult",
+    "effectValue": 2.0,
+    "description": "Doubles chain lightning damage"
+  },
+  {
+    "id": "habib_voltaic_surge",
+    "name": "Voltaic Surge",
+    "rarity": "Legendary",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.50,
+    "description": "Reduces CHAIN LTG cooldown by 50%"
+  },
+  {
+    "id": "habib_godslayer_round",
+    "name": "Godslayer Round",
+    "rarity": "Legendary",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.50,
+    "description": "Increases base damage by 50%"
+  }
+]

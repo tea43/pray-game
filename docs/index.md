@@ -24,6 +24,8 @@ This is the navigation hub for agents. Read this first, then open only the file 
 - `smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
 - `backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). This is the backlog — not immediate work.
 - `wasteland_survivors_feature_plan.md`: Historical/completed feature ledger plus near-term backlog.
+- `bwaves_feature.md`: Feature specification for between-wave upgrades.
+- `bwaves_feature_dev_plan.md`: Implementation plan for the between-wave upgrade system.
 
 ## Root Entry Points
 

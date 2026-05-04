@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { initAudio } from '../../systems/audio.js';
+import { loadUpgrades } from '../../systems/upgrades.js';
 
 export class SplashScene extends Phaser.Scene {
   constructor() { super({ key: 'SplashScene' }); }
@@ -36,8 +37,9 @@ export class SplashScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
-    const advance = () => {
+    const advance = async () => {
       initAudio();
+      await loadUpgrades();
       this.scene.start('MenuScene');
     };
 

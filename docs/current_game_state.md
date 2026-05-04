@@ -82,6 +82,16 @@ Temporary weapons replace or modify a survivor's normal attack after pickup.
 - `spray_gun`: 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate is multiplied by 0.25.
 - `samurai_sword`: 20s duration. Wide 120-degree cleave within 80 px. Damage is multiplied by 2.2.
 
+## Between-Wave Upgrades
+
+At the end of each 22s wave, time pauses and `UpgradeScene` appears.
+- The player drafts one upgrade per hero (Elliot, Dick, Habib) from 3 random choices drawn from their respective JSON upgrade pools (`public/assets/data/upgrades/`).
+- Each pool has 10 entries; 3 are randomly sampled each wave, providing variety.
+- Upgrades have rarities (Common, Rare, Epic, Legendary).
+- Effects include stat multipliers (speed, base damage, ability cooldown) and special hooks (e.g., chain lightning damage multiplier, melee damage reflection).
+- Upgrades are temporary and only last for the next wave, wiping out when the wave completes.
+- The game logic pauses `GameScene` while `UpgradeScene` is active to prevent any processing during upgrade selection. Once the draft is locked in, `GameScene` resumes and advances to the next wave.
+
 ## Loot
 
 | Loot | Effect |

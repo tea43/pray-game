@@ -13,6 +13,7 @@ import { playMusic } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
+import { removeWaveUpgrades, applyWaveUpgrades } from '../../systems/upgrades.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -97,6 +98,8 @@ export class GameScene extends Phaser.Scene {
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
       survivedSeconds: 0, menuPhase: 'playing',
+      isUpgradeScreen: false, activeUpgrades: { elliot: [], dick: [], habib: [] },
+      pendingUpgrades: { elliot: null, dick: null, habib: null },
     });
 
     if (diff.devWaves?.length > 0) {
@@ -157,7 +160,7 @@ export class GameScene extends Phaser.Scene {
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0
                      : spaceHoldDriving      ? state.timeSpeed
-                     : state.manualPause     ? 0
+                     : state.manualPause || state.isUpgradeScreen ? 0
                      : (anyMoving || heliDeparting) ? state.timeSpeed
                      : 0;
     state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
@@ -315,30 +318,10 @@ export class GameScene extends Phaser.Scene {
     if (!state.allWavesCleared && state.waveTimer > WAVE_DEFS.duration) {
       state.waveTimer = 0;
       if (state.wave < WAVE_DEFS.maxWave) {
-        state.wave++;
-        const devWaves = diff.devWaves;
-        if (devWaves) {
-          const nextDev = devWaves.find(w => w > state.wave - 1);
-          if (nextDev && nextDev !== state.wave) {
-            state.wave = nextDev;
-            let iv = WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult;
-            for (let i = 1; i < state.wave; i++) iv = Math.max(WAVE_DEFS.spawnIntervalMin, iv * WAVE_DEFS.spawnIntervalScale);
-            state.spawnInterval = iv;
-          } else {
-            state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
-          }
-        } else {
-          state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
-        }
-        const bossMap = diff.enemy.bosses;
-        const bigCount  = bossMap.bigboss?.[state.wave]  ?? 0;
-        const miniCount = bossMap.miniboss?.[state.wave] ?? 0;
-        for (let i = 0; i < bigCount;  i++) spawnBoss('bigboss');
-        for (let i = 0; i < miniCount; i++) spawnBoss('miniboss');
-        state.moveMarkers.push({
-          x: G.W / 2, y: G.PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
-          type: 'wave', bossLabel: bigCount > 0 ? DISPLAY_NAME_DEFS.bigbossLabel : miniCount > 0 ? DISPLAY_NAME_DEFS.minibossLabel : null,
-        });
+        state.isUpgradeScreen = true;
+        removeWaveUpgrades();
+        this.scene.pause();
+        this.scene.launch('UpgradeScene');
       } else {
         state.allWavesCleared = true;
         state.waveTimer = 0;
@@ -361,6 +344,36 @@ export class GameScene extends Phaser.Scene {
         type: 'wave', bossLabel: 'REACH THE HELICOPTER', extraction: true,
       });
     }
+  }
+
+  advanceWave() {
+    state.isUpgradeScreen = false;
+    state.wave++;
+    const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+    const devWaves = diff.devWaves;
+    if (devWaves) {
+      const nextDev = devWaves.find(w => w > state.wave - 1);
+      if (nextDev && nextDev !== state.wave) {
+        state.wave = nextDev;
+        let iv = WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult;
+        for (let i = 1; i < state.wave; i++) iv = Math.max(WAVE_DEFS.spawnIntervalMin, iv * WAVE_DEFS.spawnIntervalScale);
+        state.spawnInterval = iv;
+      } else {
+        state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
+      }
+    } else {
+      state.spawnInterval = Math.max(WAVE_DEFS.spawnIntervalMin, state.spawnInterval * WAVE_DEFS.spawnIntervalScale);
+    }
+    const bossMap = diff.enemy.bosses;
+    const bigCount  = bossMap.bigboss?.[state.wave]  ?? 0;
+    const miniCount = bossMap.miniboss?.[state.wave] ?? 0;
+    for (let i = 0; i < bigCount;  i++) spawnBoss('bigboss');
+    for (let i = 0; i < miniCount; i++) spawnBoss('miniboss');
+    state.moveMarkers.push({
+      x: G.W / 2, y: G.PLAY_BOTTOM / 2, life: 1.6, maxLife: 1.6,
+      type: 'wave', bossLabel: bigCount > 0 ? DISPLAY_NAME_DEFS.bigbossLabel : miniCount > 0 ? DISPLAY_NAME_DEFS.minibossLabel : null,
+    });
+    applyWaveUpgrades();
   }
 
   _updateHelicopterLogic(gameDt) {

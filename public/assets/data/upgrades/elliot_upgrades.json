@@ -1,0 +1,82 @@
+[
+  {
+    "id": "elliot_minor_healing",
+    "name": "Minor Healing Brew",
+    "rarity": "Common",
+    "effectType": "heal_start",
+    "effectValue": 0.1,
+    "description": "Restores 10% HP at the start of the wave"
+  },
+  {
+    "id": "elliot_hollow_points",
+    "name": "Hollow Points",
+    "rarity": "Rare",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.15,
+    "description": "Increases base damage by 15%"
+  },
+  {
+    "id": "elliot_nimble_feet",
+    "name": "Nimble Feet",
+    "rarity": "Common",
+    "effectType": "speed_mult",
+    "effectValue": 1.10,
+    "description": "Increases movement speed by 10%"
+  },
+  {
+    "id": "elliot_ironblood_elixir",
+    "name": "Ironblood Elixir",
+    "rarity": "Rare",
+    "effectType": "heal_start",
+    "effectValue": 0.25,
+    "description": "Restores 25% HP at the start of the wave"
+  },
+  {
+    "id": "elliot_focus_drops",
+    "name": "Focus Drops",
+    "rarity": "Common",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.85,
+    "description": "Reduces ability cooldown by 15%"
+  },
+  {
+    "id": "elliot_adrenaline_shot",
+    "name": "Adrenaline Shot",
+    "rarity": "Rare",
+    "effectType": "atk_rate_mult",
+    "effectValue": 0.80,
+    "description": "Increases attack speed by 20%"
+  },
+  {
+    "id": "elliot_berserker_serum",
+    "name": "Berserker Serum",
+    "rarity": "Epic",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.30,
+    "description": "Increases base damage by 30%"
+  },
+  {
+    "id": "elliot_swiftness_tonic",
+    "name": "Swiftness Tonic",
+    "rarity": "Epic",
+    "effectType": "speed_mult",
+    "effectValue": 1.25,
+    "description": "Increases movement speed by 25%"
+  },
+  {
+    "id": "elliot_phantom_draught",
+    "name": "Phantom Draught",
+    "rarity": "Legendary",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.60,
+    "description": "Reduces ability cooldown by 40%"
+  },
+  {
+    "id": "elliot_godsbrew",
+    "name": "Godsbrew",
+    "rarity": "Legendary",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.50,
+    "description": "Increases base damage by 50%"
+  }
+]

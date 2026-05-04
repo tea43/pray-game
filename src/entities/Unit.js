@@ -53,11 +53,11 @@ export class Unit {
   get _wDef() { return WEAPON_DEFS[this.currentWeapon] ?? {}; }
   get atkDmg()  {
     const base = this._wDef.atkDmg ?? 24;
-    return this.rageTimer > 0 ? base * 2 : base;
+    return (this.rageTimer > 0 ? base * 2 : base) * (this.upgradeDmgMult || 1);
   }
   get atkRate()  {
     const base = this._wDef.atkRate ?? 0.5;
-    return this.rageTimer > 0 ? base * 0.4 : base;
+    return (this.rageTimer > 0 ? base * 0.4 : base) * (this.upgradeRateMult || 1);
   }
   get atkRange() { return this._wDef.atkRange ?? 50; }
   get moving()   { return dist2(this.x, this.y, this.tx, this.ty) > 2.5; }
@@ -371,7 +371,7 @@ export class Unit {
       if (!nearest) break;
       hit.add(nearest);
       points.push({ x: nearest.x, y: nearest.y });
-      const dmg = 30;
+      const dmg = 30 * (this.chainMult || 1);
       nearest.hp -= dmg;
       nearest.stunTimer = Math.max(nearest.stunTimer, 1.8);
       nearest.hurtFlash = 1;
