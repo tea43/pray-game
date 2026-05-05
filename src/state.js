@@ -45,6 +45,8 @@ export const state = {
   isUpgradeScreen: false,
   activeUpgrades: { elliot: [], dick: [], habib: [] },
   pendingUpgrades: { elliot: null, dick: null, habib: null },
+  upgradeSpinCredits: 0,
+  selectedUpgradeHistory: { elliot: [], dick: [], habib: [] },
   score: 0,
   difficulty: 'brood-hunter',
   menuPhase: 'main',

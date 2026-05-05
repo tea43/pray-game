@@ -82,6 +82,8 @@ export class MenuScene extends Phaser.Scene {
     super({ key: 'MenuScene' });
     this._selectedDiff = 'brood-hunter';
     this._screen = 'title';
+    this._devExpanded  = false;
+    this._devSub       = null;   // 'level' | 'slot' | null
   }
 
   create() {
@@ -163,6 +165,9 @@ export class MenuScene extends Phaser.Scene {
     this._renderButtonList(panelX, btnStartY, panelW, buttons);
     this._txt(panelX, btnStartY + buttons.length * LAYOUT.btn.gap + 14,
       'prototype build · phase 5', { fontSize: '9px', color: TC.faint });
+
+    const devY = btnStartY + buttons.length * LAYOUT.btn.gap + 38;
+    this._renderDevSection(panelX, devY, panelW);
   }
 
   _showDifficulty() {
@@ -232,6 +237,109 @@ export class MenuScene extends Phaser.Scene {
 
   _saveSettings() {
     try { localStorage.setItem('praySettings', JSON.stringify(state.settings)); } catch {}
+  }
+
+  // ── Dev section ───────────────────────────────────────────────────────────
+
+  _renderDevSection(x, y, w) {
+    const TOG_H = 24;
+    const arrow = this._devExpanded ? '▼' : '▶';
+
+    // Disclosure bar
+    const togBg = this.add.graphics();
+    const drawTogBg = (hov) => {
+      togBg.clear();
+      togBg.fillStyle(hov ? 0x2a0e0e : 0x190808, 1).fillRect(x, y, w, TOG_H);
+      togBg.lineStyle(1, 0x5a1818).strokeRect(x, y, w, TOG_H);
+    };
+    drawTogBg(false);
+    this._txt(x + 10, y + 6, `${arrow} DEV TOOLS`, {
+      fontSize: '10px', fontFamily: "'Courier New', monospace",
+      fontStyle: 'bold', color: '#cc5555',
+    });
+
+    this.add.zone(x, y, w, TOG_H).setOrigin(0, 0).setInteractive()
+      .on('pointerover', () => drawTogBg(true))
+      .on('pointerout',  () => drawTogBg(false))
+      .on('pointerdown', () => { this._devExpanded = !this._devExpanded; this._showTitle(); });
+
+    if (!this._devExpanded) return;
+
+    // Two sub-menus
+    const SUB_H = 28, SUB_GAP = 32, INDENT = 12;
+    const subW = w - INDENT;
+    const items = [
+      { label: 'LEVEL TESTING', sub: 'level', hint: 'start game · dev-mode difficulty' },
+      { label: 'SLOT MACHINE',  sub: 'slot',  hint: 'test upgrade reels in isolation'  },
+    ];
+
+    items.forEach(({ label, sub, hint }, i) => {
+      const sy = y + TOG_H + 6 + i * SUB_GAP;
+      const sx = x + INDENT;
+      const isOpen = this._devSub === sub;
+
+      const sbg = this.add.graphics();
+      const drawSub = (hov) => {
+        sbg.clear();
+        sbg.fillStyle(hov || isOpen ? 0x261010 : 0x140808, 1).fillRect(sx, sy, subW, SUB_H);
+        sbg.lineStyle(1, isOpen ? 0x8a2020 : 0x421414).strokeRect(sx, sy, subW, SUB_H);
+      };
+      drawSub(false);
+
+      this._txt(sx + 8, sy + 4, label, {
+        fontSize: '10px', fontFamily: "'Courier New', monospace",
+        fontStyle: 'bold', color: isOpen ? '#ff8888' : '#cc6666',
+      });
+      this._txt(sx + 8, sy + 15, hint, {
+        fontSize: '8px', fontFamily: "'Courier New', monospace", color: '#907070',
+      });
+
+      this.add.zone(sx, sy, subW, SUB_H).setOrigin(0, 0).setInteractive()
+        .on('pointerover', () => drawSub(true))
+        .on('pointerout',  () => drawSub(false))
+        .on('pointerdown', () => this._launchDevSub(sub));
+    });
+
+    // Content area for whichever sub is open
+    const contentY = y + TOG_H + 6 + items.length * SUB_GAP + 6;
+    if (this._devSub === 'level') this._renderDevLevel(x + INDENT, contentY, subW);
+    if (this._devSub === 'slot')  this._renderDevSlot(x + INDENT, contentY, subW);
+  }
+
+  _launchDevSub(sub) {
+    if (this._devSub === sub) { this._devSub = null; this._showTitle(); return; }
+    if (sub === 'slot') {
+      this.scene.start('UpgradeTestScene');
+      return;
+    }
+    this._devSub = sub;
+    this._showTitle();
+  }
+
+  _renderDevLevel(x, y, w) {
+    const H = 28;
+    const self = this;
+
+    const launchDev = () => self.scene.start('GameScene', { difficulty: 'dev-mode' });
+
+    const bg = this.add.graphics();
+    const drawBg = (hov) => {
+      bg.clear();
+      bg.fillStyle(hov ? 0x1e1a10 : 0x141008, 1).fillRect(x, y, w, H);
+      bg.lineStyle(1, hov ? 0xc5a572 : 0x4a3818).strokeRect(x, y, w, H);
+    };
+    drawBg(false);
+    this._txt(x + 10, y + 8, 'START GAME (dev-mode difficulty)', {
+      fontSize: '10px', fontFamily: "'Courier New', monospace", color: '#d4b880',
+    });
+    this.add.zone(x, y, w, H).setOrigin(0, 0).setInteractive()
+      .on('pointerover', () => drawBg(true))
+      .on('pointerout',  () => drawBg(false))
+      .on('pointerdown', launchDev);
+  }
+
+  _renderDevSlot(x, y, w) {
+    // Slot machine goes directly — no extra sub-content
   }
 
   // ── Component renderers ───────────────────────────────────────────────────

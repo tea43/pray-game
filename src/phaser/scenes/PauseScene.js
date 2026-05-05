@@ -42,8 +42,9 @@ const BOX_H = SECTIONS.reduce((sum, s) => sum + ROW[s.kind], 0) + BOX.padding;
 export class PauseScene extends Phaser.Scene {
   constructor() { super({ key: 'PauseScene' }); }
 
-  create() {
+  create(data) {
     const { width: W, height: H } = this.scale;
+    const fromUpgrade = !!data?.fromUpgrade;
 
     // Dim the game behind the panel
     this.add.graphics()
@@ -72,7 +73,9 @@ export class PauseScene extends Phaser.Scene {
     y += ROW.title;
 
     // ── Resume ────────────────────────────────────────────────────────────
-    const resume = () => { this.scene.stop('PauseScene'); this.scene.resume('GameScene'); };
+    const resume = fromUpgrade
+      ? () => this.scene.stop('PauseScene')
+      : () => { this.scene.stop('PauseScene'); this.scene.resume('GameScene'); };
     btn(this, cx, y, BOX.width - BOX.padding * 2, BTN_H, 'RESUME', resume);
     y += ROW.btn;
 
@@ -113,12 +116,13 @@ export class PauseScene extends Phaser.Scene {
 
     btn(this, cx, y, BOX.width - BOX.padding * 2, BTN_H, 'MAIN MENU', () => {
       this.scene.stop('PauseScene');
+      this.scene.stop('UpgradeScene');
+      this.scene.stop('UpgradeTestScene');
       this.scene.stop('HUDScene');
       this.scene.stop('GameScene');
       this.scene.start('MenuScene');
     });
 
-    // ESC also resumes
     this.input.keyboard.on('keydown-ESC', resume);
   }
 }

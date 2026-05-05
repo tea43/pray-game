@@ -100,6 +100,7 @@ export class GameScene extends Phaser.Scene {
       survivedSeconds: 0, menuPhase: 'playing',
       isUpgradeScreen: false, activeUpgrades: { elliot: [], dick: [], habib: [] },
       pendingUpgrades: { elliot: null, dick: null, habib: null },
+      upgradeSpinCredits: 0, selectedUpgradeHistory: { elliot: [], dick: [], habib: [] },
     });
 
     if (diff.devWaves?.length > 0) {
