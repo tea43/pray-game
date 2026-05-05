@@ -1,8 +1,8 @@
 # Current Game State
 
-Source of truth: `wasteland_survivors-v4.html`.
+Source of truth: `src/` (modular build). Run `npm run dev` to play.
 
-This snapshot is for fast agent onboarding. It describes the current playable behavior without requiring a full read of the 3k+ line HTML file.
+This snapshot is for fast agent onboarding. It describes the current playable behaviour without requiring a full read of every source file.
 
 ## Game Identity
 
@@ -185,7 +185,7 @@ Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves
 
 ## Current Architecture
 
-Phase 4 modular build is complete. The game runs from `src/` via `npm run dev`. `wasteland_survivors-v4.html` is retained as the golden single-file reference.
+Modular build (Phases 0–5 complete, Phase 6 Audio in progress). The game runs from `src/` via `npm run dev`. The legacy single-file `wasteland_survivors-v4.html` has been removed; the modular build is now the primary source.
 
 Module layout:
 
@@ -226,4 +226,4 @@ src/
     canvas.js          # canvas helpers
 ```
 
-Next planned phases: finish Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `plan.md` for full details.
+Next planned phases: finish Audio (Phase 6), Lore/Cutscenes (Phase 7), Asset Registry + Enemy Visual Overhaul (Phase 8), World Exploration + Impassable Blocks (Phase 9). See `docs/planning/plan.md` for full details.

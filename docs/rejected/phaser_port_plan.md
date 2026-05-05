@@ -1,5 +1,7 @@
 # Phaser 4.1 Port Plan
 
+> **STATUS: REJECTED.** Port abandoned. Game remains on vanilla Canvas 2D + Vite. Kept for reference.
+
 Port `P-RAY: The Game` from vanilla Canvas 2D + Vite to **Phaser 4.1**.
 
 ---

@@ -1,5 +1,7 @@
 # Between-Wave Upgrade System: Implementation Plan
 
+> **STATUS: EXECUTED.** All 4 phases complete. Feature ships in the current modular build.
+
 This document outlines the development plan for the Between-Wave Upgrade System described in `bwaves_feature.md`.
 
 ## 1. Data Architecture

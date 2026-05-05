@@ -1,8 +1,8 @@
 # Modularization Plan
 
-Goal: make P-RAY: The Game manageable for humans and agents without corrupting the current playable file.
+> **STATUS: EXECUTED.** Phases 0–4 complete. Modular `src/` build is the primary source. `wasteland_survivors-v4.html` has been removed. This doc is kept for historical reference.
 
-The current game should remain shippable as `wasteland_survivors-v4.html` until a build system can reproduce the same behavior from modules.
+Goal: make P-RAY: The Game manageable for humans and agents without corrupting the current playable file.
 
 ## Principles
 

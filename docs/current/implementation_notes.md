@@ -1,18 +1,15 @@
-# P-RAY v4 — Implementation Notes
+# P-RAY — Implementation Notes
 
-Source file: `wasteland_survivors-v4.html` (~3 242 lines, single-file HTML/JS/CSS game on a `<canvas>` element).
+Source: modular `src/` (served via `npm run dev`). The legacy single-file `wasteland_survivors-v4.html` has been removed.
 
-The current HTML now has in-file definition tables near the top of the script:
+Definition tables live in `src/config/`:
 
-- `HERO_DEFS`
-- `ENEMY_DEFS`
-- `LOOT_DEFS`
-- `WAVE_DEFS`
-- `DISPLAY_NAME_DEFS`
+- `src/config/heroes.js` — `HERO_DEFS`
+- `src/config/enemies.js` — `ENEMY_DEFS`
+- `src/config/loot.js` — `LOOT_DEFS`
+- `src/config/waves.js` — `WAVE_DEFS`
 
-These are the first modularization boundary. They keep tuning and display metadata compact while the golden single-file build remains playable.
-
-Run `node scripts/check-game-data.js` after changing those definitions. It parses the embedded script and checks the core hero, enemy, loot, and wave configuration.
+Run `node scripts/check-game-data.js` after changing those definitions. It validates the core hero, enemy, loot, and wave configuration.
 
 ---
 
