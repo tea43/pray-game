@@ -1,21 +1,6 @@
 # Claude Guide
 
-P-RAY: The Game is a browser Canvas survival tactics game. Three survivors, movement-driven time flow, alien worm waves, bosses, loot drops, temporary weapon spikes, and between-wave upgrades.
-
-Use `agents.md` for role routing. Use `docs/index.md` as the navigation hub.
-
-## Fast Context
-
-- Playable entry point: `index.html` (served via `npm run dev`; modular source in `src/`)
-- Documentation hub: `docs/index.md`
-- Current game snapshot: `docs/current/current_game_state.md`
-- Active build phases: `docs/planning/plan.md`
-- Asset injection spec: `docs/planning/asset_injection_plan.md`
-- Future roadmap: `docs/planning/future_development_plan.md`
-
-## Working Principle
-
-Spend tokens on the subsystem being changed, not the whole project. Read `docs/index.md`, choose the smallest relevant file, then inspect exact code ranges with search.
+Read `docs/index.md` first. It is the navigation hub for all project docs.
 
 ## Documentation Discipline
 
@@ -48,5 +33,3 @@ When the user signals a phase is complete and work is moving to the next, the fi
 2. Move any fulfilled plan doc from `docs/planning/` to `docs/executed/` and mark items complete.
 3. Update `docs/planning/plan.md` to reflect the new current phase.
 4. Commit the doc updates together with, or immediately after, the last code commit of the phase.
-
-The goal is that any agent dropped into the project cold should be able to read `docs/index.md` and get an accurate, up-to-date picture without diffing the source.

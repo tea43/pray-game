@@ -59,9 +59,9 @@ Priority order (highest first):
 
 | Hero | Base Role | HP | Attack | Range | Rate | Ability |
 |---|---|---:|---:|---:|---:|---|
-| Elliot | Flexible melee skirmisher | 100 | 32 | 56 | 0.55s | `Q` Blink |
-| Dick | Fast melee bruiser | 120 | 24 | 36 | 0.34s | `W` Rage |
-| Habib | Ranged control attacker | 100 | 36 | 220 | 0.90s | `E` Chain Lightning |
+| Elliot | Alchemical potion provider | 100 | 32 | 56 | 0.55s | `Q` Blink |
+| Dick | Melee heavy unit | 120 | 24 | 36 | 0.34s | `W` Rage |
+| Habib | Ranged engineer attacker | 100 | 36 | 220 | 0.90s | `E` Chain Lightning |
 
 ## Base Weapons
 
