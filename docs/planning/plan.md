@@ -2,6 +2,7 @@
 
 > **This file is the immediate action plan** — phases with clear scope, implementation steps, and commit targets.
 > For larger design questions, open-ended ideas, and long-horizon discussions see [`backlog.md`](backlog.md).
+> Phases 0–5 complete. Phase 6 (Audio) in progress. Between-wave upgrades complete (executed separately, see `docs/executed/bwaves_feature_dev_plan.md`).
 
 Ultimate goals:
 
