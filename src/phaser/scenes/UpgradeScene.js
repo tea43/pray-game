@@ -31,17 +31,6 @@ export class UpgradeScene extends Phaser.Scene {
   // Capture init data fresh each launch so stale data never bleeds between runs
   init(data) { this._initData = data || {}; }
 
-  // ── Asset loading ──────────────────────────────────────────────────────────
-  preload() {
-    const px = Math.ceil(20 * DPR * 2);   // load at 2x render size for crispness
-    const svgCfg = { width: px, height: px };
-    const tryLoad = (key, path) => {
-      if (!this.textures.exists(key)) this.load.svg(key, path, svgCfg);
-    };
-    tryLoad('upg-alchemy', 'assets/tbd/icons/fizzing-flask.svg');
-    tryLoad('upg-weapon',  'assets/tbd/icons/hockey.svg');
-    tryLoad('upg-armor',   'assets/tbd/icons/round-shield.svg');
-  }
 
   // ── Scene entry ────────────────────────────────────────────────────────────
   create() {
