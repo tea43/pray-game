@@ -15,7 +15,7 @@ function canvasPt(e) {
 }
 
 function getPortraitUnit(x, y) {
-  const slotW = 150, slotH = G.PANEL_H, gap = 12;
+  const slotW = 180, slotH = G.PANEL_H, gap = 12;
   const slots = state.units;
   const totalW = slots.length * slotW + (slots.length - 1) * gap;
   const startX = (G.W - totalW) / 2;

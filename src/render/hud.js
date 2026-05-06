@@ -12,10 +12,17 @@ const HERO_KEYS = {
   habib:  ['3', 'E', 'D'],
 };
 
-const BTN  = 28;  // icon button size in px
-const GAP  = 4;   // gap between buttons
+const SLOT_W  = 180;  // hero card width
+const SLOT_G  = 12;   // gap between cards
+// Button layout: 3 buttons fill SLOT_W exactly
+// 2px left margin + 58px btn + 2px gap + 58px btn + 2px gap + 58px btn = 182 → trim right
+const BW      = 58;   // button width
+const BG      = 2;    // gap between buttons
+const B_LEFT  = 2;    // left margin before first button
+const KEY_H   = 18;   // key-label strip at bottom of each button
+// Button height fills from HEADER_H to PANEL_H - 2 (computed in draw)
 
-// Lazy image loader — returns Image when ready, null while loading, false on error
+// Lazy image loader
 const _imgCache = new Map();
 function _img(src) {
   if (!src) return null;
@@ -28,19 +35,18 @@ function _img(src) {
   return null;
 }
 
-// Tooltip set during drawAbilityPanel, rendered at the very end
 let _tooltip = null;
 
 export function drawAbilityPanel() {
   const { ctx, W, H, PANEL_H } = G;
-  const slotW = 150, slotH = PANEL_H, gap = 12;
-  const slots = state.units;
-  const totalW = slots.length * slotW + (slots.length - 1) * gap;
+  const slots  = state.units;
+  const totalW = slots.length * SLOT_W + (slots.length - 1) * SLOT_G;
   const startX = (W - totalW) / 2;
-  const panelY  = H - slotH - 12;
+  const panelY = H - PANEL_H - 12;
 
+  // Panel background stripe
   ctx.fillStyle = 'rgba(10, 6, 3, 0.6)';
-  ctx.fillRect(0, panelY - 4, W, slotH + 10);
+  ctx.fillRect(0, panelY - 4, W, PANEL_H + 10);
   ctx.strokeStyle = '#3a2a18';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -51,26 +57,29 @@ export function drawAbilityPanel() {
 
   for (let i = 0; i < slots.length; i++) {
     const u = slots[i];
-    const x = startX + i * (slotW + gap);
+    const x = startX + i * (SLOT_W + SLOT_G);
     const y = panelY;
 
+    // Card background + border
     ctx.fillStyle = u.dead ? 'rgba(30, 8, 5, 0.88)' : 'rgba(20, 12, 6, 0.92)';
-    ctx.fillRect(x, y, slotW, slotH);
+    ctx.fillRect(x, y, SLOT_W, PANEL_H);
     ctx.strokeStyle = u.dead ? '#5a2a1a' : u.selected ? '#c5a572' : '#3a2a18';
     ctx.lineWidth = u.selected && !u.dead ? 2 : 1;
-    ctx.strokeRect(x, y, slotW, slotH);
+    ctx.strokeRect(x, y, SLOT_W, PANEL_H);
 
     if (u.type === 'dick' && u.rageTimer > 0) {
       const pulse = 0.5 + Math.sin(state.time * 12) * 0.5;
       ctx.strokeStyle = `rgba(255, 60, 30, ${0.5 + pulse * 0.5})`;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x - 1, y - 1, slotW + 2, slotH + 2);
+      ctx.strokeRect(x - 1, y - 1, SLOT_W + 2, PANEL_H + 2);
     }
 
-    // Mini portrait
+    // ── Header: portrait + name + HP bar ─────────────────────────────────────
+    const HEADER_H = 26;
+
     ctx.save();
-    ctx.translate(x + 16, y + 20);
-    ctx.scale(0.65, 0.65);
+    ctx.translate(x + 12, y + 13);
+    ctx.scale(0.50, 0.50);
     const savedSel = u.selected;
     u.selected = false;
     if (u.type === 'eliott') u._drawEliott(ctx, 0);
@@ -80,48 +89,52 @@ export function drawAbilityPanel() {
     ctx.restore();
 
     ctx.fillStyle = u.dead ? '#8a4a3a' : '#e8d8b0';
-    ctx.font = 'bold 13px "Courier New", monospace';
+    ctx.font = 'bold 11px "Courier New", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(u.name.toUpperCase(), x + 34, y + 16);
+    ctx.fillText(u.name.toUpperCase(), x + 27, y + 12);
 
     if (u.dead) {
       ctx.fillStyle = '#a83a2a';
       ctx.font = 'bold 11px "Courier New", monospace';
-      ctx.fillText('DEAD', x + 34, y + 34);
+      ctx.fillText('DEAD', x + 27, y + HEADER_H + 8);
       continue;
     }
 
-    // HP
-    ctx.font = '10px "Courier New", monospace';
+    ctx.font = '9px "Courier New", monospace';
     ctx.fillStyle = '#8a6b3a';
     ctx.textAlign = 'right';
-    ctx.fillText(`${Math.ceil(u.hp)}/${u.maxHp}`, x + slotW - 8, y + 16);
+    ctx.fillText(`${Math.ceil(u.hp)}/${u.maxHp}`, x + SLOT_W - 4, y + 12);
     ctx.textAlign = 'left';
 
-    const barLeft = x + 34, barW = slotW - 34 - 8;
+    const barL = x + 27, barW = SLOT_W - 27 - 4;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(barLeft, y + 22, barW, 5);
+    ctx.fillRect(barL, y + 16, barW, 5);
     const hpPct = u.hp / u.maxHp;
     ctx.fillStyle = hpPct > 0.5 ? '#7aa853' : hpPct > 0.25 ? '#c5a247' : '#a83a2a';
-    ctx.fillRect(barLeft, y + 22, barW * hpPct, 5);
+    ctx.fillRect(barL, y + 16, barW * hpPct, 5);
 
-    // Ability buttons row
-    _drawAbilityButtons(ctx, u, x, y, panelY);
+    // ── Ability buttons ───────────────────────────────────────────────────────
+    const btnY = y + HEADER_H + 2;          // top of button area
+    const BH   = PANEL_H - HEADER_H - 4;    // button height (fills rest of card)
+    _drawAbilityButtons(ctx, u, x, btnY, BH, panelY);
   }
 
   if (_tooltip) _drawTooltip(ctx, _tooltip, W, panelY);
 }
 
-function _drawAbilityButtons(ctx, unit, sx, sy, panelY) {
-  const keys  = HERO_KEYS[unit.type] || ['?', '?', '?'];
+function _drawAbilityButtons(ctx, unit, sx, btnY, BH, panelY) {
+  const keys    = HERO_KEYS[unit.type] || ['?', '?', '?'];
   const upgPool = GameData.upgrades[unit.type] || [];
-  const btnY  = sy + 32;
-  const bx    = [sx + 34, sx + 34 + BTN + GAP, sx + 34 + (BTN + GAP) * 2];
+  const bxs     = [
+    sx + B_LEFT,
+    sx + B_LEFT + BW + BG,
+    sx + B_LEFT + (BW + BG) * 2,
+  ];
 
   // Basic ability
   _processBtn(ctx, {
-    x: bx[0], y: btnY,
-    key: keys[0],
+    x: bxs[0], y: btnY, bh: BH,
+    key:         keys[0],
     abilityId:   unit.abilityId,
     cd:          unit.abilityCd,
     maxCd:       unit.abilityMaxCd,
@@ -134,12 +147,12 @@ function _drawAbilityButtons(ctx, unit, sx, sy, panelY) {
 
   // Active skill slots 0 and 1
   for (let si = 0; si < 2; si++) {
-    const slot   = unit.activeSkillSlots[si];
-    const upgDef = slot ? upgPool.find(u => u.id === slot.id) : null;
+    const slot    = unit.activeSkillSlots[si];
+    const upgDef  = slot ? upgPool.find(u => u.id === slot.id) : null;
     const iconCfg = slot ? (GameData.abilityIcons[slot.id] || null) : null;
     _processBtn(ctx, {
-      x: bx[si + 1], y: btnY,
-      key: keys[si + 1],
+      x: bxs[si + 1], y: btnY, bh: BH,
+      key:         keys[si + 1],
       abilityId:   slot?.id || '',
       cd:          slot?.cd ?? 0,
       maxCd:       slot?.maxCd ?? 1,
@@ -154,141 +167,148 @@ function _drawAbilityButtons(ctx, unit, sx, sy, panelY) {
 
 function _processBtn(ctx, btn, panelY) {
   _drawBtn(ctx, btn);
-
-  // Hover → queue tooltip
   const mx = state.mouse?.x ?? -1, my = state.mouse?.y ?? -1;
   if (!btn.isEmpty && btn.name &&
-      mx >= btn.x && mx <= btn.x + BTN &&
-      my >= btn.y && my <= btn.y + BTN) {
+      mx >= btn.x && mx <= btn.x + BW &&
+      my >= btn.y && my <= btn.y + btn.bh) {
     _tooltip = { ...btn, panelY };
   }
 }
 
 function _drawBtn(ctx, btn) {
-  const { x, y, key, abilityId, cd, maxCd, color, isEmpty, wavesLeft } = btn;
-  const cx = x + BTN / 2, cy = y + BTN / 2;
+  const { x, y, bh, key, abilityId, cd, maxCd, color, isEmpty, wavesLeft } = btn;
+  const icnH = bh - KEY_H;       // icon area height (above key strip)
+  const icx  = x + BW / 2;
+  const icy  = y + icnH / 2;
 
   // Background
   ctx.fillStyle = isEmpty ? 'rgba(12,8,4,0.75)' : 'rgba(22,15,8,0.95)';
-  ctx.fillRect(x, y, BTN, BTN);
+  ctx.fillRect(x, y, BW, bh);
 
   if (isEmpty) {
     ctx.strokeStyle = '#2a1a0a';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, BTN, BTN);
+    ctx.strokeRect(x, y, BW, bh);
+    // dim dash in icon area
     ctx.fillStyle = '#2a1a0a';
-    ctx.font = '11px "Courier New", monospace';
+    ctx.font = '14px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('—', cx, cy);
+    ctx.fillText('—', icx, icy);
     ctx.textBaseline = 'alphabetic';
-    _drawKeyLabel(ctx, x, y, key, false);
+    _drawKeyStrip(ctx, x, y, bh, key, false);
     return;
   }
 
+  // ── Icon area ──────────────────────────────────────────────────────────────
   const iconCfg = GameData.abilityIcons[abilityId];
   const imgSrc  = iconCfg?.icon;
   const imgCol  = iconCfg?.color || color;
   const img     = _img(imgSrc);
-  const PAD = 3;
+  const PAD     = 4;
 
   if (img) {
     ctx.save();
     if (cd > 0) ctx.globalAlpha = 0.45;
-    ctx.drawImage(img, x + PAD, y + PAD, BTN - PAD * 2, BTN - PAD * 2);
+    ctx.drawImage(img, x + PAD, y + PAD, BW - PAD * 2, icnH - PAD * 2);
     ctx.restore();
   } else {
-    // Coloured placeholder
+    // Coloured placeholder with first letter
     ctx.fillStyle = imgCol;
-    ctx.globalAlpha = cd > 0 ? 0.22 : 0.50;
-    ctx.fillRect(x + PAD, y + PAD, BTN - PAD * 2, BTN - PAD * 2);
+    ctx.globalAlpha = cd > 0 ? 0.20 : 0.45;
+    ctx.fillRect(x + PAD, y + PAD, BW - PAD * 2, icnH - PAD * 2);
     ctx.globalAlpha = 1;
     ctx.fillStyle = cd > 0 ? '#5a4020' : '#e0d0b0';
-    ctx.font = `bold ${Math.round(BTN * 0.42)}px "Courier New", monospace`;
+    ctx.font = `bold ${Math.round(BW * 0.50)}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText((abilityId || '?').charAt(0).toUpperCase(), cx, cy + 1);
+    ctx.fillText((abilityId || '?').charAt(0).toUpperCase(), icx, icy);
     ctx.textBaseline = 'alphabetic';
   }
 
-  // Border — glows when ready
+  // Border — colour-glow when ready
   ctx.strokeStyle = cd > 0 ? '#3a2818' : imgCol;
   ctx.lineWidth   = cd > 0 ? 1 : 1.5;
-  ctx.strokeRect(x, y, BTN, BTN);
+  ctx.strokeRect(x, y, BW, bh);
 
-  // Cooldown pie overlay
+  // ── Cooldown pie (covers icon area only) ──────────────────────────────────
   if (cd > 0) {
-    const r   = BTN / 2 - 2;
+    const r   = Math.min(BW, icnH) / 2 - 3;
     const pct = cd / maxCd;
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, BW, icnH);   // clip to icon area
+    ctx.clip();
     ctx.globalAlpha = 0.72;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * pct);
+    ctx.moveTo(icx, icy);
+    ctx.arc(icx, icy, r, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * pct);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
-    // Remaining seconds
-    ctx.save();
+    // Seconds text
     ctx.fillStyle = '#d0c080';
-    ctx.font = `bold 8px "Courier New", monospace`;
+    ctx.font = 'bold 10px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(Math.ceil(cd) + 's', cx, cy + 1);
+    ctx.fillText(Math.ceil(cd) + 's', icx, icy + 1);
     ctx.textBaseline = 'alphabetic';
-    ctx.restore();
   }
 
-  // Durability pips — top-right corner, for active skills only
+  // ── Durability pips (active skills only) — top-right of icon area ─────────
   if (wavesLeft !== null) {
     const pipCol = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
     for (let p = 0; p < wavesLeft; p++) {
       ctx.fillStyle = pipCol;
       ctx.beginPath();
-      ctx.arc(x + BTN - 4 - p * 5, y + 4, 2, 0, Math.PI * 2);
+      ctx.arc(x + BW - 5 - p * 6, y + 5, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  _drawKeyLabel(ctx, x, y, key, cd <= 0);
+  _drawKeyStrip(ctx, x, y, bh, key, cd <= 0);
 }
 
-function _drawKeyLabel(ctx, bx, by, key, ready) {
-  const lw = 13, lh = 10;
-  ctx.fillStyle = ready ? 'rgba(50,35,15,0.95)' : 'rgba(16,10,4,0.95)';
-  ctx.fillRect(bx + 1, by + BTN - lh - 1, lw, lh);
-  ctx.fillStyle = ready ? '#c5a572' : '#4a3020';
-  ctx.font = 'bold 7px "Courier New", monospace';
+function _drawKeyStrip(ctx, bx, by, bh, key, ready) {
+  const sy = by + bh - KEY_H;
+  // Strip background
+  ctx.fillStyle = ready ? '#2a1a08' : '#130d04';
+  ctx.fillRect(bx, sy, BW, KEY_H);
+  // Top divider
+  ctx.strokeStyle = ready ? '#6a4820' : '#2a1a0a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx, sy); ctx.lineTo(bx + BW, sy);
+  ctx.stroke();
+  // Key label
+  ctx.fillStyle = ready ? '#e8c060' : '#6a4828';
+  ctx.font = 'bold 11px "Courier New", monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(key, bx + 1 + lw / 2, by + BTN - lh / 2 - 1);
+  ctx.fillText(key, bx + BW / 2, sy + KEY_H / 2);
   ctx.textBaseline = 'alphabetic';
 }
 
 function _drawTooltip(ctx, data, W, panelY) {
   const { x, y, name, description, cd, maxCd, wavesLeft } = data;
-  const PAD  = 8;
-  const TW   = 200;
-  const LH   = 13;
+  const PAD = 8, TW = 210, LH = 14;
 
   ctx.font = '9px "Courier New", monospace';
   const descLines = description ? _wrapText(ctx, description, TW - PAD * 2) : [];
-
-  // Count lines: name + desc + status + maybe pips
-  const statusLine = cd > 0 ? `CD: ${Math.ceil(cd)}s  (max ${Math.round(maxCd)}s)` : 'READY';
+  const statusLine = cd > 0 ? `CD: ${Math.ceil(cd)}s / ${Math.round(maxCd)}s` : 'READY';
   const allLines = [
-    { text: name,       bold: true,  color: '#e8d8b0' },
+    { text: name, bold: true, color: '#e8d8b0' },
     ...descLines.map(t => ({ text: t, bold: false, color: '#9a8060' })),
     { text: statusLine, bold: cd <= 0, color: cd > 0 ? '#c5a572' : '#80c040' },
   ];
   if (wavesLeft !== null) {
-    const pipCol = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
-    allLines.push({ text: `Durability: ${wavesLeft} wave${wavesLeft !== 1 ? 's' : ''} left`, bold: false, color: pipCol });
+    const col = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
+    allLines.push({ text: `${wavesLeft} wave${wavesLeft !== 1 ? 's' : ''} remaining`, bold: false, color: col });
   }
 
   const TH = allLines.length * LH + PAD * 2;
-  let tx = x + BTN / 2 - TW / 2;
+  let tx = x + BW / 2 - TW / 2;
   let ty = y - TH - 6;
   tx = Math.max(4, Math.min(W - TW - 4, tx));
   ty = Math.max(4, ty);

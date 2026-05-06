@@ -207,7 +207,7 @@ export class InputSystem {
   }
 
   _getPortraitUnit(x, y) {
-    const slotW = 150, gap = 12;
+    const slotW = 180, gap = 12;
     const slots = this.state.units;
     const totalW = slots.length * slotW + (slots.length - 1) * gap;
     const startX = (G.W - totalW) / 2;
