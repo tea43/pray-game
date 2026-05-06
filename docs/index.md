@@ -29,6 +29,7 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `planning/audio_plan.md`: Phase 6 implementation plan for music, sound effects, event naming, variant pools, and missing-asset fallbacks.
 - `planning/asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, enemies, weapons, loot, and comic assets.
 - `planning/future_world_sprites.md`: Eastern European environment sprites — design spec and occlusion system.
+- `planning/reworked_upgrade_plan.md`: Reworked slot-machine upgrade selector — lore-correct upgrade pools (Dick→weapons, Habib→armor, Eliott→alchemy), hidden spin-credit banking mechanic, and `UpgradeTestScene` dev harness.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 
 ## executed/ — Completed Specs
