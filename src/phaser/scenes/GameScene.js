@@ -13,7 +13,7 @@ import { playMusic } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
-import { removeWaveUpgrades, applyWaveUpgrades } from '../../systems/upgrades.js';
+import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -98,9 +98,9 @@ export class GameScene extends Phaser.Scene {
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
       survivedSeconds: 0, menuPhase: 'playing',
-      isUpgradeScreen: false, activeUpgrades: { elliot: [], dick: [], habib: [] },
-      pendingUpgrades: { elliot: null, dick: null, habib: null },
-      upgradeSpinCredits: 0, selectedUpgradeHistory: { elliot: [], dick: [], habib: [] },
+      isUpgradeScreen: false, activeUpgrades: { eliott: [], dick: [], habib: [] },
+      pendingUpgrades: { eliott: null, dick: null, habib: null },
+      upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
     });
 
     if (diff.devWaves?.length > 0) {
@@ -116,7 +116,7 @@ export class GameScene extends Phaser.Scene {
     clearBackgroundCache();
 
     const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
-    state.units.push(new Unit(cx - 44, cy + 8,  'elliot'));
+    state.units.push(new Unit(cx - 44, cy + 8,  'eliott'));
     state.units.push(new Unit(cx,       cy - 10, 'dick'));
     state.units.push(new Unit(cx + 44,  cy + 8,  'habib'));
 
@@ -321,6 +321,7 @@ export class GameScene extends Phaser.Scene {
       if (state.wave < WAVE_DEFS.maxWave) {
         state.isUpgradeScreen = true;
         removeWaveUpgrades();
+        tickActiveSkillDurability();
         this.scene.pause();
         this.scene.launch('UpgradeScene');
       } else {

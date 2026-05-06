@@ -1,82 +1,87 @@
 [
   {
-    "id": "dick_adrenaline_shot",
-    "name": "Adrenaline Shot",
+    "id": "inappropriate_stories",
+    "name": "Inappropriate Stories",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Allies in 250px gain +40% move speed and +30% attack speed for 6s. CD: 16s."
+  },
+  {
+    "id": "scream",
+    "name": "Scream",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "All enemies in 250px are stunned for 2.5s. CD: 14s."
+  },
+  {
+    "id": "mill_360",
+    "name": "360 Mill",
+    "rarity": "Epic",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Dick spins 360° (radius 80px): 2× base damage, heavy knockback. Dick is immortal during the spin. CD: 10s."
+  },
+  {
+    "id": "vortex",
+    "name": "Vortex",
+    "rarity": "Epic",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Like 360 Mill but Dick spirals ~60px while spinning, covering a larger area. Immortal during spin. CD: 12s."
+  },
+  {
+    "id": "smashing_time",
+    "name": "Smashing Time",
+    "rarity": "Legendary",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Leap to the highest-HP enemy in 350px; instant kill or 500 damage. Dick is immortal during leap. CD: 20s."
+  },
+  {
+    "id": "iron_knuckles",
+    "name": "Iron Knuckles",
+    "rarity": "Common",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.25,
+    "description": "Dick's melee damage increased by 25%."
+  },
+  {
+    "id": "thunderfoot",
+    "name": "Thunderfoot",
     "rarity": "Common",
     "effectType": "speed_mult",
-    "effectValue": 1.15,
-    "description": "Increases movement speed by 15%"
-  },
-  {
-    "id": "dick_thorn_mail",
-    "name": "Thorn Mail",
-    "rarity": "Epic",
-    "effectType": "reflect_dmg",
-    "effectValue": 0.5,
-    "description": "Reflects 50% of melee damage taken back to the attacker"
-  },
-  {
-    "id": "dick_heavy_swings",
-    "name": "Heavy Swings",
-    "rarity": "Rare",
-    "effectType": "base_dmg_mult",
     "effectValue": 1.20,
-    "description": "Increases base damage by 20%"
+    "description": "Dick's movement speed increased by 20%."
   },
   {
-    "id": "dick_patched_vest",
-    "name": "Patched Vest",
-    "rarity": "Common",
-    "effectType": "heal_start",
-    "effectValue": 0.10,
-    "description": "Restores 10% HP at the start of the wave"
-  },
-  {
-    "id": "dick_reinforced_boots",
-    "name": "Reinforced Boots",
-    "rarity": "Common",
-    "effectType": "speed_mult",
-    "effectValue": 1.10,
-    "description": "Increases movement speed by 10%"
-  },
-  {
-    "id": "dick_rapid_strikes",
-    "name": "Rapid Strikes",
+    "id": "hard_cap",
+    "name": "Hard Cap",
     "rarity": "Rare",
+    "effectType": "knockback_mult",
+    "effectValue": 1.40,
+    "description": "Dick's knockback dealt increased by 40%."
+  },
+  {
+    "id": "thick_skull",
+    "name": "Thick Skull",
+    "rarity": "Common",
+    "effectType": "hp_max_bonus",
+    "effectValue": 40,
+    "description": "Dick's max HP increased by 40."
+  },
+  {
+    "id": "battle_rhythm",
+    "name": "Battle Rhythm",
+    "rarity": "Common",
     "effectType": "atk_rate_mult",
-    "effectValue": 0.82,
-    "description": "Increases attack speed by 18%"
-  },
-  {
-    "id": "dick_battle_trance",
-    "name": "Battle Trance",
-    "rarity": "Rare",
-    "effectType": "ability_cd_mult",
-    "effectValue": 0.80,
-    "description": "Reduces RAGE cooldown by 20%"
-  },
-  {
-    "id": "dick_titans_fury",
-    "name": "Titan's Fury",
-    "rarity": "Epic",
-    "effectType": "base_dmg_mult",
-    "effectValue": 1.35,
-    "description": "Increases base damage by 35%"
-  },
-  {
-    "id": "dick_death_mirror",
-    "name": "Death Mirror",
-    "rarity": "Legendary",
-    "effectType": "reflect_dmg",
-    "effectValue": 1.0,
-    "description": "Reflects 100% of melee damage taken back to the attacker"
-  },
-  {
-    "id": "dick_undying_rage",
-    "name": "Undying Rage",
-    "rarity": "Legendary",
-    "effectType": "heal_start",
-    "effectValue": 0.50,
-    "description": "Restores 50% HP at the start of the wave"
+    "effectValue": 0.85,
+    "description": "Dick's attack rate increased by 15%."
   }
 ]

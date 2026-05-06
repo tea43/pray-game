@@ -15,10 +15,15 @@ P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a
 - Shift-click: add/remove a survivor from selection.
 - Click portrait: select from the bottom ability panel.
 - Right click: move selected survivors, or attack-move if clicking an enemy.
-- `Q`: Elliot ability.
-- `W`: Dick ability.
-- `E`: Habib ability.
-- `S`: stop selected survivors.
+- `Q`: Eliott ability (Group Blink).
+- `W`: Dick ability (Boomerang Throw).
+- `E`: Habib ability (Backdoor Blockade).
+- `S`: stop selected survivors / fire Habib's 2nd active skill.
+- `1`: fire Dick's 1st active skill (if equipped).
+- `2`: fire Habib's 1st active skill (if equipped).
+- `3`: fire Eliott's 1st active skill (if equipped).
+- `a`: fire Dick's 2nd active skill (if equipped).
+- `d`: fire Eliott's 2nd active skill (if equipped).
 - `+`: increase time speed multiplier (x1 → x2 → x3).
 - `-`: decrease time speed multiplier (x3 → x2 → x1).
 - `SPACE` tap (< 1s): toggle manual pause on/off.
@@ -59,21 +64,32 @@ Priority order (highest first):
 
 | Hero | Base Role | HP | Attack | Range | Rate | Ability |
 |---|---|---:|---:|---:|---:|---|
-| Elliot | Alchemical potion provider | 100 | 32 | 56 | 0.55s | `Q` Blink |
-| Dick | Melee heavy unit | 120 | 24 | 36 | 0.34s | `W` Rage |
-| Habib | Ranged engineer attacker | 100 | 36 | 220 | 0.90s | `E` Chain Lightning |
+| Eliott | Alchemical potion provider | 100 | 18 | 32 | 0.28s | `Q` Group Blink |
+| Dick | Melee heavy unit | 120 | 26 | 40 | 0.34s | `W` Boomerang Throw |
+| Habib | Frontline engineer | 100 | 26 | 40 | 0.34s | `E` Backdoor Blockade |
 
 ## Base Weapons
 
-- Elliot: `longClub`; melee hit with moderate knockback.
-- Dick: `dualClubs`; alternating melee swings with high attack frequency.
-- Habib: `thrownClub`; boomerang-style projectile that flies toward the target, hits once if it collides, then returns to Habib and disappears when caught.
+- Eliott: `short_hockey_club`; fast short-range melee with moderate knockback.
+- Dick: `hockey_club`; dual alternating melee swings with high knockback.
+- Habib: `hockey_club`; melee swings (no projectile).
 
 ## Abilities
 
-- Elliot, Blink: teleports up to 240 px toward the cursor. Cooldown: 6s.
-- Dick, Rage: lasts 5s, doubles damage, speeds attacks by applying a 0.4x attack-rate multiplier, and increases knockback. Cooldown: 12s.
-- Habib, Chain Lightning: chains to up to 4 enemies within 200 px per jump. Each hit deals 30 damage and stuns for 1.8s. Cooldown: 8s.
+- Eliott, Group Blink: teleports up to 240 px toward the cursor; every allied hero within 120 px of Eliott's start position is also pulled to within ~40 px of his destination. Cooldown: 9s.
+- Dick, Boomerang Throw: auto-targets the heaviest enemy within 300 px; the hockey club flies an oval arc outbound (260 px/s, 40 dmg/hit, piercing) then returns (300 px/s, 25 dmg/hit). Dick is unarmed until the club returns. Cooldown: 10s (starts on catch).
+- Habib, Backdoor Blockade: all heroes within 150 px of Habib at activation receive 50% damage reduction for 6s (buff travels with each hero). Cooldown: 14s.
+
+## Active Upgrade Slots
+
+Each hero can hold up to 2 active upgrade skills beyond their base ability. Active skills are awarded by the slot-machine and bound to hotkeys in acquisition order:
+
+| Slot | Dick | Habib | Eliott |
+|---|---|---|---|
+| 1st | `1` | `2` | `3` |
+| 2nd | `a` | `s` | `d` |
+
+Active upgrades have a durability counter (3 waves by default; modified by difficulty). When the counter reaches 0 the slot empties and the upgrade becomes available in future reels again. Durability pips are shown in the HUD. Passive upgrades remain permanent for the run.
 
 ## Temporary Weapons
 
@@ -98,7 +114,7 @@ At the end of each 22s wave, time pauses and `UpgradeScene` appears as a slot ma
 
 **Upgrades have rarities** (Common, Rare, Epic, Legendary) shown as a coloured left stripe and background tint. Effects include stat multipliers (speed, damage, cooldown, attack rate) and special hooks.
 
-**Upgrades are temporary** — they wipe at the start of each new wave cycle; `selectedUpgradeHistory` persists for the run so the same upgrade is never offered twice.
+**Passive upgrades are temporary** — they wipe at the start of each wave; `selectedUpgradeHistory` persists for the run. **Active upgrades** are stored on the unit and tick down a durability counter each wave (see Active Upgrade Slots above).
 
 `GameScene` is paused while `UpgradeScene` is active. ESC opens the settings/pause panel without closing the upgrade screen. On selection, `GameScene` resumes and `advanceWave()` is called.
 
@@ -174,7 +190,7 @@ Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves
 
 - Static screen-space arena, no camera and no world-coordinate layer yet.
 - Canvas size is approximately 97% of the browser window.
-- Bottom HUD panel reserves 74 px plus padding.
+- Bottom HUD panel reserves 96 px plus padding (expanded to fit active skill slot rows).
 - Terrain is procedural decoration: debris, cracks, dust, soil variation, blood stains, vignette, and warm tint.
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
 - **Pseudo-3D / 2.5D System**: Entities feature a `z` (height) axis and pseudo-gravity. They draw a decoupled ground shadow at `y`, and their main sprite is drawn at `y - z` to give them verticality. Worms use radial gradients to give segments a tubular, 3D appearance.

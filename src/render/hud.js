@@ -2,6 +2,14 @@ import { G } from '../globals.js';
 import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 import { getHighScore } from '../systems/score.js';
+import { GameData } from '../systems/upgrades.js';
+
+// Hotkey labels per hero per slot
+const ACTIVE_KEY_LABELS = {
+  dick:   ['1', 'a'],
+  habib:  ['2', 's'],
+  eliott: ['3', 'd'],
+};
 
 export function drawAbilityPanel() {
   const { ctx, W, H, PANEL_H } = G;
@@ -43,7 +51,7 @@ export function drawAbilityPanel() {
     ctx.scale(0.65, 0.65);
     const savedSelected = u.selected;
     u.selected = false;
-    if (u.type === 'elliot') u._drawElliot(ctx, 0);
+    if (u.type === 'eliott') u._drawEliott(ctx, 0);
     else if (u.type === 'dick') u._drawDick(ctx, 0);
     else if (u.type === 'habib') u._drawHabib(ctx, 0);
     u.selected = savedSelected;
@@ -77,35 +85,99 @@ export function drawAbilityPanel() {
 
     ctx.font = 'bold 11px "Courier New", monospace';
     ctx.fillStyle = u.abilityCd > 0 ? '#6a5030' : u.abilityColor;
-    ctx.fillText(`[${u.abilityKey}] ${u.abilityName}`, x + 8, y + 46);
-
-    if (u.type === 'dick' && u.rageTimer > 0) {
-      ctx.fillStyle = '#ff8040';
-      ctx.textAlign = 'right';
-      ctx.font = '10px "Courier New", monospace';
-      ctx.fillText(`${u.rageTimer.toFixed(1)}s`, x + slotW - 8, y + 46);
-      ctx.textAlign = 'left';
-    }
+    ctx.fillText(`[${u.abilityKey}] ${u.abilityName}`, x + 8, y + 44);
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(x + 8, y + 52, slotW - 16, 6);
+    ctx.fillRect(x + 8, y + 49, slotW - 16, 5);
     if (u.abilityCd > 0) {
       const cdPct = 1 - (u.abilityCd / u.abilityMaxCd);
       ctx.fillStyle = '#5a3a70';
-      ctx.fillRect(x + 8, y + 52, (slotW - 16) * cdPct, 6);
+      ctx.fillRect(x + 8, y + 49, (slotW - 16) * cdPct, 5);
       ctx.fillStyle = '#c5a572';
       ctx.font = '9px "Courier New", monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`${u.abilityCd.toFixed(1)}s`, x + slotW - 8, y + 66);
+      ctx.fillText(`${u.abilityCd.toFixed(1)}s`, x + slotW - 8, y + 60);
       ctx.textAlign = 'left';
     } else {
       ctx.fillStyle = u.abilityColor;
-      ctx.fillRect(x + 8, y + 52, slotW - 16, 6);
+      ctx.fillRect(x + 8, y + 49, slotW - 16, 5);
       ctx.fillStyle = u.abilityColor;
       ctx.font = 'bold 9px "Courier New", monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('READY', x + slotW - 8, y + 66);
+      ctx.fillText('READY', x + slotW - 8, y + 60);
       ctx.textAlign = 'left';
+    }
+
+    // Active skill slots
+    _drawActiveSlots(ctx, u, x, y + 63, slotW);
+  }
+}
+
+function _drawActiveSlots(ctx, unit, x, topY, slotW) {
+  const keyLabels = ACTIVE_KEY_LABELS[unit.type] || ['?', '?'];
+  const pool = GameData.upgrades[unit.type] || [];
+
+  for (let si = 0; si < 2; si++) {
+    const slot = unit.activeSkillSlots[si];
+    const rowY = topY + si * 14;
+    const key = keyLabels[si];
+
+    // Key label box
+    ctx.fillStyle = slot ? 'rgba(40,30,15,0.9)' : 'rgba(20,15,8,0.7)';
+    ctx.fillRect(x + 8, rowY, 12, 11);
+    ctx.strokeStyle = slot ? '#6a4820' : '#3a2a18';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(x + 8, rowY, 12, 11);
+    ctx.font = 'bold 8px "Courier New", monospace';
+    ctx.fillStyle = slot ? '#c5a572' : '#4a3520';
+    ctx.textAlign = 'center';
+    ctx.fillText(key, x + 14, rowY + 9);
+    ctx.textAlign = 'left';
+
+    if (!slot) {
+      ctx.fillStyle = '#3a2a18';
+      ctx.font = '8px "Courier New", monospace';
+      ctx.fillText('empty', x + 24, rowY + 9);
+      continue;
+    }
+
+    // Skill name (abbreviated)
+    const upgDef = pool.find(u => u.id === slot.id);
+    const name = upgDef ? upgDef.name.substring(0, 14) : slot.id.substring(0, 14);
+    ctx.fillStyle = slot.cd > 0 ? '#5a4020' : '#c5a572';
+    ctx.font = '8px "Courier New", monospace';
+    ctx.fillText(name, x + 24, rowY + 9);
+
+    // Cooldown mini-bar
+    const barX = x + slotW - 36;
+    const barW = 26;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(barX, rowY + 1, barW, 9);
+    if (slot.cd > 0) {
+      const pct = 1 - slot.cd / slot.maxCd;
+      ctx.fillStyle = '#5a3a70';
+      ctx.fillRect(barX, rowY + 1, barW * pct, 9);
+      ctx.fillStyle = '#8a68a0';
+      ctx.font = '7px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${slot.cd.toFixed(0)}s`, barX + barW / 2, rowY + 9);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillStyle = '#c5a040';
+      ctx.fillRect(barX, rowY + 1, barW, 9);
+      ctx.fillStyle = '#201808';
+      ctx.font = 'bold 7px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('RDY', barX + barW / 2, rowY + 9);
+      ctx.textAlign = 'left';
+    }
+
+    // Durability pips
+    for (let p = 0; p < slot.wavesLeft; p++) {
+      ctx.fillStyle = p < slot.wavesLeft ? '#80c040' : '#2a1a08';
+      ctx.beginPath();
+      ctx.arc(x + slotW - 7 - p * 5, rowY + 5.5, 2, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 }

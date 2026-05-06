@@ -29,9 +29,20 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 
 ## Abilities
 
-- Select Elliot, press `Q`, confirm blink toward cursor and cooldown.
-- Select Dick, press `W`, confirm rage aura, faster attacks, and cooldown.
-- Select Habib, press `E` near enemies, confirm chain lightning, stun, and cooldown.
+- All hero name labels read "Eliott" (double-t).
+- Habib auto-attacks with melee hockey club; no projectile spawned.
+- Eliott auto-attacks with short hockey club; swing is visually smaller/faster than Dick's.
+- Select Eliott, press `Q`, confirm Group Blink moves Eliott and nearby allies; hero outside 120 px is unaffected. Cooldown shown.
+- Select Dick, press `W` near enemies, confirm club travels oval arc targeting highest-HP enemy, hits on both legs, returns; Dick unarmed during flight. Does not fire if no target in range.
+- Select Habib, press `E` near allies, confirm Backdoor Blockade shimmer on heroes within 150 px; those heroes take half damage for 6s; heroes outside radius unaffected.
+
+## Active Skills
+
+- Win an active upgrade (e.g. Green Pipe for Eliott) from the slot machine.
+- Confirm it appears in the HUD active slot with key label and pip row.
+- Activate with the bound hotkey; confirm effect fires and cooldown bar fills.
+- Play 3+ waves; confirm durability pips decrement each wave; confirm slot empties at 0 pips.
+- Confirm the expired upgrade reappears in the slot machine reel after expiry.
 
 ## Combat And Loot
 

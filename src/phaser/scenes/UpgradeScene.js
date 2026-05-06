@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { state } from '../../state.js';
 import { GameData } from '../../systems/upgrades.js';
 import { playSfx } from '../../systems/audio.js';
+import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 
 const DPR  = window.devicePixelRatio || 1;
 const CARD_H   = 76;
@@ -15,10 +16,10 @@ const RARITY = {
   Legendary: { tint: 0xffaa18, alpha: 0.22 },
 };
 
-const HERO_ICON = { elliot: 'upg-alchemy', dick: 'upg-weapon', habib: 'upg-armor' };
+const HERO_ICON = { eliott: 'upg-alchemy', dick: 'upg-weapon', habib: 'upg-armor' };
 
 const HEROES = [
-  { id: 'elliot', label: 'ELLIOT' },
+  { id: 'eliott', label: 'ELIOTT' },
   { id: 'dick',   label: 'DICK'   },
   { id: 'habib',  label: 'HABIB'  },
 ];
@@ -47,7 +48,7 @@ export class UpgradeScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
 
     state.upgradeSpinCredits = Math.min(state.upgradeSpinCredits + 1, 3);
-    state.pendingUpgrades = { elliot: null, dick: null, habib: null };
+    state.pendingUpgrades = { eliott: null, dick: null, habib: null };
 
     // Dim the frozen GameScene behind
     this.add.graphics().fillStyle(0x000000, 0.62).fillRect(0, 0, W, H);
@@ -191,7 +192,14 @@ export class UpgradeScene extends Phaser.Scene {
     const cardW   = this._cardW;
 
     const history = state.selectedUpgradeHistory[hero.id] || [];
-    const pool    = (GameData.upgrades[hero.id] || []).filter(u => !history.includes(u.id));
+    // Filter out already-selected upgrades; also filter active upgrades if slots are full
+    const unit = state.units?.find(u => u.type === hero.id);
+    const activeCount = unit ? unit.activeSkillSlots.filter(Boolean).length : 0;
+    const pool    = (GameData.upgrades[hero.id] || []).filter(u => {
+      if (history.includes(u.id)) return false;
+      if (u.upgradeClass === 'active' && activeCount >= 2) return false;
+      return true;
+    });
 
     if (pool.length === 0) {
       this._txt(cx, centreY, 'EXHAUSTED', {
@@ -493,7 +501,15 @@ export class UpgradeScene extends Phaser.Scene {
 
   _advance() {
     const { heroId, upg } = this._selected;
-    state.activeUpgrades[heroId].push(upg);
+    if (upg.upgradeClass === 'active') {
+      // Route to unit's active skill slot
+      const unit = state.units?.find(u => u.type === heroId);
+      if (unit) {
+        unit.pushActiveSkill(upg.id, upg.baseDurability ?? 3);
+      }
+    } else {
+      state.activeUpgrades[heroId].push(upg);
+    }
     state.selectedUpgradeHistory[heroId].push(upg.id);
 
     const initData = this._initData || {};
@@ -509,7 +525,7 @@ export class UpgradeScene extends Phaser.Scene {
   _clearSelection() {
     this._selected = null;
     this._ready    = false;
-    state.pendingUpgrades = { elliot: null, dick: null, habib: null };
+    state.pendingUpgrades = { eliott: null, dick: null, habib: null };
 
     this._reels.forEach(reel => {
       if (!reel) return;

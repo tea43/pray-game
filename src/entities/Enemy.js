@@ -174,11 +174,30 @@ export class Enemy {
       }
     }
 
+    // Fire DoT
+    if (this.fireDot > 0) {
+      this.fireDot = Math.max(0, this.fireDot - dt);
+      this.hp -= 6 * dt;
+      if (Math.random() < dt * 8) {
+        state.particles.push({ x: this.x + rand(-4, 4), y: this.y + rand(-6, 0), vx: rand(-20, 20), vy: rand(-50, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: rand(0, 1) > 0.5 ? '#ff6020' : '#ffa040', size: rand(1.5, 3), realtime: true });
+      }
+    }
+
+    // Target selection: prefer stoned hero if one exists
     let target = null, nd = Infinity;
+    let stonedTarget = null;
     for (const u of state.units) {
       if (u.dead) continue;
-      const d = dist2(this.x, this.y, u.x, u.y);
-      if (d < nd) { nd = d; target = u; }
+      if (u.stonedTimer > 0) { stonedTarget = u; break; }
+    }
+    if (stonedTarget) {
+      target = stonedTarget;
+    } else {
+      for (const u of state.units) {
+        if (u.dead) continue;
+        const d = dist2(this.x, this.y, u.x, u.y);
+        if (d < nd) { nd = d; target = u; }
+      }
     }
 
     if (target) {
@@ -193,19 +212,23 @@ export class Enemy {
           playSfx('boss.walk.default', { cooldownKey: `boss.walk.${this.kind}` });
         }
       } else if (this.dmgCd <= 0) {
-        target.hp -= this.dmg;
-        target.hurtFlash = 1;
-        this.dmgCd = 0.75;
-        playSfx('alien.attack.default', { synthetic: 'hit' });
-        playSfx('character.damaged.default', { synthetic: 'hit' });
-        if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
-        for (let i = 0; i < 6; i++) {
-          state.particles.push({
-            x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
-            vx: rand(-60, 60), vy: rand(-80, -10),
-            life: 0.5, maxLife: 0.5,
-            color: '#a83a2a', size: rand(1, 2), realtime: true,
-          });
+        const actualDmg = target.applyDamage ? target.applyDamage(this.dmg, this) : this.dmg;
+        if (actualDmg > 0) {
+          if (!target.applyDamage) { target.hp -= actualDmg; target.hurtFlash = 1; }
+          this.dmgCd = 0.75;
+          playSfx('alien.attack.default', { synthetic: 'hit' });
+          playSfx('character.damaged.default', { synthetic: 'hit' });
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
+          for (let i = 0; i < 6; i++) {
+            state.particles.push({
+              x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
+              vx: rand(-60, 60), vy: rand(-80, -10),
+              life: 0.5, maxLife: 0.5,
+              color: '#a83a2a', size: rand(1, 2), realtime: true,
+            });
+          }
+        } else {
+          this.dmgCd = 0.75; // still apply cooldown even if blocked
         }
       }
     }

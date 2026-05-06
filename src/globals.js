@@ -5,6 +5,6 @@ export const G = {
   ctx: null,
   W: 0,
   H: 0,
-  PANEL_H: 74,
+  PANEL_H: 96,
   PLAY_BOTTOM: 0,
 };

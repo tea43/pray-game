@@ -13,6 +13,36 @@ export const WEAPON_DEFS = {
 
   // ── Melee ──────────────────────────────────────────────────────────────────
 
+  hockey_club: {
+    displayName:   'Hockey Club',
+    type:          'melee',
+    dual:          true,            // alternating swings
+    atkRange:      40,
+    atkDmg:        26,
+    atkRate:       0.34,
+    knockback:     90,
+    swingArc:      2.2,
+    swingOffset:   1.1,
+    sfxAttack:     'weapon.dualClubs.attack',
+    sfxFallback:   'weapon.attack.default',
+    lootDuration:  null,
+  },
+
+  short_hockey_club: {
+    displayName:   'Short Hockey Club',
+    type:          'melee',
+    shortClub:     true,            // use scaled-down club draw
+    atkRange:      32,
+    atkDmg:        18,
+    atkRate:       0.28,
+    knockback:     55,
+    swingArc:      2.0,
+    swingOffset:   1.0,
+    sfxAttack:     'weapon.attack.default',
+    sfxFallback:   'weapon.attack.default',
+    lootDuration:  null,
+  },
+
   long_club: {
     displayName:   'Long Club',
     type:          'melee',

@@ -82,7 +82,7 @@ function newGame() {
   document.getElementById('gameOverText').classList.remove('victory');
 
   const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
-  state.units.push(new Unit(cx - 44, cy + 8, 'elliot'));
+  state.units.push(new Unit(cx - 44, cy + 8, 'eliott'));
   state.units.push(new Unit(cx, cy - 10, 'dick'));
   state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
 
@@ -370,8 +370,12 @@ function frame(now) {
         if (u.dead || sw.hit.has(u)) continue;
         const d = dist2(sw.x, sw.y, u.x, u.y);
         if (d > prevR - 8 && d < sw.r + 8) {
-          u.hp -= sw.dmg;
-          u.hurtFlash = 1;
+          if (u.applyDamage) {
+            u.applyDamage(sw.dmg, null);
+          } else {
+            u.hp -= sw.dmg;
+            u.hurtFlash = 1;
+          }
           sw.hit.add(u);
           const ang = Math.atan2(u.y - sw.y, u.x - sw.x);
           for (let i = 0; i < 10; i++) {
@@ -389,6 +393,36 @@ function frame(now) {
       if (sw.r > sw.maxR) sw.life = 0;
     }
     state.shockwaves = state.shockwaves.filter(sw => sw.life > 0);
+
+    // Acid shots
+    if (state.acidShots && state.acidShots.length) {
+      for (const a of state.acidShots) {
+        if (a.dead) continue;
+        a.x += a.vx * gameDt;
+        a.y += a.vy * gameDt;
+        a.life -= gameDt;
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          if (dist2(a.x, a.y, e.x, e.y) < e.r + 14) {
+            for (const e2 of state.enemies) {
+              if (e2.dead) continue;
+              if (dist2(a.x, a.y, e2.x, e2.y) < 60 + e2.r) {
+                e2.hp -= 35;
+                e2.hurtFlash = 1;
+                if (!e2.stunTimer || e2.stunTimer < 3) e2.stunTimer = 3;
+              }
+            }
+            for (let i = 0; i < 14; i++) {
+              state.particles.push({ x: a.x + rand(-8,8), y: a.y + rand(-8,8), vx: rand(-80,80), vy: rand(-80,20), life: rand(0.3,0.7), maxLife: 0.7, color: '#60c040', size: rand(2,4), realtime: true });
+            }
+            a.dead = true;
+            break;
+          }
+        }
+        if (a.life <= 0) a.dead = true;
+      }
+      state.acidShots = state.acidShots.filter(a => !a.dead);
+    }
 
     for (const e of state.enemies) {
       if (e.dead && e.deathTimer < 0.1 && e.deathTimer + gameDt >= 0.1) {
@@ -618,6 +652,20 @@ function frame(now) {
   drawHelicopter(ctx);
   for (const ent of drawables) ent.draw(ctx);
   for (const pr of state.projectiles) pr.draw(ctx);
+
+  // Draw acid shots
+  if (state.acidShots) {
+    for (const a of state.acidShots) {
+      if (a.dead) continue;
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#50b030';
+      ctx.fill();
+      ctx.strokeStyle = '#80e050';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
 
   drawBolts();
   drawExplosions();

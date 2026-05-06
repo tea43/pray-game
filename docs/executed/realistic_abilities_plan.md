@@ -2,6 +2,7 @@
 
 > Branch: `realistic_abilities`
 > Scope: Replace current placeholder abilities with lore-accurate ones, fix name spelling, reassign weapons per character roles, and redesign the upgrade pool into passive/active tiers.
+> **Status: IMPLEMENTED** — All steps completed on 2026-05-05.
 
 ---
 

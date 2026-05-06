@@ -1,13 +1,13 @@
 export const HERO_DEFS = {
-  elliot: {
-    name: 'Elliot',
+  eliott: {
+    name: 'Eliott',
     abilityKey: 'Q',
-    abilityName: 'BLINK',
-    abilityMaxCd: 6,
+    abilityName: 'GROUP BLINK',
+    abilityMaxCd: 9,
     abilityColor: '#80c8ff',
-    startingWeapon: 'long_club',
+    startingWeapon: 'short_hockey_club',
     maxHp: 100,
-    fallbackRenderer: 'elliot',
+    fallbackRenderer: 'eliott',
     palette: {
       shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
       shorts: '#8a6840', skin: '#e8b888',
@@ -17,10 +17,10 @@ export const HERO_DEFS = {
   dick: {
     name: 'Dick',
     abilityKey: 'W',
-    abilityName: 'RAGE',
-    abilityMaxCd: 12,
+    abilityName: 'BOOMERANG',
+    abilityMaxCd: 10,
     abilityColor: '#ff6040',
-    startingWeapon: 'dual_clubs',
+    startingWeapon: 'hockey_club',
     maxHp: 120,
     fallbackRenderer: 'dick',
     palette: {
@@ -31,10 +31,10 @@ export const HERO_DEFS = {
   habib: {
     name: 'Habib',
     abilityKey: 'E',
-    abilityName: 'CHAIN LTG',
-    abilityMaxCd: 8,
+    abilityName: 'BLOCKADE',
+    abilityMaxCd: 14,
     abilityColor: '#c8a0ff',
-    startingWeapon: 'thrown_club',
+    startingWeapon: 'hockey_club',
     maxHp: 100,
     fallbackRenderer: 'habib',
     palette: {

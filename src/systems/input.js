@@ -168,6 +168,14 @@ export function initInput() {
       return;
     }
     if (k === 's') {
+      // Activate Habib's 2nd active skill if any selected hero has it
+      let skillFired = false;
+      for (const u of state.selected) {
+        if (u.type === 'habib' && !u.dead) {
+          if (u.activateSkill(1)) skillFired = true;
+        }
+      }
+      // Always also stop movement
       for (const u of state.selected) u.stop();
       return;
     }
@@ -190,6 +198,21 @@ export function initInput() {
       e.preventDefault();
       for (const u of state.selected) {
         if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+      }
+    }
+
+    // Active skill hotkeys: 1/2/3 (slot 0) and a/d (slot 1)
+    const ACTIVE_KEYS = {
+      '1': { type: 'dick',   slot: 0 },
+      '2': { type: 'habib',  slot: 0 },
+      '3': { type: 'eliott', slot: 0 },
+      'a': { type: 'dick',   slot: 1 },
+      'd': { type: 'eliott', slot: 1 },
+    };
+    if (ACTIVE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
+      const { type, slot } = ACTIVE_KEYS[k];
+      for (const u of state.selected) {
+        if (u.type === type && !u.dead) u.activateSkill(slot);
       }
     }
   });

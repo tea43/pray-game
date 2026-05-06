@@ -37,8 +37,8 @@
       "volume": 0.8,
       "pitchJitter": 0.04
     },
-    "character.death.elliot": {
-      "dir": "characters/death/elliot",
+    "character.death.eliott": {
+      "dir": "characters/death/eliott",
       "fallback": "character.death.default",
       "volume": 0.85,
       "pitchJitter": 0.03

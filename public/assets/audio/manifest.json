@@ -48,7 +48,7 @@
       "volume": 0.8,
       "pitchJitter": 0.04
     },
-    "character.death.elliot": {
+    "character.death.eliott": {
       "variants": [],
       "fallback": "character.death.default",
       "volume": 0.85,
