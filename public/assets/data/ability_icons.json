@@ -1,0 +1,22 @@
+{
+  "group_blink":            { "icon": "assets/icons/abilities/group_blink.png",            "color": "#80c8ff" },
+  "boomerang":              { "icon": "assets/icons/abilities/boomerang.png",              "color": "#ff6040" },
+  "backdoor_blockade":      { "icon": "assets/icons/abilities/backdoor_blockade.png",      "color": "#c8a0ff" },
+
+  "stoned_green_pipe":      { "icon": "assets/icons/abilities/stoned_green_pipe.png",      "color": "#40c840" },
+  "green_pipe":             { "icon": "assets/icons/abilities/green_pipe.png",             "color": "#60c060" },
+  "blue_cubes_rage":        { "icon": "assets/icons/abilities/blue_cubes_rage.png",        "color": "#4080ff" },
+  "blue_cubes_speed":       { "icon": "assets/icons/abilities/blue_cubes_speed.png",       "color": "#6060ff" },
+  "white_powder_hit":       { "icon": "assets/icons/abilities/white_powder_hit.png",       "color": "#e8e0ff" },
+  "white_powder_dominance": { "icon": "assets/icons/abilities/white_powder_dominance.png", "color": "#c0a0ff" },
+
+  "chain_lightning":        { "icon": "assets/icons/abilities/chain_lightning.png",        "color": "#a0e0ff" },
+  "flamethrower":           { "icon": "assets/icons/abilities/flamethrower.png",           "color": "#ff6020" },
+  "acid_gun":               { "icon": "assets/icons/abilities/acid_gun.png",               "color": "#60ff40" },
+
+  "inappropriate_stories":  { "icon": "assets/icons/abilities/inappropriate_stories.png",  "color": "#ff8030" },
+  "scream":                 { "icon": "assets/icons/abilities/scream.png",                 "color": "#ff4040" },
+  "mill_360":               { "icon": "assets/icons/abilities/mill_360.png",               "color": "#ff8020" },
+  "vortex":                 { "icon": "assets/icons/abilities/vortex.png",                 "color": "#ff6010" },
+  "smashing_time":          { "icon": "assets/icons/abilities/smashing_time.png",          "color": "#ff3010" }
+}

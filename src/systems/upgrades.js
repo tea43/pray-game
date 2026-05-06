@@ -4,8 +4,16 @@ import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { ACTIVE_SKILL_DEFS } from './activeSkills.js';
 
 export const GameData = {
-  upgrades: { eliott: [], dick: [], habib: [] }
+  upgrades: { eliott: [], dick: [], habib: [] },
+  abilityIcons: {},
 };
+
+export async function loadAbilityIcons() {
+  try {
+    const res = await fetch('assets/data/ability_icons.json');
+    if (res.ok) GameData.abilityIcons = await res.json();
+  } catch (e) {}
+}
 
 export async function loadUpgrades() {
   try {

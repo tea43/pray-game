@@ -78,6 +78,8 @@ export class Unit {
     this.name = def.name;
     this.abilityKey = def.abilityKey;
     this.abilityName = def.abilityName;
+    this.abilityId = def.abilityId || '';
+    this.abilityDescription = def.abilityDescription || '';
     this.abilityMaxCd = def.abilityMaxCd * diff.hero.abilityCdMult;
     this.abilityColor = def.abilityColor;
     this.currentWeapon = def.startingWeapon || 'hockey_club';

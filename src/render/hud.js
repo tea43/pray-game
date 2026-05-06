@@ -3,13 +3,33 @@ import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 import { getHighScore } from '../systems/score.js';
 import { GameData } from '../systems/upgrades.js';
+import { HERO_DEFS } from '../config/heroes.js';
 
-// Hotkey labels per hero per slot
-const ACTIVE_KEY_LABELS = {
-  eliott: ['Q', 'A'],
-  dick:   ['W', 'S'],
-  habib:  ['E', 'D'],
+// Key bindings per hero: [basic, active slot 0, active slot 1]
+const HERO_KEYS = {
+  eliott: ['1', 'Q', 'A'],
+  dick:   ['2', 'W', 'S'],
+  habib:  ['3', 'E', 'D'],
 };
+
+const BTN  = 28;  // icon button size in px
+const GAP  = 4;   // gap between buttons
+
+// Lazy image loader — returns Image when ready, null while loading, false on error
+const _imgCache = new Map();
+function _img(src) {
+  if (!src) return null;
+  if (_imgCache.has(src)) return _imgCache.get(src);
+  _imgCache.set(src, null);
+  const el = new Image();
+  el.onload  = () => _imgCache.set(src, el);
+  el.onerror = () => _imgCache.set(src, false);
+  el.src = src;
+  return null;
+}
+
+// Tooltip set during drawAbilityPanel, rendered at the very end
+let _tooltip = null;
 
 export function drawAbilityPanel() {
   const { ctx, W, H, PANEL_H } = G;
@@ -17,19 +37,22 @@ export function drawAbilityPanel() {
   const slots = state.units;
   const totalW = slots.length * slotW + (slots.length - 1) * gap;
   const startX = (W - totalW) / 2;
-  const y = H - slotH - 12;
+  const panelY  = H - slotH - 12;
 
   ctx.fillStyle = 'rgba(10, 6, 3, 0.6)';
-  ctx.fillRect(0, y - 4, W, slotH + 10);
+  ctx.fillRect(0, panelY - 4, W, slotH + 10);
   ctx.strokeStyle = '#3a2a18';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, y - 4); ctx.lineTo(W, y - 4);
+  ctx.moveTo(0, panelY - 4); ctx.lineTo(W, panelY - 4);
   ctx.stroke();
+
+  _tooltip = null;
 
   for (let i = 0; i < slots.length; i++) {
     const u = slots[i];
     const x = startX + i * (slotW + gap);
+    const y = panelY;
 
     ctx.fillStyle = u.dead ? 'rgba(30, 8, 5, 0.88)' : 'rgba(20, 12, 6, 0.92)';
     ctx.fillRect(x, y, slotW, slotH);
@@ -45,16 +68,15 @@ export function drawAbilityPanel() {
     }
 
     // Mini portrait
-    const pxc = x + 16, pyc = y + 20;
     ctx.save();
-    ctx.translate(pxc, pyc);
+    ctx.translate(x + 16, y + 20);
     ctx.scale(0.65, 0.65);
-    const savedSelected = u.selected;
+    const savedSel = u.selected;
     u.selected = false;
     if (u.type === 'eliott') u._drawEliott(ctx, 0);
     else if (u.type === 'dick') u._drawDick(ctx, 0);
     else if (u.type === 'habib') u._drawHabib(ctx, 0);
-    u.selected = savedSelected;
+    u.selected = savedSel;
     ctx.restore();
 
     ctx.fillStyle = u.dead ? '#8a4a3a' : '#e8d8b0';
@@ -69,117 +91,239 @@ export function drawAbilityPanel() {
       continue;
     }
 
+    // HP
     ctx.font = '10px "Courier New", monospace';
     ctx.fillStyle = '#8a6b3a';
     ctx.textAlign = 'right';
     ctx.fillText(`${Math.ceil(u.hp)}/${u.maxHp}`, x + slotW - 8, y + 16);
     ctx.textAlign = 'left';
 
-    const barLeft = x + 34;
-    const barW = slotW - 34 - 8;
+    const barLeft = x + 34, barW = slotW - 34 - 8;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(barLeft, y + 22, barW, 5);
     const hpPct = u.hp / u.maxHp;
     ctx.fillStyle = hpPct > 0.5 ? '#7aa853' : hpPct > 0.25 ? '#c5a247' : '#a83a2a';
     ctx.fillRect(barLeft, y + 22, barW * hpPct, 5);
 
-    ctx.font = 'bold 11px "Courier New", monospace';
-    ctx.fillStyle = u.abilityCd > 0 ? '#6a5030' : u.abilityColor;
-    ctx.fillText(`[${u.abilityKey}] ${u.abilityName}`, x + 8, y + 44);
+    // Ability buttons row
+    _drawAbilityButtons(ctx, u, x, y, panelY);
+  }
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(x + 8, y + 49, slotW - 16, 5);
-    if (u.abilityCd > 0) {
-      const cdPct = 1 - (u.abilityCd / u.abilityMaxCd);
-      ctx.fillStyle = '#5a3a70';
-      ctx.fillRect(x + 8, y + 49, (slotW - 16) * cdPct, 5);
-      ctx.fillStyle = '#c5a572';
-      ctx.font = '9px "Courier New", monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${u.abilityCd.toFixed(1)}s`, x + slotW - 8, y + 60);
-      ctx.textAlign = 'left';
-    } else {
-      ctx.fillStyle = u.abilityColor;
-      ctx.fillRect(x + 8, y + 49, slotW - 16, 5);
-      ctx.fillStyle = u.abilityColor;
-      ctx.font = 'bold 9px "Courier New", monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText('READY', x + slotW - 8, y + 60);
-      ctx.textAlign = 'left';
-    }
+  if (_tooltip) _drawTooltip(ctx, _tooltip, W, panelY);
+}
 
-    // Active skill slots
-    _drawActiveSlots(ctx, u, x, y + 63, slotW);
+function _drawAbilityButtons(ctx, unit, sx, sy, panelY) {
+  const keys  = HERO_KEYS[unit.type] || ['?', '?', '?'];
+  const upgPool = GameData.upgrades[unit.type] || [];
+  const btnY  = sy + 32;
+  const bx    = [sx + 34, sx + 34 + BTN + GAP, sx + 34 + (BTN + GAP) * 2];
+
+  // Basic ability
+  _processBtn(ctx, {
+    x: bx[0], y: btnY,
+    key: keys[0],
+    abilityId:   unit.abilityId,
+    cd:          unit.abilityCd,
+    maxCd:       unit.abilityMaxCd,
+    color:       unit.abilityColor,
+    name:        unit.abilityName,
+    description: unit.abilityDescription,
+    wavesLeft:   null,
+    isEmpty:     false,
+  }, panelY);
+
+  // Active skill slots 0 and 1
+  for (let si = 0; si < 2; si++) {
+    const slot   = unit.activeSkillSlots[si];
+    const upgDef = slot ? upgPool.find(u => u.id === slot.id) : null;
+    const iconCfg = slot ? (GameData.abilityIcons[slot.id] || null) : null;
+    _processBtn(ctx, {
+      x: bx[si + 1], y: btnY,
+      key: keys[si + 1],
+      abilityId:   slot?.id || '',
+      cd:          slot?.cd ?? 0,
+      maxCd:       slot?.maxCd ?? 1,
+      color:       iconCfg?.color || '#6a5030',
+      name:        upgDef?.name || '',
+      description: upgDef?.description || '',
+      wavesLeft:   slot?.wavesLeft ?? null,
+      isEmpty:     !slot,
+    }, panelY);
   }
 }
 
-function _drawActiveSlots(ctx, unit, x, topY, slotW) {
-  const keyLabels = ACTIVE_KEY_LABELS[unit.type] || ['?', '?'];
-  const pool = GameData.upgrades[unit.type] || [];
+function _processBtn(ctx, btn, panelY) {
+  _drawBtn(ctx, btn);
 
-  for (let si = 0; si < 2; si++) {
-    const slot = unit.activeSkillSlots[si];
-    const rowY = topY + si * 14;
-    const key = keyLabels[si];
+  // Hover → queue tooltip
+  const mx = state.mouse?.x ?? -1, my = state.mouse?.y ?? -1;
+  if (!btn.isEmpty && btn.name &&
+      mx >= btn.x && mx <= btn.x + BTN &&
+      my >= btn.y && my <= btn.y + BTN) {
+    _tooltip = { ...btn, panelY };
+  }
+}
 
-    // Key label box
-    ctx.fillStyle = slot ? 'rgba(40,30,15,0.9)' : 'rgba(20,15,8,0.7)';
-    ctx.fillRect(x + 8, rowY, 12, 11);
-    ctx.strokeStyle = slot ? '#6a4820' : '#3a2a18';
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(x + 8, rowY, 12, 11);
-    ctx.font = 'bold 8px "Courier New", monospace';
-    ctx.fillStyle = slot ? '#c5a572' : '#4a3520';
+function _drawBtn(ctx, btn) {
+  const { x, y, key, abilityId, cd, maxCd, color, isEmpty, wavesLeft } = btn;
+  const cx = x + BTN / 2, cy = y + BTN / 2;
+
+  // Background
+  ctx.fillStyle = isEmpty ? 'rgba(12,8,4,0.75)' : 'rgba(22,15,8,0.95)';
+  ctx.fillRect(x, y, BTN, BTN);
+
+  if (isEmpty) {
+    ctx.strokeStyle = '#2a1a0a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, BTN, BTN);
+    ctx.fillStyle = '#2a1a0a';
+    ctx.font = '11px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(key, x + 14, rowY + 9);
-    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('—', cx, cy);
+    ctx.textBaseline = 'alphabetic';
+    _drawKeyLabel(ctx, x, y, key, false);
+    return;
+  }
 
-    if (!slot) {
-      ctx.fillStyle = '#3a2a18';
-      ctx.font = '8px "Courier New", monospace';
-      ctx.fillText('empty', x + 24, rowY + 9);
-      continue;
-    }
+  const iconCfg = GameData.abilityIcons[abilityId];
+  const imgSrc  = iconCfg?.icon;
+  const imgCol  = iconCfg?.color || color;
+  const img     = _img(imgSrc);
+  const PAD = 3;
 
-    // Skill name (abbreviated)
-    const upgDef = pool.find(u => u.id === slot.id);
-    const name = upgDef ? upgDef.name.substring(0, 14) : slot.id.substring(0, 14);
-    ctx.fillStyle = slot.cd > 0 ? '#5a4020' : '#c5a572';
-    ctx.font = '8px "Courier New", monospace';
-    ctx.fillText(name, x + 24, rowY + 9);
+  if (img) {
+    ctx.save();
+    if (cd > 0) ctx.globalAlpha = 0.45;
+    ctx.drawImage(img, x + PAD, y + PAD, BTN - PAD * 2, BTN - PAD * 2);
+    ctx.restore();
+  } else {
+    // Coloured placeholder
+    ctx.fillStyle = imgCol;
+    ctx.globalAlpha = cd > 0 ? 0.22 : 0.50;
+    ctx.fillRect(x + PAD, y + PAD, BTN - PAD * 2, BTN - PAD * 2);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = cd > 0 ? '#5a4020' : '#e0d0b0';
+    ctx.font = `bold ${Math.round(BTN * 0.42)}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((abilityId || '?').charAt(0).toUpperCase(), cx, cy + 1);
+    ctx.textBaseline = 'alphabetic';
+  }
 
-    // Cooldown mini-bar
-    const barX = x + slotW - 36;
-    const barW = 26;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(barX, rowY + 1, barW, 9);
-    if (slot.cd > 0) {
-      const pct = 1 - slot.cd / slot.maxCd;
-      ctx.fillStyle = '#5a3a70';
-      ctx.fillRect(barX, rowY + 1, barW * pct, 9);
-      ctx.fillStyle = '#8a68a0';
-      ctx.font = '7px "Courier New", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${slot.cd.toFixed(0)}s`, barX + barW / 2, rowY + 9);
-      ctx.textAlign = 'left';
-    } else {
-      ctx.fillStyle = '#c5a040';
-      ctx.fillRect(barX, rowY + 1, barW, 9);
-      ctx.fillStyle = '#201808';
-      ctx.font = 'bold 7px "Courier New", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('RDY', barX + barW / 2, rowY + 9);
-      ctx.textAlign = 'left';
-    }
+  // Border — glows when ready
+  ctx.strokeStyle = cd > 0 ? '#3a2818' : imgCol;
+  ctx.lineWidth   = cd > 0 ? 1 : 1.5;
+  ctx.strokeRect(x, y, BTN, BTN);
 
-    // Durability pips
-    for (let p = 0; p < slot.wavesLeft; p++) {
-      ctx.fillStyle = p < slot.wavesLeft ? '#80c040' : '#2a1a08';
+  // Cooldown pie overlay
+  if (cd > 0) {
+    const r   = BTN / 2 - 2;
+    const pct = cd / maxCd;
+    ctx.save();
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * pct);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    // Remaining seconds
+    ctx.save();
+    ctx.fillStyle = '#d0c080';
+    ctx.font = `bold 8px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.ceil(cd) + 's', cx, cy + 1);
+    ctx.textBaseline = 'alphabetic';
+    ctx.restore();
+  }
+
+  // Durability pips — top-right corner, for active skills only
+  if (wavesLeft !== null) {
+    const pipCol = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
+    for (let p = 0; p < wavesLeft; p++) {
+      ctx.fillStyle = pipCol;
       ctx.beginPath();
-      ctx.arc(x + slotW - 7 - p * 5, rowY + 5.5, 2, 0, Math.PI * 2);
+      ctx.arc(x + BTN - 4 - p * 5, y + 4, 2, 0, Math.PI * 2);
       ctx.fill();
     }
   }
+
+  _drawKeyLabel(ctx, x, y, key, cd <= 0);
+}
+
+function _drawKeyLabel(ctx, bx, by, key, ready) {
+  const lw = 13, lh = 10;
+  ctx.fillStyle = ready ? 'rgba(50,35,15,0.95)' : 'rgba(16,10,4,0.95)';
+  ctx.fillRect(bx + 1, by + BTN - lh - 1, lw, lh);
+  ctx.fillStyle = ready ? '#c5a572' : '#4a3020';
+  ctx.font = 'bold 7px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(key, bx + 1 + lw / 2, by + BTN - lh / 2 - 1);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function _drawTooltip(ctx, data, W, panelY) {
+  const { x, y, name, description, cd, maxCd, wavesLeft } = data;
+  const PAD  = 8;
+  const TW   = 200;
+  const LH   = 13;
+
+  ctx.font = '9px "Courier New", monospace';
+  const descLines = description ? _wrapText(ctx, description, TW - PAD * 2) : [];
+
+  // Count lines: name + desc + status + maybe pips
+  const statusLine = cd > 0 ? `CD: ${Math.ceil(cd)}s  (max ${Math.round(maxCd)}s)` : 'READY';
+  const allLines = [
+    { text: name,       bold: true,  color: '#e8d8b0' },
+    ...descLines.map(t => ({ text: t, bold: false, color: '#9a8060' })),
+    { text: statusLine, bold: cd <= 0, color: cd > 0 ? '#c5a572' : '#80c040' },
+  ];
+  if (wavesLeft !== null) {
+    const pipCol = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
+    allLines.push({ text: `Durability: ${wavesLeft} wave${wavesLeft !== 1 ? 's' : ''} left`, bold: false, color: pipCol });
+  }
+
+  const TH = allLines.length * LH + PAD * 2;
+  let tx = x + BTN / 2 - TW / 2;
+  let ty = y - TH - 6;
+  tx = Math.max(4, Math.min(W - TW - 4, tx));
+  ty = Math.max(4, ty);
+
+  ctx.fillStyle = 'rgba(6, 4, 2, 0.96)';
+  ctx.fillRect(tx, ty, TW, TH);
+  ctx.strokeStyle = '#5a4020';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(tx, ty, TW, TH);
+
+  let ly = ty + PAD + 9;
+  for (const line of allLines) {
+    ctx.font = (line.bold ? 'bold ' : '') + '9px "Courier New", monospace';
+    ctx.fillStyle = line.color;
+    ctx.textAlign = 'left';
+    ctx.fillText(line.text, tx + PAD, ly);
+    ly += LH;
+  }
+}
+
+function _wrapText(ctx, text, maxW) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW) {
+      if (line) { lines.push(line); line = word; }
+      else lines.push(word);
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 export function updateDust(dt) {
@@ -206,7 +350,7 @@ export function updateHUD() {
   document.getElementById('scoreCount').textContent = state.score;
   document.getElementById('highScore').textContent = getHighScore();
 
-  const bar = document.getElementById('timeBar');
+  const bar   = document.getElementById('timeBar');
   const label = document.getElementById('timeLabel');
   bar.classList.remove('flowing', 'paused');
   const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
