@@ -158,11 +158,15 @@ export class GameScene extends Phaser.Scene {
     if (state.spaceHeld) state.spaceHoldDuration += realDt;
     const anyMoving     = state.units.some(u => !u.dead && !u.boarded && u.moving);
     const heliDeparting = state.helicopter?.flightState === 'departing';
+    const anyAbilityActive = state.units.some(u => !u.dead && (
+      (u._dominanceTargets?.length > 0) || u.flamethrowerTimer > 0 ||
+      u.millTimer > 0 || u.vortexTimer > 0
+    ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0
                      : spaceHoldDriving      ? state.timeSpeed
                      : state.manualPause || state.isUpgradeScreen ? 0
-                     : (anyMoving || heliDeparting) ? state.timeSpeed
+                     : (anyMoving || heliDeparting || anyAbilityActive) ? state.timeSpeed
                      : 0;
     state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
     if (state.timeFlow < 0.001) state.timeFlow = 0;

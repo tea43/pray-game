@@ -54,8 +54,12 @@ export class Unit {
     this.flamethrowerTimer = 0;  // Flamethrower cone active
     this.millTimer = 0;          // 360 Mill spin visual timer
     this.millAngle = 0;
+    this.millCenterX = 0;
+    this.millCenterY = 0;
     this.vortexTimer = 0;        // Vortex spin visual timer
     this.vortexAngle = 0;
+    this.vortexCenterX = 0;
+    this.vortexCenterY = 0;
     this._wpHitReturn = null;    // White Powder of Hit return data
     this._dominanceTargets = null;
     this._dominanceTimer = 0;
@@ -125,6 +129,50 @@ export class Unit {
     this.flamethrowerTimer= Math.max(0, this.flamethrowerTimer - dt);
     this.millTimer        = Math.max(0, this.millTimer - dt);
     this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
+
+    // Mill 360: Dick orbits around center while dealing continuous AoE
+    if (this.millTimer > 0) {
+      this.millAngle += dt * 6.0;
+      const orbitR = 38;
+      this.x = clamp(this.millCenterX + Math.cos(this.millAngle) * orbitR, 6, G.W - 6);
+      this.y = clamp(this.millCenterY + Math.sin(this.millAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      this.tx = this.x; this.ty = this.y;
+      this.facing = this.millAngle + Math.PI * 0.5;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(this.x, this.y, e.x, e.y) < 80 + e.r) {
+          const dmg = this.atkDmg * 2 * (this.upgradeDmgMult || 1) * dt;
+          e.hp -= dmg;
+          e.hurtFlash = Math.max(e.hurtFlash, 0.15);
+          const ang = Math.atan2(e.y - this.y, e.x - this.x);
+          e.knockX += Math.cos(ang) * 40 * dt;
+          e.knockY += Math.sin(ang) * 40 * dt;
+        }
+      }
+    }
+
+    // Vortex: Dick orbits a larger circle, pulling and damaging enemies
+    if (this.vortexTimer > 0) {
+      this.vortexAngle += dt * 4.5;
+      const orbitR = 50;
+      this.x = clamp(this.vortexCenterX + Math.cos(this.vortexAngle) * orbitR, 6, G.W - 6);
+      this.y = clamp(this.vortexCenterY + Math.sin(this.vortexAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      this.tx = this.x; this.ty = this.y;
+      this.facing = this.vortexAngle + Math.PI * 0.5;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const ed = dist2(this.x, this.y, e.x, e.y);
+        if (ed < 100 + e.r) {
+          const dmg = this.atkDmg * 2.2 * (this.upgradeDmgMult || 1) * dt;
+          e.hp -= dmg;
+          e.hurtFlash = Math.max(e.hurtFlash, 0.15);
+          // Pull toward center
+          const ax = Math.atan2(this.vortexCenterY - e.y, this.vortexCenterX - e.x);
+          e.knockX += Math.cos(ax) * 60 * dt;
+          e.knockY += Math.sin(ax) * 60 * dt;
+        }
+      }
+    }
 
     if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
 
@@ -319,10 +367,10 @@ export class Unit {
 
     // Hit detection
     const hitSet = b.phase === 'outbound' ? b.hitOut : b.hitRet;
-    const dmg = Math.round((b.phase === 'outbound' ? 40 : 25) * (this.upgradeDmgMult || 1));
+    const dmg = Math.round((b.phase === 'outbound' ? 50 : 35) * (this.upgradeDmgMult || 1));
     for (const e of state.enemies) {
       if (e.dead || hitSet.has(e)) continue;
-      if (dist2(b.clubX, b.clubY, e.x, e.y) < e.r + 12) {
+      if (dist2(b.clubX, b.clubY, e.x, e.y) < e.r + 18) {
         hitSet.add(e);
         e.hp -= dmg;
         e.hurtFlash = 1;
@@ -842,13 +890,45 @@ export class Unit {
       this._drawFlyingBoomerang(ctx);
     }
 
+    // Flamethrower cone visual
+    if (this.flamethrowerTimer > 0) {
+      const coneRange = 180, halfArc = Math.PI * 0.25;
+      const alpha = Math.min(1, this.flamethrowerTimer * 0.6);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.arc(this.x, this.y, coneRange, this.facing - halfArc, this.facing + halfArc);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(255, 90, 10, ${alpha * 0.18})`;
+      ctx.fill();
+      // Animated fire streams
+      for (let i = -2; i <= 2; i++) {
+        const ang = this.facing + (i / 2) * halfArc * 0.9;
+        const len = coneRange * (0.7 + Math.sin(state.time * 14 + i) * 0.3);
+        ctx.strokeStyle = i === 0 ? `rgba(255, 200, 40, ${alpha * 0.9})` : `rgba(255, 80, 10, ${alpha * 0.6})`;
+        ctx.lineWidth = i === 0 ? 3 : 1.5;
+        ctx.beginPath();
+        ctx.moveTo(this.x + Math.cos(ang) * this.r, this.y + Math.sin(ang) * this.r);
+        ctx.lineTo(this.x + Math.cos(ang) * len, this.y + Math.sin(ang) * len);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     // Mill/Vortex spin arc
     if (this.millTimer > 0 || this.vortexTimer > 0) {
       const t = this.millTimer > 0 ? this.millTimer : this.vortexTimer;
-      ctx.strokeStyle = `rgba(255, 180, 60, ${t * 1.4})`;
+      const radius = this.vortexTimer > 0 ? 100 : 80;
+      ctx.strokeStyle = `rgba(255, 180, 60, ${Math.min(1, t * 1.4)})`;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.vortexTimer > 0 ? 100 : 80, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner glow
+      ctx.strokeStyle = `rgba(255, 220, 80, ${Math.min(0.5, t * 0.7)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, radius * 0.6, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -894,29 +974,36 @@ export class Unit {
   _drawFlyingBoomerang(ctx) {
     const b = this.boomerang;
     if (!b) return;
-    const angle = state.time * 12; // spinning
+    const angle = state.time * 14;
     ctx.save();
     ctx.translate(b.clubX, b.clubY);
     ctx.rotate(angle);
+    // Shaft
     ctx.strokeStyle = '#5a3510';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-12, 0);
-    ctx.lineTo(12, 0);
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
     ctx.stroke();
-    ctx.strokeStyle = '#8a5520';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#9a6530';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-12, 0);
-    ctx.lineTo(12, 0);
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
     ctx.stroke();
-    // Club blade
+    // Blade at tip
     ctx.strokeStyle = '#3a2010';
-    ctx.lineWidth = 3.5;
+    ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.moveTo(10, 0);
-    ctx.lineTo(10 + Math.cos(1.1) * 8, Math.sin(1.1) * 8);
+    ctx.moveTo(16, 0);
+    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
+    ctx.stroke();
+    ctx.strokeStyle = '#7a4520';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
     ctx.stroke();
     ctx.lineCap = 'butt';
     ctx.restore();

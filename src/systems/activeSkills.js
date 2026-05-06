@@ -243,22 +243,11 @@ export const ACTIVE_SKILL_DEFS = {
     maxCd: 10,
     activate(unit) {
       playSfx('ability_rage');
-      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 0.7);
-      unit.millTimer = 0.7;
+      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.2);
+      unit.millTimer = 2.2;
       unit.millAngle = unit.facing;
-      const range = 80;
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        if (dist2(unit.x, unit.y, e.x, e.y) < range + e.r) {
-          const dmg = Math.round(unit.atkDmg * 2 * (unit.upgradeDmgMult || 1));
-          e.hp -= dmg;
-          e.hurtFlash = 1;
-          const ang = Math.atan2(e.y - unit.y, e.x - unit.x);
-          e.knockX += Math.cos(ang) * 180;
-          e.knockY += Math.sin(ang) * 180;
-          pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 180, 60] });
-        }
-      }
+      unit.millCenterX = unit.x;
+      unit.millCenterY = unit.y;
       _radialParticles(unit.x, unit.y, 22, '#ff8020', '#ffd060');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 8);
     },
@@ -268,22 +257,11 @@ export const ACTIVE_SKILL_DEFS = {
     maxCd: 12,
     activate(unit) {
       playSfx('ability_rage');
-      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 0.9);
-      unit.vortexTimer = 0.9;
+      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.8);
+      unit.vortexTimer = 2.8;
       unit.vortexAngle = unit.facing;
-      const range = 100;
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        if (dist2(unit.x, unit.y, e.x, e.y) < range + e.r) {
-          const dmg = Math.round(unit.atkDmg * 2.2 * (unit.upgradeDmgMult || 1));
-          e.hp -= dmg;
-          e.hurtFlash = 1;
-          const ang = Math.atan2(e.y - unit.y, e.x - unit.x);
-          e.knockX += Math.cos(ang) * 220;
-          e.knockY += Math.sin(ang) * 220;
-          pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 160, 40] });
-        }
-      }
+      unit.vortexCenterX = unit.x;
+      unit.vortexCenterY = unit.y;
       _radialParticles(unit.x, unit.y, 30, '#ff6010', '#ffe050');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 10);
     },

@@ -1,0 +1,8 @@
+ - [FIXED] During white powder of dominance the time stops and canont proceed further unless space pressed. By design the time should proceed until white powder of dominance ends.
+ - [FIXED] flamethrower is not visible, i see no flame
+ - [FIXED] the hockey club for boomerang should be larger, at least the size of the clubs hero holsing in hand. The damage of the boomerang should be enough to kill initial enemy ~50 damage
+ - [FIXED] mill 360 and vortex: I see the radius but Dick does not move, he should move while the ability is active. Time does not stop itself while the ability is active.
+ - User should be able to stop ability execution by pressing the space and once the space is pressed again the ability should contnue. If that is not possible we can come up with different approach
+- Smokescreen ability of eliott does not work
+- Endoserpents turn around instantly, they should turn not so fast as they are snakes, I would say in normal speed it should take 1-3 seconds. It can be configurable parameter.
+- If one hero dies: the scrore divided by 2, if 2 hero died: by 4.
