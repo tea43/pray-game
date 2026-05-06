@@ -168,11 +168,9 @@ export function initInput() {
       return;
     }
     if (k === 's') {
-      // Activate Dick's 2nd active skill; always also stop selected units
       for (const u of state.units) {
         if (u.type === 'dick' && !u.dead) u.activateSkill(1);
       }
-      for (const u of state.selected) u.stop();
       return;
     }
     if (e.key === ' ') {
