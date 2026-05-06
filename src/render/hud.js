@@ -6,9 +6,9 @@ import { GameData } from '../systems/upgrades.js';
 
 // Hotkey labels per hero per slot
 const ACTIVE_KEY_LABELS = {
-  dick:   ['1', 'a'],
-  habib:  ['2', 's'],
-  eliott: ['3', 'd'],
+  eliott: ['Q', 'A'],
+  dick:   ['W', 'S'],
+  habib:  ['E', 'D'],
 };
 
 export function drawAbilityPanel() {

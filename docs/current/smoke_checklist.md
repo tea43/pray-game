@@ -32,9 +32,9 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 - All hero name labels read "Eliott" (double-t).
 - Habib auto-attacks with melee hockey club; no projectile spawned.
 - Eliott auto-attacks with short hockey club; swing is visually smaller/faster than Dick's.
-- Select Eliott, press `Q`, confirm Group Blink moves Eliott and nearby allies; hero outside 120 px is unaffected. Cooldown shown.
-- Select Dick, press `W` near enemies, confirm club travels oval arc targeting highest-HP enemy, hits on both legs, returns; Dick unarmed during flight. Does not fire if no target in range.
-- Select Habib, press `E` near allies, confirm Backdoor Blockade shimmer on heroes within 150 px; those heroes take half damage for 6s; heroes outside radius unaffected.
+- Press `1` (no selection needed), confirm Eliott's Group Blink moves him and nearby allies; hero outside 120 px is unaffected. Cooldown shown.
+- Press `2` (no selection needed) near enemies, confirm Dick's Boomerang travels oval arc targeting highest-HP enemy, hits on both legs, returns; Dick unarmed during flight. Does not fire if no target in range.
+- Press `3` (no selection needed) near allies, confirm Habib's Backdoor Blockade shimmer on heroes within 150 px; those heroes take half damage for 6s; heroes outside radius unaffected.
 
 ## Active Skills
 

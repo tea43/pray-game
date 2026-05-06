@@ -1,7 +1,7 @@
 export const HERO_DEFS = {
   eliott: {
     name: 'Eliott',
-    abilityKey: 'Q',
+    abilityKey: '1',
     abilityName: 'GROUP BLINK',
     abilityMaxCd: 9,
     abilityColor: '#80c8ff',
@@ -16,7 +16,7 @@ export const HERO_DEFS = {
   },
   dick: {
     name: 'Dick',
-    abilityKey: 'W',
+    abilityKey: '2',
     abilityName: 'BOOMERANG',
     abilityMaxCd: 10,
     abilityColor: '#ff6040',
@@ -30,7 +30,7 @@ export const HERO_DEFS = {
   },
   habib: {
     name: 'Habib',
-    abilityKey: 'E',
+    abilityKey: '3',
     abilityName: 'BLOCKADE',
     abilityMaxCd: 14,
     abilityColor: '#c8a0ff',

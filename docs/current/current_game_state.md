@@ -15,15 +15,15 @@ P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a
 - Shift-click: add/remove a survivor from selection.
 - Click portrait: select from the bottom ability panel.
 - Right click: move selected survivors, or attack-move if clicking an enemy.
-- `Q`: Eliott ability (Group Blink).
-- `W`: Dick ability (Boomerang Throw).
-- `E`: Habib ability (Backdoor Blockade).
-- `S`: stop selected survivors / fire Habib's 2nd active skill.
-- `1`: fire Dick's 1st active skill (if equipped).
-- `2`: fire Habib's 1st active skill (if equipped).
-- `3`: fire Eliott's 1st active skill (if equipped).
-- `a`: fire Dick's 2nd active skill (if equipped).
-- `d`: fire Eliott's 2nd active skill (if equipped).
+- `1`: Eliott ability (Group Blink).
+- `2`: Dick ability (Boomerang Throw).
+- `3`: Habib ability (Backdoor Blockade).
+- `Q`: Eliott's 1st active skill (if equipped).
+- `W`: Dick's 1st active skill (if equipped).
+- `E`: Habib's 1st active skill (if equipped).
+- `A`: Eliott's 2nd active skill (if equipped).
+- `S`: stop selected survivors / fire Dick's 2nd active skill (if equipped).
+- `D`: Habib's 2nd active skill (if equipped).
 - `+`: increase time speed multiplier (x1 → x2 → x3).
 - `-`: decrease time speed multiplier (x3 → x2 → x1).
 - `SPACE` tap (< 1s): toggle manual pause on/off.
@@ -84,10 +84,10 @@ Priority order (highest first):
 
 Each hero can hold up to 2 active upgrade skills beyond their base ability. Active skills are awarded by the slot-machine and bound to hotkeys in acquisition order:
 
-| Slot | Dick | Habib | Eliott |
+| Slot | Eliott | Dick | Habib |
 |---|---|---|---|
-| 1st | `1` | `2` | `3` |
-| 2nd | `a` | `s` | `d` |
+| 1st | `Q` | `W` | `E` |
+| 2nd | `A` | `S` | `D` |
 
 Active upgrades have a durability counter (3 waves by default; modified by difficulty). When the counter reaches 0 the slot empties and the upgrade becomes available in future reels again. Durability pips are shown in the HUD. Passive upgrades remain permanent for the run.
 

@@ -168,14 +168,10 @@ export function initInput() {
       return;
     }
     if (k === 's') {
-      // Activate Habib's 2nd active skill if any selected hero has it
-      let skillFired = false;
-      for (const u of state.selected) {
-        if (u.type === 'habib' && !u.dead) {
-          if (u.activateSkill(1)) skillFired = true;
-        }
+      // Activate Dick's 2nd active skill; always also stop selected units
+      for (const u of state.units) {
+        if (u.type === 'dick' && !u.dead) u.activateSkill(1);
       }
-      // Always also stop movement
       for (const u of state.selected) u.stop();
       return;
     }
@@ -194,24 +190,26 @@ export function initInput() {
       return;
     }
 
-    if (k === 'q' || k === 'w' || k === 'e') {
+    // Basic abilities: 1/2/3 (Eliott/Dick/Habib) — fire regardless of selection
+    if (k === '1' || k === '2' || k === '3') {
       e.preventDefault();
-      for (const u of state.selected) {
-        if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+      for (const u of state.units) {
+        if (u.abilityKey === k && !u.dead) u.cast();
       }
     }
 
-    // Active skill hotkeys: 1/2/3 (slot 0) and a/d (slot 1)
+    // Active skill hotkeys: Q/W/E (slot 0) and A/D (slot 1); S handled above
+    // Fire regardless of selection — keys are already hero-specific
     const ACTIVE_KEYS = {
-      '1': { type: 'dick',   slot: 0 },
-      '2': { type: 'habib',  slot: 0 },
-      '3': { type: 'eliott', slot: 0 },
-      'a': { type: 'dick',   slot: 1 },
-      'd': { type: 'eliott', slot: 1 },
+      'q': { type: 'eliott', slot: 0 },
+      'w': { type: 'dick',   slot: 0 },
+      'e': { type: 'habib',  slot: 0 },
+      'a': { type: 'eliott', slot: 1 },
+      'd': { type: 'habib',  slot: 1 },
     };
     if (ACTIVE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
       const { type, slot } = ACTIVE_KEYS[k];
-      for (const u of state.selected) {
+      for (const u of state.units) {
         if (u.type === type && !u.dead) u.activateSkill(slot);
       }
     }
