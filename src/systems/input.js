@@ -167,6 +167,11 @@ export function initInput() {
       state.timeSpeed = clamp(state.timeSpeed - 1, 1, 3);
       return;
     }
+    if (k === 'v') {
+      for (const u of state.selected) u.stop();
+      return;
+    }
+
     if (k === 's') {
       for (const u of state.units) {
         if (u.type === 'dick' && !u.dead) u.activateSkill(1);

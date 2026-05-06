@@ -22,6 +22,7 @@ P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a
 - `W`: Dick's 1st active skill (if equipped).
 - `E`: Habib's 1st active skill (if equipped).
 - `A`: Eliott's 2nd active skill (if equipped).
+- `V`: stop selected survivors.
 - `S`: fire Dick's 2nd active skill (if equipped).
 - `D`: Habib's 2nd active skill (if equipped).
 - `+`: increase time speed multiplier (x1 → x2 → x3).
