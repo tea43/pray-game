@@ -67,13 +67,12 @@ const COLORS = {
 };
 
 // ── Difficulty content ────────────────────────────────────────────────────────
-const DIFF_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral', 'dev-mode'];
+const DIFF_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral'];
 const DIFF_HINTS = {
   'cavity-cadet': 'fewer enemies · generous loot',
   'brood-hunter': 'balanced · intended experience',
   'crack-knight': 'faster · harder · scarcer loot',
   'rear-admiral': 'brutal · multiple bosses · barely any healing',
-  'dev-mode':     'a single wave only · all enemies · for testing end-game',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
