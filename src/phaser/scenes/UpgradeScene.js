@@ -85,9 +85,11 @@ export class UpgradeScene extends Phaser.Scene {
     // ── Hero name labels ──────────────────────────────────────────────────────
     const LABEL_Y = FY + HDR_H + 8;
     HEROES.forEach((h, i) => {
-      this._txt(this._colCX[i], LABEL_Y, h.label, {
+      const heroUnit = state.units?.find(u => u.type === h.id);
+      const isDead = heroUnit?.dead ?? false;
+      this._txt(this._colCX[i], LABEL_Y, isDead ? `✝ ${h.label}` : h.label, {
         fontSize: '13px', fontFamily: "'Courier New', monospace",
-        fontStyle: 'bold', color: '#e8d8b0', letterSpacing: 3,
+        fontStyle: 'bold', color: isDead ? '#5a2a1a' : '#e8d8b0', letterSpacing: 3,
       }).setOrigin(0.5, 0);
     });
 
@@ -181,8 +183,23 @@ export class UpgradeScene extends Phaser.Scene {
     const cardW   = this._cardW;
 
     const history = state.selectedUpgradeHistory[hero.id] || [];
-    // Filter out already-selected upgrades; also filter active upgrades if slots are full
     const unit = state.units?.find(u => u.type === hero.id);
+
+    // Dead hero column: show FALLEN, no selection allowed
+    if (unit?.dead) {
+      this._txt(cx, centreY - 10, '†', {
+        fontSize: '28px', fontFamily: 'Georgia, serif', color: '#5a2a1a',
+      }).setOrigin(0.5);
+      this._txt(cx, centreY + 20, 'FALLEN', {
+        fontSize: '10px', fontFamily: "'Courier New', monospace",
+        fontStyle: 'bold', color: '#6a2a1a',
+      }).setOrigin(0.5);
+      state.pendingUpgrades[hero.id] = 'none';
+      this._reels.push(null);
+      return;
+    }
+
+    // Filter out already-selected upgrades; also filter active upgrades if slots are full
     const activeCount = unit ? unit.activeSkillSlots.filter(Boolean).length : 0;
     const pool    = (GameData.upgrades[hero.id] || []).filter(u => {
       if (history.includes(u.id)) return false;

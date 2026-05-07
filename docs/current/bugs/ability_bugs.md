@@ -8,3 +8,6 @@
  - [FIXED] The corpse of the hero should stay at the place of death. deathX/deathY stored on death; _drawHeroCorpse() renders a flattened silhouette and blood pool at that position.
  - [FIXED] The ability selection block for dead hero should be non selectable on the death of hero. Dead hero cards already skip button rendering and block input; now also show a crosshatch overlay over the button area.
  - [FIXED] For the highest level, death of the hero means the end of the game. On rear-admiral difficulty, any hero death immediately triggers game over with message "HERO FALLEN".
+ - [FIXED] Smokescreen ability is not added to the ability list whenever selected. A passive-upgrade strip is now shown at the bottom of each hero card in the HUD, listing all acquired passives (from selectedUpgradeHistory, excluding active skills already shown as buttons).
+ - [FIXED] During the spin of the abilities in between the waves, the abilities of the dead hero should be unselectable. Dead hero columns in UpgradeScene now show a "† FALLEN" label and push a null reel so they cannot be clicked; the hero name label in the header is also grayed out.
+

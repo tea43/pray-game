@@ -19,8 +19,9 @@ const SLOT_G  = 12;   // gap between cards
 const BW      = 58;   // button width
 const BG      = 2;    // gap between buttons
 const B_LEFT  = 2;    // left margin before first button
-const KEY_H   = 18;   // key-label strip at bottom of each button
-// Button height fills from HEADER_H to PANEL_H - 2 (computed in draw)
+const KEY_H       = 18;   // key-label strip at bottom of each button
+const PASSIVE_ROW_H = 14; // strip at card bottom for passive upgrade tags
+// Button height fills from HEADER_H to PANEL_H - 2 - PASSIVE_ROW_H (computed in draw)
 
 // Lazy image loader
 const _imgCache = new Map();
@@ -127,9 +128,12 @@ export function drawAbilityPanel() {
     ctx.fillRect(barL, y + 16, barW * hpPct, 5);
 
     // ── Ability buttons ───────────────────────────────────────────────────────
-    const btnY = y + HEADER_H + 2;          // top of button area
-    const BH   = PANEL_H - HEADER_H - 4;    // button height (fills rest of card)
+    const btnY = y + HEADER_H + 2;                            // top of button area
+    const BH   = PANEL_H - HEADER_H - 4 - PASSIVE_ROW_H;     // button height (leaves room for passive row)
     _drawAbilityButtons(ctx, u, x, btnY, BH, panelY);
+
+    // ── Passive upgrade strip ─────────────────────────────────────────────────
+    _drawPassiveStrip(ctx, u, x, y + PANEL_H - PASSIVE_ROW_H, SLOT_W);
   }
 
   if (_tooltip) _drawTooltip(ctx, _tooltip, W, panelY);
@@ -301,6 +305,50 @@ function _drawKeyStrip(ctx, bx, by, bh, key, ready) {
   ctx.textBaseline = 'middle';
   ctx.fillText(key, bx + BW / 2, sy + KEY_H / 2);
   ctx.textBaseline = 'alphabetic';
+}
+
+function _drawPassiveStrip(ctx, unit, sx, sy, sw) {
+  const history  = state.selectedUpgradeHistory[unit.type] || [];
+  const upgPool  = GameData.upgrades[unit.type] || [];
+  // Collect passive upgrade names (exclude active skills which are already shown as buttons)
+  const passives = history
+    .map(id => upgPool.find(u => u.id === id))
+    .filter(u => u && u.upgradeClass !== 'active');
+
+  // Strip background
+  ctx.fillStyle = 'rgba(8, 5, 2, 0.7)';
+  ctx.fillRect(sx, sy, sw, PASSIVE_ROW_H);
+  ctx.strokeStyle = 'rgba(50, 35, 18, 0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(sx + sw, sy);
+  ctx.stroke();
+
+  if (passives.length === 0) {
+    ctx.fillStyle = '#3a2818';
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('no passives', sx + 4, sy + PASSIVE_ROW_H - 4);
+    return;
+  }
+
+  ctx.font = 'bold 7px "Courier New", monospace';
+  ctx.textAlign = 'left';
+  let px = sx + 4;
+  for (const upg of passives) {
+    const label = upg.name.length > 10 ? upg.name.slice(0, 9) + '…' : upg.name;
+    const tw = ctx.measureText(label).width + 6;
+    if (px + tw > sx + sw - 2) break;
+    // Pill background
+    ctx.fillStyle = 'rgba(80, 50, 20, 0.8)';
+    ctx.beginPath();
+    ctx.roundRect(px, sy + 2, tw, PASSIVE_ROW_H - 4, 2);
+    ctx.fill();
+    ctx.fillStyle = '#c8a060';
+    ctx.fillText(label, px + 3, sy + PASSIVE_ROW_H - 4);
+    px += tw + 3;
+  }
 }
 
 function _drawTooltip(ctx, data, W, panelY) {
