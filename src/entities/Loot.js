@@ -47,6 +47,7 @@ export class Loot {
     const easedPop = 1 - Math.pow(1 - popIn, 3);
 
     const glowColor = this.type === 'medkit'       ? 'rgba(255, 90, 80, 0.22)'
+                    : this.type === 'rare_medkit'   ? 'rgba(60, 160, 255, 0.40)'
                     : this.type === 'stimpack'      ? 'rgba(80, 240, 130, 0.22)'
                     : this.type === 'spray_gun'     ? 'rgba(255, 160, 40, 0.35)'
                     : this.type === 'samurai_sword' ? 'rgba(220, 220, 80, 0.35)'
@@ -69,24 +70,43 @@ export class Loot {
       return;
     }
 
-    if (this.type === 'medkit') {
-      ctx.fillStyle = '#e8e0c8';
+    if (this.type === 'medkit' || this.type === 'rare_medkit') {
+      const isRare = this.type === 'rare_medkit';
+      ctx.fillStyle = isRare ? '#d8eeff' : '#e8e0c8';
       ctx.fillRect(-6, -5, 12, 10);
-      ctx.strokeStyle = '#1a0f06';
+      ctx.strokeStyle = isRare ? '#102040' : '#1a0f06';
       ctx.lineWidth = 0.9;
       ctx.strokeRect(-6, -5, 12, 10);
-      ctx.fillStyle = '#5a4a30';
-      ctx.fillRect(-6, -5, 2, 1.4);
-      ctx.fillRect(4, -5, 2, 1.4);
-      ctx.fillRect(-6, 3.6, 2, 1.4);
-      ctx.fillRect(4, 3.6, 2, 1.4);
-      ctx.fillStyle = '#c53030';
-      ctx.fillRect(-1.3, -3.5, 2.6, 7);
-      ctx.fillRect(-3.5, -1.3, 7, 2.6);
-      ctx.strokeStyle = '#5a1010';
-      ctx.lineWidth = 0.4;
-      ctx.strokeRect(-1.3, -3.5, 2.6, 7);
-      ctx.strokeRect(-3.5, -1.3, 7, 2.6);
+      if (isRare) {
+        ctx.fillStyle = '#1a3050';
+        ctx.fillRect(-6, -5, 2, 1.4);
+        ctx.fillRect(4, -5, 2, 1.4);
+        ctx.fillRect(-6, 3.6, 2, 1.4);
+        ctx.fillRect(4, 3.6, 2, 1.4);
+        ctx.fillStyle = '#3080d0';
+        ctx.fillRect(-1.3, -3.5, 2.6, 7);
+        ctx.fillRect(-3.5, -1.3, 7, 2.6);
+        ctx.strokeStyle = '#104080';
+        ctx.lineWidth = 0.4;
+        ctx.strokeRect(-1.3, -3.5, 2.6, 7);
+        ctx.strokeRect(-3.5, -1.3, 7, 2.6);
+        // Blue shimmer highlight
+        ctx.fillStyle = 'rgba(180, 220, 255, 0.5)';
+        ctx.fillRect(-1, -3.2, 0.8, 6.4);
+      } else {
+        ctx.fillStyle = '#5a4a30';
+        ctx.fillRect(-6, -5, 2, 1.4);
+        ctx.fillRect(4, -5, 2, 1.4);
+        ctx.fillRect(-6, 3.6, 2, 1.4);
+        ctx.fillRect(4, 3.6, 2, 1.4);
+        ctx.fillStyle = '#c53030';
+        ctx.fillRect(-1.3, -3.5, 2.6, 7);
+        ctx.fillRect(-3.5, -1.3, 7, 2.6);
+        ctx.strokeStyle = '#5a1010';
+        ctx.lineWidth = 0.4;
+        ctx.strokeRect(-1.3, -3.5, 2.6, 7);
+        ctx.strokeRect(-3.5, -1.3, 7, 2.6);
+      }
     } else if (this.type === 'stimpack') {
       ctx.fillStyle = '#d8d4c0';
       ctx.fillRect(-5, -2.2, 9, 4.4);

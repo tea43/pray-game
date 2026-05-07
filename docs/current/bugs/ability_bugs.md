@@ -8,6 +8,15 @@
  - [FIXED] The corpse of the hero should stay at the place of death. deathX/deathY stored on death; _drawHeroCorpse() renders a flattened silhouette and blood pool at that position.
  - [FIXED] The ability selection block for dead hero should be non selectable on the death of hero. Dead hero cards already skip button rendering and block input; now also show a crosshatch overlay over the button area.
  - [FIXED] For the highest level, death of the hero means the end of the game. On rear-admiral difficulty, any hero death immediately triggers game over with message "HERO FALLEN".
- - [FIXED] Smokescreen ability is not added to the ability list whenever selected. A passive-upgrade strip is now shown at the bottom of each hero card in the HUD, listing all acquired passives (from selectedUpgradeHistory, excluding active skills already shown as buttons).
+ - [FIXED] Smokescreen ability is not added to the ability list whenever selected. Passive upgrades now appear as a second upgrade slot button in the HUD (disabled, hoverable for tooltip). The separate passive strip was replaced by the unified 2-slot system (see below).
  - [FIXED] During the spin of the abilities in between the waves, the abilities of the dead hero should be unselectable. Dead hero columns in UpgradeScene now show a "† FALLEN" label and push a null reel so they cannot be clicked; the hero name label in the header is also grayed out.
+ - [FIXED] White powder of hit stops time before the back-teleport executes. Added `u._wpHitReturn !== null` to the `anyAbilityActive` guard in GameScene._updateTimeFlow() so time keeps flowing for the full 0.3s return window. Dominance was already covered by the existing `_dominanceTargets` check.
+- ingame menu should ask "are you sure?" when customer press "main menu"
+- whenever user wants to close the tab: there should be a notification before the tab is closed
+
+## Enhancement Queue (from docs/planning/enchancements.md)
+- [DONE] All-survivors-dead: 2s time-flow before game-over overlay, random flavor message, EASIER DIFFICULTY button, controls blocked.
+- [DONE] Hockey club cursor in main menu.
+- [DONE] Active pickups visible in HUD: weapon timer pill, rage pill, medkit-heal pill. Medkit now heals over 4s; rare (blue) medkit over 5s for 1.8× heal.
+
 

@@ -94,11 +94,11 @@ export class GameScene extends Phaser.Scene {
       hitStop: 0, flashAlpha: 0, selected: [], moveMarkers: [],
       time: 0, kills: 0, wave: 1, waveTimer: 0, spawnTimer: 1.5,
       spawnInterval: WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult,
-      gameOver: false, victory: false, allWavesCleared: false,
+      gameOver: false, allDeadPending: false, victory: false, allWavesCleared: false,
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
       survivedSeconds: 0, menuPhase: 'playing',
-      isUpgradeScreen: false, activeUpgrades: { eliott: [], dick: [], habib: [] },
+      isUpgradeScreen: false,
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
     });
@@ -159,11 +159,12 @@ export class GameScene extends Phaser.Scene {
     const anyMoving     = state.units.some(u => !u.dead && !u.boarded && u.moving);
     const heliDeparting = state.helicopter?.flightState === 'departing';
     const anyAbilityActive = state.units.some(u => !u.dead && (
-      (u._dominanceTargets?.length > 0) || u.flamethrowerTimer > 0 ||
-      u.millTimer > 0 || u.vortexTimer > 0
+      (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
+      u.flamethrowerTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0
     ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0
+                     : state.allDeadPending  ? 1
                      : spaceHoldDriving      ? state.timeSpeed
                      : state.manualPause || state.isUpgradeScreen ? 0
                      : (anyMoving || heliDeparting || anyAbilityActive) ? state.timeSpeed
@@ -742,9 +743,12 @@ export class GameScene extends Phaser.Scene {
   // ── End conditions ───────────────────────────────────────────────────────────
 
   _checkEndConditions() {
-    if (!state.gameOver && state.units.every(u => u.dead)) {
-      state.gameOver = true;
-      this.time.delayedCall(800, () => {
+    if (!state.gameOver && !state.allDeadPending && state.units.every(u => u.dead)) {
+      state.allDeadPending = true;
+      this.time.delayedCall(2000, () => {
+        if (!state.allDeadPending) return;
+        state.gameOver = true;
+        state.allDeadPending = false;
         this.scene.stop('HUDScene');
         this.scene.start('GameOverScene', { state });
       });

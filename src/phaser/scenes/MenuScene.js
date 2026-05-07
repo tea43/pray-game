@@ -97,8 +97,11 @@ export class MenuScene extends Phaser.Scene {
       this._videoEl.play().catch(() => {});
     }
 
+    this._initHockeyCursor();
+
     this.events.on('shutdown', () => {
       if (this._videoEl) this._videoEl.style.display = 'none';
+      this._destroyHockeyCursor();
     }, this);
 
     this._showTitle();
@@ -379,4 +382,52 @@ export class MenuScene extends Phaser.Scene {
   _btn(x, y, w, h, label, cb, disabled = false)         { return wBtn(this, x, y, w, h, label, cb, disabled); }
   _slider(x, y, w, label, getValue, onChange)           { return wSlider(this, x, y, w, label, getValue, onChange); }
   _toggle(x, y, label, getState, onToggle)              { return wToggle(this, x, y, label, getState, onToggle); }
+
+  // ── Hockey club cursor ────────────────────────────────────────────────────
+
+  _initHockeyCursor() {
+    this.sys.game.canvas.style.cursor = 'none';
+    this._clubG = this.add.graphics().setDepth(9999);
+    this._drawClub(this.input.activePointer.x, this.input.activePointer.y);
+    this.input.on('pointermove', (ptr) => this._drawClub(ptr.x, ptr.y));
+  }
+
+  _drawClub(px, py) {
+    const g = this._clubG;
+    if (!g) return;
+    g.clear();
+    g.x = px; g.y = py;
+
+    // Blade — thick curved piece at origin
+    g.lineStyle(5, 0xd4b070, 1);
+    g.beginPath();
+    g.moveTo(-2, 3);
+    g.lineTo(14, 0);
+    g.strokePath();
+    // Blade tip cap
+    g.fillStyle(0xd4b070, 1);
+    g.fillCircle(-2, 3, 2.5);
+
+    // Handle — tapered stick going up-right
+    g.lineStyle(4, 0xb88c4a, 1);
+    g.beginPath();
+    g.moveTo(4, -1);
+    g.lineTo(22, -30);
+    g.strokePath();
+    g.lineStyle(2, 0x8a6030, 1);
+    g.beginPath();
+    g.moveTo(5, -2);
+    g.lineTo(23, -31);
+    g.strokePath();
+
+    // Knob at top of handle
+    g.fillStyle(0x8a6030, 1);
+    g.fillCircle(23, -31, 3);
+  }
+
+  _destroyHockeyCursor() {
+    this.sys.game.canvas.style.cursor = 'default';
+    if (this._clubG) { this._clubG.destroy(); this._clubG = null; }
+    this.input.off('pointermove');
+  }
 }

@@ -4,6 +4,7 @@ import { state } from '../state.js';
 import { getHighScore } from '../systems/score.js';
 import { GameData } from '../systems/upgrades.js';
 import { HERO_DEFS } from '../config/heroes.js';
+import { WEAPON_DEFS } from '../config/weapons.js';
 
 // Key bindings per hero: [basic, active slot 0, active slot 1]
 const HERO_KEYS = {
@@ -20,8 +21,7 @@ const BW      = 58;   // button width
 const BG      = 2;    // gap between buttons
 const B_LEFT  = 2;    // left margin before first button
 const KEY_H       = 18;   // key-label strip at bottom of each button
-const PASSIVE_ROW_H = 14; // strip at card bottom for passive upgrade tags
-// Button height fills from HEADER_H to PANEL_H - 2 - PASSIVE_ROW_H (computed in draw)
+const BUFF_ROW_H  = 16;   // active-buff indicator row between header and buttons
 
 // Lazy image loader
 const _imgCache = new Map();
@@ -98,7 +98,7 @@ export function drawAbilityPanel() {
       ctx.fillStyle = '#a83a2a';
       ctx.font = 'bold 11px "Courier New", monospace';
       ctx.fillText('DEAD', x + 27, y + HEADER_H + 8);
-      // Crosshatch over button area to make it visually non-interactive
+      // Crosshatch over buff row + button area to make it visually non-interactive
       const btnY = y + HEADER_H + 2;
       const BH   = PANEL_H - HEADER_H - 4;
       ctx.fillStyle = 'rgba(40, 8, 5, 0.75)';
@@ -127,16 +127,80 @@ export function drawAbilityPanel() {
     ctx.fillStyle = hpPct > 0.5 ? '#7aa853' : hpPct > 0.25 ? '#c5a247' : '#a83a2a';
     ctx.fillRect(barL, y + 16, barW * hpPct, 5);
 
-    // ── Ability buttons ───────────────────────────────────────────────────────
-    const btnY = y + HEADER_H + 2;                            // top of button area
-    const BH   = PANEL_H - HEADER_H - 4 - PASSIVE_ROW_H;     // button height (leaves room for passive row)
-    _drawAbilityButtons(ctx, u, x, btnY, BH, panelY);
+    // ── Active buff indicators ────────────────────────────────────────────────
+    const buffY = y + HEADER_H + 1;
+    _drawBuffRow(ctx, u, x, buffY);
 
-    // ── Passive upgrade strip ─────────────────────────────────────────────────
-    _drawPassiveStrip(ctx, u, x, y + PANEL_H - PASSIVE_ROW_H, SLOT_W);
+    // ── Ability buttons ───────────────────────────────────────────────────────
+    const btnY = y + HEADER_H + BUFF_ROW_H + 2;
+    const BH   = PANEL_H - HEADER_H - BUFF_ROW_H - 4;
+    _drawAbilityButtons(ctx, u, x, btnY, BH, panelY);
   }
 
   if (_tooltip) _drawTooltip(ctx, _tooltip, W, panelY);
+}
+
+function _drawBuffRow(ctx, unit, sx, rowY) {
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.fillRect(sx, rowY, SLOT_W, BUFF_ROW_H);
+
+  const buffs = [];
+  if (unit.weaponTimer > 0) {
+    const wDef = WEAPON_DEFS[unit.currentWeapon];
+    const maxT = wDef?.lootDuration || 15;
+    buffs.push({ label: wDef?.displayName?.slice(0,4).toUpperCase() || 'WPN', time: unit.weaponTimer, maxTime: maxT, color: '#ffa040' });
+  }
+  if (unit.rageTimer > 0) {
+    buffs.push({ label: 'RAGE', time: unit.rageTimer, maxTime: 5, color: '#ff4020' });
+  }
+  if (unit.medkitHealRemaining > 0) {
+    buffs.push({ label: unit.medkitHealRemaining > 80 ? 'HEAL+' : 'HEAL', time: unit.medkitHealRemaining, maxTime: unit.medkitHealPerSec > 0 ? (unit.medkitHealRemaining / unit.medkitHealPerSec) : 4, color: '#40b0ff', isHeal: true });
+  }
+
+  if (buffs.length === 0) {
+    ctx.strokeStyle = 'rgba(40,25,10,0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(sx, rowY + BUFF_ROW_H - 0.5);
+    ctx.lineTo(sx + SLOT_W, rowY + BUFF_ROW_H - 0.5);
+    ctx.stroke();
+    return;
+  }
+
+  const PILL_W = 56, PILL_GAP = 3, PILL_H = BUFF_ROW_H - 3;
+  let bx = sx + 2;
+  const cy = rowY + BUFF_ROW_H / 2;
+
+  for (const buff of buffs) {
+    const pct = Math.max(0, Math.min(1, buff.time / buff.maxTime));
+    // Pill background
+    ctx.fillStyle = 'rgba(10,6,3,0.85)';
+    ctx.fillRect(bx, rowY + 1, PILL_W, PILL_H);
+    // Timer bar fill
+    ctx.fillStyle = buff.color;
+    ctx.globalAlpha = 0.35;
+    ctx.fillRect(bx, rowY + 1, PILL_W * pct, PILL_H);
+    ctx.globalAlpha = 1;
+    // Border
+    ctx.strokeStyle = buff.color;
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(bx, rowY + 1, PILL_W, PILL_H);
+    // Label
+    ctx.fillStyle = buff.color;
+    ctx.font = 'bold 7px "Courier New", monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(buff.label, bx + 3, cy);
+    // Time value
+    const timeStr = buff.isHeal ? Math.ceil(buff.time) + 'hp' : Math.ceil(buff.time) + 's';
+    ctx.fillStyle = '#d0c080';
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(timeStr, bx + PILL_W - 2, cy);
+    ctx.textBaseline = 'alphabetic';
+    bx += PILL_W + PILL_GAP;
+    if (bx + PILL_W > sx + SLOT_W - 2) break;
+  }
 }
 
 function _drawAbilityButtons(ctx, unit, sx, btnY, BH, panelY) {
@@ -162,22 +226,24 @@ function _drawAbilityButtons(ctx, unit, sx, btnY, BH, panelY) {
     isEmpty:     false,
   }, panelY);
 
-  // Active skill slots 0 and 1
+  // Upgrade slots 0 and 1 (active or passive)
   for (let si = 0; si < 2; si++) {
-    const slot    = unit.activeSkillSlots[si];
-    const upgDef  = slot ? upgPool.find(u => u.id === slot.id) : null;
-    const iconCfg = slot ? (GameData.abilityIcons[slot.id] || null) : null;
+    const slot      = unit.upgradeSlots?.[si] ?? null;
+    const isPassive = slot?.kind === 'passive';
+    const upgDef    = slot ? upgPool.find(u => u.id === slot.id) : null;
+    const iconCfg   = slot ? (GameData.abilityIcons[slot.id] || null) : null;
     _processBtn(ctx, {
       x: bxs[si + 1], y: btnY, bh: BH,
       key:         keys[si + 1],
       abilityId:   slot?.id || '',
-      cd:          slot?.cd ?? 0,
-      maxCd:       slot?.maxCd ?? 1,
+      cd:          isPassive ? 0 : (slot?.cd ?? 0),
+      maxCd:       isPassive ? 1 : (slot?.maxCd ?? 1),
       color:       iconCfg?.color || '#6a5030',
       name:        upgDef?.name || '',
       description: upgDef?.description || '',
-      wavesLeft:   slot?.wavesLeft ?? null,
+      wavesLeft:   isPassive ? null : (slot?.wavesLeft ?? null),
       isEmpty:     !slot,
+      isPassive,
     }, panelY);
   }
 }
@@ -193,13 +259,13 @@ function _processBtn(ctx, btn, panelY) {
 }
 
 function _drawBtn(ctx, btn) {
-  const { x, y, bh, key, abilityId, cd, maxCd, color, isEmpty, wavesLeft } = btn;
+  const { x, y, bh, key, abilityId, cd, maxCd, color, isEmpty, wavesLeft, isPassive } = btn;
   const icnH = bh - KEY_H;       // icon area height (above key strip)
   const icx  = x + BW / 2;
   const icy  = y + icnH / 2;
 
   // Background
-  ctx.fillStyle = isEmpty ? 'rgba(12,8,4,0.75)' : 'rgba(22,15,8,0.95)';
+  ctx.fillStyle = isEmpty ? 'rgba(12,8,4,0.75)' : isPassive ? 'rgba(18,12,5,0.92)' : 'rgba(22,15,8,0.95)';
   ctx.fillRect(x, y, BW, bh);
 
   if (isEmpty) {
@@ -243,10 +309,24 @@ function _drawBtn(ctx, btn) {
     ctx.textBaseline = 'alphabetic';
   }
 
-  // Border — colour-glow when ready
-  ctx.strokeStyle = cd > 0 ? '#3a2818' : imgCol;
-  ctx.lineWidth   = cd > 0 ? 1 : 1.5;
+  // Border
+  ctx.strokeStyle = isPassive ? '#5a4520' : cd > 0 ? '#3a2818' : imgCol;
+  ctx.lineWidth   = isPassive ? 1 : cd > 0 ? 1 : 1.5;
   ctx.strokeRect(x, y, BW, bh);
+
+  // Passive badge overlay
+  if (isPassive) {
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
+    ctx.fillRect(x, y, BW, icnH);
+    ctx.fillStyle = '#8a6a2a';
+    ctx.font = 'bold 7px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('PASSIVE', icx, y + icnH - 2);
+    ctx.textBaseline = 'alphabetic';
+    _drawKeyStrip(ctx, x, y, bh, '●', false);
+    return;
+  }
 
   // ── Cooldown pie (covers icon area only) ──────────────────────────────────
   if (cd > 0) {
@@ -307,63 +387,21 @@ function _drawKeyStrip(ctx, bx, by, bh, key, ready) {
   ctx.textBaseline = 'alphabetic';
 }
 
-function _drawPassiveStrip(ctx, unit, sx, sy, sw) {
-  const history  = state.selectedUpgradeHistory[unit.type] || [];
-  const upgPool  = GameData.upgrades[unit.type] || [];
-  // Collect passive upgrade names (exclude active skills which are already shown as buttons)
-  const passives = history
-    .map(id => upgPool.find(u => u.id === id))
-    .filter(u => u && u.upgradeClass !== 'active');
-
-  // Strip background
-  ctx.fillStyle = 'rgba(8, 5, 2, 0.7)';
-  ctx.fillRect(sx, sy, sw, PASSIVE_ROW_H);
-  ctx.strokeStyle = 'rgba(50, 35, 18, 0.6)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(sx, sy);
-  ctx.lineTo(sx + sw, sy);
-  ctx.stroke();
-
-  if (passives.length === 0) {
-    ctx.fillStyle = '#3a2818';
-    ctx.font = '7px "Courier New", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('no passives', sx + 4, sy + PASSIVE_ROW_H - 4);
-    return;
-  }
-
-  ctx.font = 'bold 7px "Courier New", monospace';
-  ctx.textAlign = 'left';
-  let px = sx + 4;
-  for (const upg of passives) {
-    const label = upg.name.length > 10 ? upg.name.slice(0, 9) + '…' : upg.name;
-    const tw = ctx.measureText(label).width + 6;
-    if (px + tw > sx + sw - 2) break;
-    // Pill background
-    ctx.fillStyle = 'rgba(80, 50, 20, 0.8)';
-    ctx.beginPath();
-    ctx.roundRect(px, sy + 2, tw, PASSIVE_ROW_H - 4, 2);
-    ctx.fill();
-    ctx.fillStyle = '#c8a060';
-    ctx.fillText(label, px + 3, sy + PASSIVE_ROW_H - 4);
-    px += tw + 3;
-  }
-}
 
 function _drawTooltip(ctx, data, W, panelY) {
-  const { x, y, name, description, cd, maxCd, wavesLeft } = data;
+  const { x, y, name, description, cd, maxCd, wavesLeft, isPassive } = data;
   const PAD = 8, TW = 210, LH = 14;
 
   ctx.font = '9px "Courier New", monospace';
   const descLines = description ? _wrapText(ctx, description, TW - PAD * 2) : [];
-  const statusLine = cd > 0 ? `CD: ${Math.ceil(cd)}s / ${Math.round(maxCd)}s` : 'READY';
+  const statusLine = isPassive ? 'PASSIVE — always active' : cd > 0 ? `CD: ${Math.ceil(cd)}s / ${Math.round(maxCd)}s` : 'READY';
+  const statusColor = isPassive ? '#c5a030' : cd > 0 ? '#c5a572' : '#80c040';
   const allLines = [
     { text: name, bold: true, color: '#e8d8b0' },
     ...descLines.map(t => ({ text: t, bold: false, color: '#9a8060' })),
-    { text: statusLine, bold: cd <= 0, color: cd > 0 ? '#c5a572' : '#80c040' },
+    { text: statusLine, bold: isPassive || cd <= 0, color: statusColor },
   ];
-  if (wavesLeft !== null) {
+  if (!isPassive && wavesLeft !== null) {
     const col = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
     allLines.push({ text: `${wavesLeft} wave${wavesLeft !== 1 ? 's' : ''} remaining`, bold: false, color: col });
   }

@@ -40,8 +40,9 @@ export class Unit {
     this.weaponTimer = 0;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
 
-    // Active skill slots (max 2 per hero, beyond Q/W/E base ability)
-    this.activeSkillSlots = [null, null]; // {id, cd, maxCd, wavesLeft}
+    // Unified upgrade slots: holds actives {kind:'active',id,cd,maxCd,wavesLeft}
+    // and passives {kind:'passive',id}. Max 2; 3rd push drops oldest (FIFO).
+    this.upgradeSlots = [null, null];
 
     // Timers for various effects
     this.immortalTimer = 0;      // while > 0, incoming damage is absorbed
@@ -63,6 +64,10 @@ export class Unit {
     this._wpHitReturn = null;    // White Powder of Hit return data
     this._dominanceTargets = null;
     this._dominanceTimer = 0;
+
+    // Medkit over-time heal
+    this.medkitHealRemaining = 0;  // HP remaining to be healed
+    this.medkitHealPerSec    = 0;  // HP/s rate
 
     // Dick boomerang state
     this.boomerang = null; // {startX, startY, targetX, targetY, phase, t, clubX, clubY, hitOut, hitRet}
@@ -130,6 +135,12 @@ export class Unit {
     this.millTimer        = Math.max(0, this.millTimer - dt);
     this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
 
+    if (this.medkitHealRemaining > 0) {
+      const tick = Math.min(this.medkitHealPerSec * dt, this.medkitHealRemaining);
+      this.hp = Math.min(this.maxHp, this.hp + tick);
+      this.medkitHealRemaining = Math.max(0, this.medkitHealRemaining - tick);
+    }
+
     // Mill 360: Dick orbits around center while dealing continuous AoE
     if (this.millTimer > 0) {
       this.millAngle += dt * 6.0;
@@ -177,8 +188,8 @@ export class Unit {
     if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
 
     // Tick active skill cooldowns
-    for (const slot of this.activeSkillSlots) {
-      if (slot) slot.cd = Math.max(0, slot.cd - dt);
+    for (const slot of this.upgradeSlots) {
+      if (slot?.kind === 'active') slot.cd = Math.max(0, slot.cd - dt);
     }
 
     if (this.weaponTimer > 0) {
@@ -399,9 +410,9 @@ export class Unit {
   }
 
   tickSkillDurability() {
-    for (let i = 0; i < this.activeSkillSlots.length; i++) {
-      const slot = this.activeSkillSlots[i];
-      if (!slot) continue;
+    for (let i = 0; i < this.upgradeSlots.length; i++) {
+      const slot = this.upgradeSlots[i];
+      if (!slot || slot.kind !== 'active') continue;
       slot.wavesLeft--;
       if (slot.wavesLeft <= 0) {
         const hist = state.selectedUpgradeHistory[this.type];
@@ -409,25 +420,41 @@ export class Unit {
           const idx = hist.indexOf(slot.id);
           if (idx >= 0) hist.splice(idx, 1);
         }
-        this.activeSkillSlots[i] = null;
+        this.upgradeSlots[i] = null;
       }
     }
   }
 
-  pushActiveSkill(id, baseDurability) {
-    const freeSlot = this.activeSkillSlots.findIndex(s => s === null);
-    if (freeSlot === -1) return false;
+  pushUpgrade(id, kind, baseDurability) {
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     const durMod = diff.hero.activeSkillDurabilityMod ?? 0;
     const wavesLeft = Math.max(2, 3 + durMod);
-    const def = ACTIVE_SKILL_DEFS[id];
-    this.activeSkillSlots[freeSlot] = { id, cd: 0, maxCd: def?.maxCd || 12, wavesLeft };
-    return true;
+    const def = kind === 'active' ? ACTIVE_SKILL_DEFS[id] : null;
+    const entry = kind === 'active'
+      ? { kind: 'active', id, cd: 0, maxCd: def?.maxCd || 12, wavesLeft }
+      : { kind: 'passive', id };
+
+    const freeIdx = this.upgradeSlots.findIndex(s => s === null);
+    if (freeIdx !== -1) {
+      this.upgradeSlots[freeIdx] = entry;
+    } else {
+      // FIFO: drop oldest slot, free its history entry so it can be offered again
+      const dropped = this.upgradeSlots[0];
+      if (dropped) {
+        const hist = state.selectedUpgradeHistory[this.type];
+        if (hist) {
+          const idx = hist.indexOf(dropped.id);
+          if (idx >= 0) hist.splice(idx, 1);
+        }
+      }
+      this.upgradeSlots[0] = this.upgradeSlots[1];
+      this.upgradeSlots[1] = entry;
+    }
   }
 
   activateSkill(slotIdx) {
-    const slot = this.activeSkillSlots[slotIdx];
-    if (!slot || slot.cd > 0 || this.dead) return false;
+    const slot = this.upgradeSlots[slotIdx];
+    if (!slot || slot.kind !== 'active' || slot.cd > 0 || this.dead) return false;
     const impl = ACTIVE_SKILL_DEFS[slot.id];
     if (!impl) return false;
     impl.activate(this);

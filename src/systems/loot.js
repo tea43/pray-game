@@ -6,12 +6,15 @@ import { playSfx } from './audio.js';
 
 export function applyLoot(loot, unit) {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
-  if (loot.type === 'medkit') {
+  if (loot.type === 'medkit' || loot.type === 'rare_medkit') {
     playSfx('loot.medkit');
-    const heal = diff.loot.healAmount;
-    const before = unit.hp;
-    unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-    const actual = unit.hp - before;
+    const isRare = loot.type === 'rare_medkit';
+    const totalHeal = isRare ? Math.round(diff.loot.healAmount * 1.8) : diff.loot.healAmount;
+    const duration  = isRare ? 5 : 4;
+    unit.medkitHealRemaining = Math.min(unit.maxHp - unit.hp, totalHeal);
+    unit.medkitHealPerSec    = totalHeal / duration;
+    const particleColor = isRare ? '#60b0ff' : '#5fd06a';
+    const particleColor2 = isRare ? '#a0d8ff' : '#ffffff';
     for (let i = 0; i < 18; i++) {
       const a = rand(0, Math.PI * 2);
       const v = rand(20, 90);
@@ -19,11 +22,11 @@ export function applyLoot(loot, unit) {
         x: loot.x, y: loot.y,
         vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60,
         life: rand(0.4, 0.9), maxLife: 0.9,
-        color: i % 3 === 0 ? '#ffffff' : '#5fd06a',
+        color: i % 3 === 0 ? particleColor2 : particleColor,
         size: rand(1.5, 3), realtime: true,
       });
     }
-    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + actual });
+    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + totalHeal });
   } else if (loot.type === 'stimpack') {
     playSfx('loot.stimpack');
     unit.rageTimer = Math.max(unit.rageTimer, diff.loot.stimDuration);
