@@ -37,7 +37,7 @@ export const HERO_DEFS = {
     abilityKey: '3',
     abilityName: 'BLOCKADE',
     abilityId: 'backdoor_blockade',
-    abilityDescription: 'All heroes within 150px take 50% reduced damage for 6s. Buff travels with each hero.',
+    abilityDescription: 'Active Survival Shield (A.S.S) exoshell enablement. All heroes within 150px take 50% reduced damage for 6s.',
     abilityMaxCd: 14,
     abilityColor: '#c8a0ff',
     startingWeapon: 'hockey_club',

@@ -12,7 +12,6 @@ export class UpgradeTestScene extends Phaser.Scene {
 
     if (cycle === 0) {
       state.selectedUpgradeHistory = { eliott: [], dick: [], habib: [] };
-      state.activeUpgrades         = { eliott: [], dick: [], habib: [] };
       state.pendingUpgrades        = { eliott: null, dick: null, habib: null };
     }
 
@@ -67,7 +66,6 @@ export class UpgradeTestScene extends Phaser.Scene {
     const W3 = 160;
     this._addBtn(Math.round(W / 2 - W3 / 2), ROW2_Y, W3, 28, 'RESET HISTORY', 0x1e0e08, 0xaa5030, '#e07040', () => {
       state.selectedUpgradeHistory = { eliott: [], dick: [], habib: [] };
-      state.activeUpgrades         = { eliott: [], dick: [], habib: [] };
       this.scene.start('UpgradeTestScene', { cycle: 0 });
     });
   }

@@ -10,9 +10,21 @@ export class VictoryScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     playMusic('menu');
 
+    this._videoEl = document.getElementById('victoryBg');
+    if (this._videoEl) {
+      this._videoEl.src = './assets/video/victory/heli_escape.mp4';
+      this._videoEl.load();
+      this._videoEl.play().catch(() => {});
+      this._videoEl.style.display = 'block';
+    }
+
+    // Semi-transparent dark vignette so text is legible over the video
     const bg = this.add.graphics();
-    bg.fillStyle(0x0a0a02, 1);
+    bg.fillStyle(0x000000, 0.55);
     bg.fillRect(0, 0, W, H);
+    // Darker band behind the text
+    bg.fillStyle(0x020602, 0.55);
+    bg.fillRect(W / 2 - 320, H / 2 - 90, 640, 200);
 
     this.add.text(W / 2, H / 2 - 60, 'EXTRACTION COMPLETE', {
       fontFamily: 'Georgia, serif', resolution: window.devicePixelRatio, fontSize: '36px', color: '#a0d040', letterSpacing: 6,
@@ -24,10 +36,25 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);
 
-    this.tweens.add({ targets: this.children.list, alpha: 1, duration: 3500, ease: 'Linear' });
+    // Fade in text (skip bg graphics which are already opaque)
+    const fadeTargets = this.children.list.filter(c => c !== bg);
+    this.tweens.add({ targets: fadeTargets, alpha: 1, duration: 3500, ease: 'Linear' });
 
-    this._makeBtn(W / 2, H / 2 + 80, 'MAIN MENU', () => this.scene.start('MenuScene'));
+    this._makeBtn(W / 2, H / 2 + 80, 'MAIN MENU', () => {
+      this._stopVideo();
+      this.scene.start('MenuScene');
+    });
   }
+
+  _stopVideo() {
+    if (this._videoEl) {
+      this._videoEl.pause();
+      this._videoEl.src = '';
+      this._videoEl.style.display = 'none';
+    }
+  }
+
+  shutdown() { this._stopVideo(); }
 
   _makeBtn(x, y, label, cb) {
     const w = 200, h = 38;

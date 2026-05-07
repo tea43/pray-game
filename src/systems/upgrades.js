@@ -39,7 +39,12 @@ export function applyWaveUpgrades() {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   for (const hero of state.units) {
     if (hero.dead) continue;
-    const upgrades = state.activeUpgrades[hero.type] || [];
+    // Collect passive upgrade defs from unified upgrade slots
+    const upgPool = GameData.upgrades[hero.type] || [];
+    const upgrades = (hero.upgradeSlots || [])
+      .filter(s => s?.kind === 'passive')
+      .map(s => upgPool.find(u => u.id === s.id))
+      .filter(Boolean);
     let speedMult = 1;
     let dmgMult = 1;
     let cdMult = 1;
@@ -74,9 +79,9 @@ export function applyWaveUpgrades() {
       }
     }
 
-    // Apply active-skill passive upgrades too
-    for (const slot of hero.activeSkillSlots) {
-      if (!slot) continue;
+    // Apply active-skill passive effects too
+    for (const slot of (hero.upgradeSlots || [])) {
+      if (!slot || slot.kind !== 'active') continue;
       const def = ACTIVE_SKILL_DEFS[slot.id];
       if (def?.passive) def.passive(hero);
     }
@@ -91,7 +96,6 @@ export function applyWaveUpgrades() {
 }
 
 export function removeWaveUpgrades() {
-  state.activeUpgrades = { eliott: [], dick: [], habib: [] };
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   for (const hero of state.units) {
     if (!hero) continue;
@@ -125,5 +129,5 @@ export function tickActiveSkillDurability() {
 export function activeSkillCount(heroType) {
   const unit = state.units.find(u => u.type === heroType);
   if (!unit) return 0;
-  return unit.activeSkillSlots.filter(Boolean).length;
+  return (unit.upgradeSlots || []).filter(s => s?.kind === 'active').length;
 }

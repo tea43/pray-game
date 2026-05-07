@@ -199,11 +199,9 @@ export class UpgradeScene extends Phaser.Scene {
       return;
     }
 
-    // Filter out already-selected upgrades; also filter active upgrades if slots are full
-    const activeCount = unit ? unit.activeSkillSlots.filter(Boolean).length : 0;
+    // Filter out already-selected upgrades (in history or currently in slots)
     const pool    = (GameData.upgrades[hero.id] || []).filter(u => {
       if (history.includes(u.id)) return false;
-      if (u.upgradeClass === 'active' && activeCount >= 2) return false;
       return true;
     });
 
@@ -507,14 +505,10 @@ export class UpgradeScene extends Phaser.Scene {
 
   _advance() {
     const { heroId, upg } = this._selected;
-    if (upg.upgradeClass === 'active') {
-      // Route to unit's active skill slot
-      const unit = state.units?.find(u => u.type === heroId);
-      if (unit) {
-        unit.pushActiveSkill(upg.id, upg.baseDurability ?? 3);
-      }
-    } else {
-      state.activeUpgrades[heroId].push(upg);
+    const unit = state.units?.find(u => u.type === heroId);
+    if (unit) {
+      const kind = upg.upgradeClass === 'active' ? 'active' : 'passive';
+      unit.pushUpgrade(upg.id, kind, upg.baseDurability ?? 3);
     }
     state.selectedUpgradeHistory[heroId].push(upg.id);
 

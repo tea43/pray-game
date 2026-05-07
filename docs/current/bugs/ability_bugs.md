@@ -18,5 +18,15 @@
 - [DONE] All-survivors-dead: 2s time-flow before game-over overlay, random flavor message, EASIER DIFFICULTY button, controls blocked.
 - [DONE] Hockey club cursor in main menu.
 - [DONE] Active pickups visible in HUD: weapon timer pill, rage pill, medkit-heal pill. Medkit now heals over 4s; rare (blue) medkit over 5s for 1.8× heal.
+- Flamethrower and acid gun issues: 
+    - Flamethrower does not expose flame, we need an animation of flame for the flamethrower and acid gun
+    - Acid gun does not work at all, no animation
+    - Extend the cooldown for the flamethrower and extend the active state
+    - Flamethrower and Acid gun should be pointed at the closest enemy and switch if enemy died due to damage
+    - Lightning does not activates if there is no enemy around
+- Powder of dominance does not return heroes back together after hits. They Should get back to the original point if they started to hit enemies around them
+- During stoned green pipe effect, eliott cannot move even if user clicks it to move. Once effect is ended he is blinking to his closest bro.
+- decrease number of medkits 10 times, number of bombs 5 times, number of stimpacks 10 times
+- add the list for all passive abilities as well as active to the ability_icons.json
 
 
