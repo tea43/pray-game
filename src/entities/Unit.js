@@ -615,11 +615,13 @@ export class Unit {
   }
 
   moveTo(x, y) {
+    if (this.stonedTimer > 0) return;
     this.tx = clamp(x, 6, G.W - 6);
     this.ty = clamp(y, 6, G.PLAY_BOTTOM);
     this.aggroTarget = null;
   }
   attackMove(enemy) {
+    if (this.stonedTimer > 0) return;
     this.aggroTarget = enemy;
     this.tx = clamp(enemy.x, 6, G.W - 6);
     this.ty = clamp(enemy.y, 6, G.PLAY_BOTTOM);

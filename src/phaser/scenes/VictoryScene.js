@@ -36,6 +36,27 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);
 
+    // Fallen heroes + score
+    let scoreY = H / 2 + 32;
+    if (s?.units) {
+      const dead = s.units.filter(u => u.dead);
+      if (dead.length > 0) {
+        const names = dead.map(u => u.type.charAt(0).toUpperCase() + u.type.slice(1)).join('   ');
+        this.add.text(W / 2, scoreY, `†  ${names}  (fallen)`, {
+          fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
+          fontSize: '11px', color: '#c04030', letterSpacing: 2,
+        }).setOrigin(0.5).setAlpha(0);
+        scoreY += 18;
+      }
+    }
+    if (s) {
+      const div = s.heroesDied > 0 ? `  ·  PENALTY ÷${Math.pow(2, s.heroesDied)}` : '';
+      this.add.text(W / 2, scoreY, `SCORE: ${s.score}${div}`, {
+        fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
+        fontSize: '12px', color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
+      }).setOrigin(0.5).setAlpha(0);
+    }
+
     // Fade in text (skip bg graphics which are already opaque)
     const fadeTargets = this.children.list.filter(c => c !== bg);
     this.tweens.add({ targets: fadeTargets, alpha: 1, duration: 3500, ease: 'Linear' });

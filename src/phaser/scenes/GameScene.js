@@ -14,6 +14,7 @@ import { drawBackground, clearBackgroundCache } from '../../render/background.js
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
+import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -97,7 +98,7 @@ export class GameScene extends Phaser.Scene {
       gameOver: false, allDeadPending: false, victory: false, allWavesCleared: false,
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
-      survivedSeconds: 0, menuPhase: 'playing',
+      survivedSeconds: 0, menuPhase: 'playing', score: 0, heroesDied: 0,
       isUpgradeScreen: false,
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
@@ -315,6 +316,8 @@ export class GameScene extends Phaser.Scene {
       for (const u of state.units) {
         if (u.hp <= 0 && !u.dead) {
           u.dead = true;
+          u.deathX = u.x; u.deathY = u.y;
+          state.heroesDied = (state.heroesDied || 0) + 1;
           const idx = state.selected.indexOf(u);
           if (idx >= 0) state.selected.splice(idx, 1);
           u.selected = false;
@@ -794,6 +797,8 @@ export class GameScene extends Phaser.Scene {
       state.allDeadPending = true;
       this.time.delayedCall(2000, () => {
         if (!state.allDeadPending) return;
+        applyDeathPenalties();
+        saveHighScore();
         state.gameOver = true;
         state.allDeadPending = false;
         this.scene.stop('HUDScene');
@@ -802,6 +807,8 @@ export class GameScene extends Phaser.Scene {
     }
     if (state.victory && !this._victoryTriggered) {
       this._victoryTriggered = true;
+      applyDeathPenalties();
+      saveHighScore();
       this.time.delayedCall(400, () => {
         this.scene.stop('HUDScene');
         this.scene.start('VictoryScene', { state });

@@ -3,6 +3,7 @@ import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 import { playMusic, setMusicVolume, setSfxVolume, audioState } from '../../systems/audio.js';
 import { state } from '../../state.js';
 import { COLORS as W_COLORS, TC, txt as wTxt, btn as wBtn, slider as wSlider, toggle as wToggle } from '../ui/widgets.js';
+import { getHighScoreData } from '../../systems/score.js';
 
 // ── Per-screen panel geometry ─────────────────────────────────────────────────
 // Each screen declares where its panel starts and how wide it is.
@@ -180,6 +181,14 @@ export class MenuScene extends Phaser.Scene {
     this._renderButtonList(panelX, btnStartY, panelW, buttons);
     this._txt(panelX, btnStartY + buttons.length * LAYOUT.btn.gap + 14,
       'prototype build · phase 5', { fontSize: '9px', color: TC.faint });
+
+    const hs = getHighScoreData();
+    if (hs.score > 0) {
+      const H = this.scale.height;
+      this._txt(panelX, H - 36,
+        `BEST RUN  ·  ${hs.kills} KILLS  ·  ${hs.score} PTS`,
+        { fontSize: '9px', color: TC.faint });
+    }
 
     const devY = btnStartY + buttons.length * LAYOUT.btn.gap + 38;
     this._renderDevSection(panelX, devY, panelW);

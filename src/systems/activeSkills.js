@@ -17,6 +17,7 @@ export const ACTIVE_SKILL_DEFS = {
       playSfx('ability_blink');
       unit.stonedTimer = 4;
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 4);
+      unit.tx = unit.x; unit.ty = unit.y; unit.aggroTarget = null;
       _radialParticles(unit.x, unit.y, 16, '#40c840', '#80ff80');
     },
   },

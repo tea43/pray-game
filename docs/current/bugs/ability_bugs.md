@@ -26,4 +26,8 @@
 - [FIXED] Loot spawn rates reduced: medkits ÷10, stimpacks ÷10, bombs ÷5 across all difficulties.
 - [FIXED] Wave-clear + all-heroes-dead race: UpgradeScene now checks on create() if all heroes are already dead; if so it stops itself and resumes GameScene so the death flow proceeds normally. ESC in UpgradeScene now calls bringToTop('PauseScene') so the pause panel renders above the upgrade overlay.
 - [FIXED] During powder of dominance, applyDamage() returns 0 when _dominanceTargets !== null, making all heroes fully invincible for the duration of the ability.
+- [FIXED] Stoned green pipe: moveTo/attackMove return early when stonedTimer > 0; activation also stops current movement target immediately.
+- [FIXED] End screens show fallen heroes by name and score penalty breakdown (÷2 per hero lost). heroesDied now incremented in GameScene on death; applyDeathPenalties + saveHighScore called before GameOver/Victory transitions; score/heroesDied reset on new game.
+- [FIXED] GameOverScene panel starts centred and slides to left side (x=150) after 4s, revealing the dark background. Dark left band fades in as the panel arrives.
+- [FIXED] Main menu shows best run at bottom of title panel: "BEST RUN · N KILLS · N PTS". Saved via new getHighScoreData() / pray_highscore_kills key alongside existing score key.
 

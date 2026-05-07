@@ -25,6 +25,11 @@ const GAME_OVER_MESSAGES = [
   'The wasteland is unforgiving. So are you.',
 ];
 
+// x the panel slides to (left-side position matching MenuScene layout)
+const SLIDE_X      = 150;
+const SLIDE_DELAY  = 4000;
+const SLIDE_DUR    = 1200;
+
 export class GameOverScene extends Phaser.Scene {
   constructor() { super({ key: 'GameOverScene' }); }
 
@@ -34,61 +39,124 @@ export class GameOverScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     playMusic('menu');
 
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0a0302, 1);
-    bg.fillRect(0, 0, W, H);
+    this.add.graphics().fillStyle(0x0a0302, 1).fillRect(0, 0, W, H);
 
-    const msg = GAME_OVER_MESSAGES[Math.floor(Math.random() * GAME_OVER_MESSAGES.length)];
-
-    this.add.text(W / 2, H / 2 - 70, 'ALL SURVIVORS DEAD', {
-      fontFamily: 'Georgia, serif', resolution: window.devicePixelRatio, fontSize: '36px', color: '#a83a2a', letterSpacing: 6,
-    }).setOrigin(0.5).setAlpha(0);
-
-    this.add.text(W / 2, H / 2 - 22, msg, {
-      fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '12px', color: '#8a6a4a', letterSpacing: 1,
-      wordWrap: { width: 460 }, align: 'center',
-    }).setOrigin(0.5).setAlpha(0);
+    // Dark band that appears on the left as the panel slides over
+    const leftBand = this.add.graphics().setAlpha(0);
+    leftBand.fillStyle(0x050201, 0.92).fillRect(0, 0, SLIDE_X * 2, H);
 
     const s = this._state;
-    const statLine = s ? `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s` : '';
-    this.add.text(W / 2, H / 2 + 12, statLine, {
-      fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
-    }).setOrigin(0.5).setAlpha(0);
+    const msg = GAME_OVER_MESSAGES[Math.floor(Math.random() * GAME_OVER_MESSAGES.length)];
 
-    this.tweens.add({ targets: this.children.list, alpha: 1, duration: 1200, ease: 'Linear' });
+    // Container starts centred, slides left
+    const panel = this.add.container(W / 2, 0);
+    const items = [];
 
-    const diff = s?.difficulty || 'brood-hunter';
-    const diffIdx = DIFFICULTY_ORDER.indexOf(diff);
+    const addT = (y, text, style) => {
+      const t = this.add.text(0, y, text, { resolution: window.devicePixelRatio, ...style })
+        .setOrigin(0.5, 0).setAlpha(0);
+      panel.add(t);
+      items.push(t);
+      return t;
+    };
+
+    let cy = H / 2 - 96;
+
+    addT(cy, 'ALL SURVIVORS DEAD', {
+      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#a83a2a', letterSpacing: 6,
+    });
+    cy += 54;
+
+    addT(cy, msg, {
+      fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#8a6a4a',
+      letterSpacing: 1, wordWrap: { width: 380 }, align: 'center',
+    });
+    cy += 46;
+
+    // Fallen heroes
+    if (s?.units) {
+      const dead = s.units.filter(u => u.dead);
+      if (dead.length > 0) {
+        const names = dead.map(u => u.type.charAt(0).toUpperCase() + u.type.slice(1)).join('   ');
+        addT(cy, `†  ${names}`, {
+          fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#c04030', letterSpacing: 3,
+        });
+        cy += 22;
+      }
+    }
+
+    // Kill + time stats
+    if (s) {
+      addT(cy, `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s   WAVE: ${s.wave}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
+      });
+      cy += 20;
+    }
+
+    // Score with penalty breakdown
+    if (s) {
+      if (s.heroesDied > 0) {
+        const div = Math.pow(2, s.heroesDied);
+        addT(cy, `SCORE: ${s.score}  ·  PENALTY ÷${div}  (${s.heroesDied} hero${s.heroesDied > 1 ? 'es' : ''} lost)`, {
+          fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#8a5040', letterSpacing: 1,
+        });
+      } else {
+        addT(cy, `SCORE: ${s.score}`, {
+          fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
+        });
+      }
+      cy += 28;
+    }
+
+    // Buttons
+    const diff     = s?.difficulty || 'brood-hunter';
+    const diffIdx  = DIFFICULTY_ORDER.indexOf(diff);
     const easierDiff = diffIdx > 0 ? DIFFICULTY_ORDER[diffIdx - 1] : null;
 
-    this._makeBtn(W / 2, H / 2 + 68, 'RETRY',
+    this._addBtn(panel, items, cy + 10,  'RETRY',
       () => this.scene.start('GameScene', { difficulty: diff }));
-    this._makeBtn(W / 2, H / 2 + 118, 'MAIN MENU',
+    this._addBtn(panel, items, cy + 58,  'MAIN MENU',
       () => this.scene.start('MenuScene'));
-    this._makeBtn(W / 2, H / 2 + 168, easierDiff ? `EASIER  (${easierDiff.replace(/-/g, ' ').toUpperCase()})` : 'EASIEST ALREADY',
+    this._addBtn(panel, items, cy + 106,
+      easierDiff ? `EASIER  (${easierDiff.replace(/-/g, ' ').toUpperCase()})` : 'EASIEST ALREADY',
       easierDiff ? () => this.scene.start('GameScene', { difficulty: easierDiff }) : null,
       !easierDiff);
+
+    // Fade in all panel items
+    this.tweens.add({ targets: items, alpha: 1, duration: 1200, ease: 'Linear' });
+
+    // Slide to left after delay
+    this.time.delayedCall(SLIDE_DELAY, () => {
+      this.tweens.add({ targets: leftBand, alpha: 1, duration: 800 });
+      this.tweens.add({ targets: panel, x: SLIDE_X, duration: SLIDE_DUR, ease: 'Cubic.easeInOut' });
+    });
   }
 
-  _makeBtn(x, y, label, cb, disabled = false) {
+  _addBtn(panel, items, y, label, cb, disabled = false) {
     const w = 260, h = 38;
-    const g = this.add.graphics();
+    const g = this.add.graphics().setAlpha(0);
+    panel.add(g);
+    items.push(g);
+
     const draw = (hover) => {
       g.clear();
-      const bg = disabled ? 0x1a1010 : hover ? 0x3a2a1a : 0x2a1a0a;
+      const bgCol  = disabled ? 0x1a1010 : hover ? 0x3a2a1a : 0x2a1a0a;
       const border = disabled ? 0x2a1818 : hover ? 0xc5a572 : 0x5a3a18;
-      g.fillStyle(bg, 1);
-      g.fillRect(x - w / 2, y - h / 2, w, h);
-      g.lineStyle(1, border, 1);
-      g.strokeRect(x - w / 2, y - h / 2, w, h);
+      g.fillStyle(bgCol,  1).fillRect(-w / 2, y - h / 2, w, h);
+      g.lineStyle(1, border, 1).strokeRect(-w / 2, y - h / 2, w, h);
     };
     draw(false);
-    this.add.text(x, y, label, {
+
+    const t = this.add.text(0, y, label, {
       fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
       fontSize: '12px', color: disabled ? '#5a4030' : '#d9c7a0', letterSpacing: 2,
-    }).setOrigin(0.5);
-    if (!disabled) {
-      const zone = this.add.zone(x - w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
+    }).setOrigin(0.5).setAlpha(0);
+    panel.add(t);
+    items.push(t);
+
+    if (!disabled && cb) {
+      const zone = this.add.zone(-w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
+      panel.add(zone);
       zone.on('pointerover', () => draw(true));
       zone.on('pointerout',  () => draw(false));
       zone.on('pointerdown', () => cb());
