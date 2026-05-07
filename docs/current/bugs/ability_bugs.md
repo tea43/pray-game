@@ -11,22 +11,18 @@
  - [FIXED] Smokescreen ability is not added to the ability list whenever selected. Passive upgrades now appear as a second upgrade slot button in the HUD (disabled, hoverable for tooltip). The separate passive strip was replaced by the unified 2-slot system (see below).
  - [FIXED] During the spin of the abilities in between the waves, the abilities of the dead hero should be unselectable. Dead hero columns in UpgradeScene now show a "† FALLEN" label and push a null reel so they cannot be clicked; the hero name label in the header is also grayed out.
  - [FIXED] White powder of hit stops time before the back-teleport executes. Added `u._wpHitReturn !== null` to the `anyAbilityActive` guard in GameScene._updateTimeFlow() so time keeps flowing for the full 0.3s return window. Dominance was already covered by the existing `_dominanceTargets` check.
-- ingame menu should ask "are you sure?" when customer press "main menu"
-- whenever user wants to close the tab: there should be a notification before the tab is closed
+- [FIXED] Ingame menu asks "are you sure?" when player presses "main menu". Inline YES/CANCEL confirmation shown in PauseScene.
+- [FIXED] Browser tab-close notification added via beforeunload listener in index.html.
 
 ## Enhancement Queue (from docs/planning/enchancements.md)
 - [DONE] All-survivors-dead: 2s time-flow before game-over overlay, random flavor message, EASIER DIFFICULTY button, controls blocked.
 - [DONE] Hockey club cursor in main menu.
 - [DONE] Active pickups visible in HUD: weapon timer pill, rage pill, medkit-heal pill. Medkit now heals over 4s; rare (blue) medkit over 5s for 1.8× heal.
-- Flamethrower and acid gun issues: 
-    - Flamethrower does not expose flame, we need an animation of flame for the flamethrower and acid gun
-    - Acid gun does not work at all, no animation
-    - Extend the cooldown for the flamethrower and extend the active state
-    - Flamethrower and Acid gun should be pointed at the closest enemy and switch if enemy died due to damage
-    - Lightning does not activates if there is no enemy around
-- Powder of dominance does not return heroes back together after hits. They Should get back to the original point if they started to hit enemies around them
-- During stoned green pipe effect, eliott cannot move even if user clicks it to move. Once effect is ended he is blinking to his closest bro.
-- decrease number of medkits 10 times, number of bombs 5 times, number of stimpacks 10 times
-- add the list for all passive abilities as well as active to the ability_icons.json
+- [FIXED] Flamethrower auto-aims at nearest enemy each frame, animated fire particles rendered, cooldown extended 12→20s, active duration 3→6s.
+- [FIXED] Acid gun fully implemented: sustained 5s active state, periodic projectiles, enemy acidDot DOT (green particles), auto-aims at nearest enemy.
+- [FIXED] Chain lightning now returns false (skipping cooldown) when no enemies are within maxRange=200.
+- [FIXED] Powder of dominance stores _dominanceOrigin before strikes begin; hero teleports back to origin after all strikes complete.
+- [FIXED] Stoned green pipe: removed teleport-to-ally code on effect end; removed stonedTimer guard from auto-attack so movement and attacking resume normally.
+- [FIXED] Loot spawn rates reduced: medkits ÷10, stimpacks ÷10, bombs ÷5 across all difficulties.
 
 

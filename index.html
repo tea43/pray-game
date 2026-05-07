@@ -38,5 +38,8 @@
 <video id="menuVideo" loop muted playsinline></video>
 <video id="victoryBg" loop muted playsinline></video>
 <script type="module" src="/src/phaser/game.js"></script>
+<script>
+  window.addEventListener('beforeunload', e => { e.preventDefault(); e.returnValue = ''; });
+</script>
 </body>
 </html>

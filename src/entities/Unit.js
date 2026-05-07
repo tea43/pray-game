@@ -53,6 +53,8 @@ export class Unit {
     this.alchemyRageMult = 1;    // extra atk speed multiplier from Blue Cubes of Rage
     this.stonedTimer = 0;        // Stoned Green Pipe: enemy magnet + immortal
     this.flamethrowerTimer = 0;  // Flamethrower cone active
+    this.acidGunTimer = 0;       // Acid gun sustained fire
+    this.acidGunFireCd = 0;      // Acid gun fire rate cooldown
     this.millTimer = 0;          // 360 Mill spin visual timer
     this.millAngle = 0;
     this.millCenterX = 0;
@@ -63,6 +65,7 @@ export class Unit {
     this.vortexCenterY = 0;
     this._wpHitReturn = null;    // White Powder of Hit return data
     this._dominanceTargets = null;
+    this._dominanceOrigin = null;
     this._dominanceTimer = 0;
 
     // Medkit over-time heal
@@ -132,6 +135,8 @@ export class Unit {
     this.storiesRateBoost = Math.max(0, this.storiesRateBoost - dt);
     this.stonedTimer      = Math.max(0, this.stonedTimer - dt);
     this.flamethrowerTimer= Math.max(0, this.flamethrowerTimer - dt);
+    this.acidGunTimer     = Math.max(0, this.acidGunTimer - dt);
+    this.acidGunFireCd    = Math.max(0, this.acidGunFireCd - dt);
     this.millTimer        = Math.max(0, this.millTimer - dt);
     this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
 
@@ -232,36 +237,29 @@ export class Unit {
         }
         this._dominanceTimer = 0.25;
         if (this._dominanceTargets.length === 0) {
+          if (this._dominanceOrigin) {
+            this.x = clamp(this._dominanceOrigin.x, 6, G.W - 6);
+            this.y = clamp(this._dominanceOrigin.y, 6, G.PLAY_BOTTOM);
+            this.tx = this.x; this.ty = this.y;
+            this._dominanceOrigin = null;
+          }
           this._dominanceTargets = null;
           this.blinkFlash = 1;
         }
       }
     }
 
-    // Stoned Green Pipe end: teleport to nearest ally
-    if (this.stonedTimer > 0) {
-      // handled by stonedTimer decrement above; teleport happens when it hits 0
-    } else if (this.stonedTimer === 0 && this._wasStoned) {
-      this._wasStoned = false;
-      let nearest = null, nd = Infinity;
-      for (const ally of state.units) {
-        if (ally === this || ally.dead) continue;
-        const d = dist2(this.x, this.y, ally.x, ally.y);
-        if (d < nd) { nd = d; nearest = ally; }
-      }
-      if (nearest) {
-        const ang = rand(0, Math.PI * 2);
-        this.x = clamp(nearest.x + Math.cos(ang) * 35, 6, G.W - 6);
-        this.y = clamp(nearest.y + Math.sin(ang) * 35, 6, G.PLAY_BOTTOM);
-        this.tx = this.x; this.ty = this.y;
-        this.blinkFlash = 1;
-      }
-    }
-    if (this.stonedTimer > 0) this._wasStoned = true;
-
     // Flamethrower cone damage
     if (this.flamethrowerTimer > 0) {
       const coneRange = 180, halfArc = Math.PI * 0.25; // 90° cone
+      // Auto-aim toward nearest living enemy
+      let _ftNearest = null, _ftNd = Infinity;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = dist2(this.x, this.y, e.x, e.y);
+        if (d < _ftNd) { _ftNd = d; _ftNearest = e; }
+      }
+      if (_ftNearest) this.facing = Math.atan2(_ftNearest.y - this.y, _ftNearest.x - this.x);
       for (const e of state.enemies) {
         if (e.dead) continue;
         if (dist2(this.x, this.y, e.x, e.y) > coneRange + e.r) continue;
@@ -275,6 +273,31 @@ export class Unit {
         if (!e.fireDot || e.fireDot < 4) e.fireDot = 4;
         if (Math.random() < dt * 10) {
           state.particles.push({ x: e.x + rand(-5, 5), y: e.y + rand(-5, 5), vx: rand(-40, 40), vy: rand(-80, -20), life: rand(0.2, 0.5), maxLife: 0.5, color: rand(0, 1) > 0.5 ? '#ff6020' : '#ff9040', size: rand(2, 4), realtime: true });
+        }
+      }
+    }
+
+    // Acid gun: auto-aim and fire periodic blobs
+    if (this.acidGunTimer > 0) {
+      let nearest = null, nd = Infinity;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = dist2(this.x, this.y, e.x, e.y);
+        if (d < nd) { nd = d; nearest = e; }
+      }
+      if (nearest) {
+        this.facing = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+        if (this.acidGunFireCd <= 0) {
+          const ang = this.facing + rand(-0.15, 0.15);
+          state.acidShots = state.acidShots || [];
+          state.acidShots.push({
+            x: this.x + Math.cos(this.facing) * (this.r + 4),
+            y: this.y + Math.sin(this.facing) * (this.r + 4),
+            vx: Math.cos(ang) * 240, vy: Math.sin(ang) * 240,
+            life: 2.0, maxLife: 2.0, dead: false,
+            owner: this,
+          });
+          this.acidGunFireCd = 0.35;
         }
       }
     }
@@ -317,8 +340,8 @@ export class Unit {
       this._updateBoomerang(dt);
     }
 
-    // Auto-attack (skip while Dick is boomeranging or stoned)
-    if (!(this.type === 'dick' && this.boomerang !== null) && this.stonedTimer <= 0) {
+    // Auto-attack (skip while Dick is boomeranging)
+    if (!(this.type === 'dick' && this.boomerang !== null)) {
       let target = null;
       if (this.aggroTarget && !this.aggroTarget.dead) {
         const d = dist2(this.x, this.y, this.aggroTarget.x, this.aggroTarget.y);
@@ -457,7 +480,8 @@ export class Unit {
     if (!slot || slot.kind !== 'active' || slot.cd > 0 || this.dead) return false;
     const impl = ACTIVE_SKILL_DEFS[slot.id];
     if (!impl) return false;
-    impl.activate(this);
+    const result = impl.activate(this);
+    if (result === false) return false;  // ability declined (e.g. no targets)
     slot.cd = slot.maxCd;
     return true;
   }
@@ -940,6 +964,19 @@ export class Unit {
         ctx.stroke();
       }
       ctx.restore();
+      // Animated fire particles
+      if (Math.random() < 0.6) {
+        const ang = this.facing + rand(-halfArc * 0.8, halfArc * 0.8);
+        const dist = rand(this.r + 5, coneRange * 0.85);
+        state.particles.push({
+          x: this.x + Math.cos(ang) * dist * rand(0.3, 0.7),
+          y: this.y + Math.sin(ang) * dist * rand(0.3, 0.7),
+          vx: Math.cos(ang) * rand(40, 100), vy: Math.sin(ang) * rand(40, 100) - 20,
+          life: rand(0.15, 0.4), maxLife: 0.4,
+          color: Math.random() > 0.5 ? '#ff6020' : '#ffb040',
+          size: rand(3, 7), realtime: true,
+        });
+      }
     }
 
     // Mill/Vortex spin arc

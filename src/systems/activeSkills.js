@@ -112,6 +112,7 @@ export const ACTIVE_SKILL_DEFS = {
         // Queue sequential blink-strikes
         const targets = state.enemies.filter(e => !e.dead && dist2(ally.x, ally.y, e.x, e.y) < 200);
         if (targets.length === 0) continue;
+        ally._dominanceOrigin = { x: ally.x, y: ally.y };
         ally._dominanceTargets = [...targets];
         ally._dominanceTimer = 0;
         _radialParticles(ally.x, ally.y, 12, '#ffffff', '#e0c0ff');
@@ -124,9 +125,12 @@ export const ACTIVE_SKILL_DEFS = {
   chain_lightning: {
     maxCd: 8,
     activate(unit) {
+      const maxRange = 200;
+      // Don't activate if no enemies in range
+      const hasTarget = state.enemies.some(e => !e.dead && dist2(unit.x, unit.y, e.x, e.y) < maxRange);
+      if (!hasTarget) return false;
       playSfx('ability_lightning');
       const chains = 5;
-      const maxRange = 200;
       let cx = unit.x, cy = unit.y;
       const hit = new Set();
       const points = [{ x: cx, y: cy }];
@@ -162,34 +166,21 @@ export const ACTIVE_SKILL_DEFS = {
   },
 
   flamethrower: {
-    maxCd: 12,
+    maxCd: 20,
     activate(unit) {
       playSfx('ability_rage');
-      unit.flamethrowerTimer = 3;
+      unit.flamethrowerTimer = 6;
       _radialParticles(unit.x, unit.y, 14, '#ff6020', '#ffb040');
     },
   },
 
   acid_gun: {
-    maxCd: 10,
+    maxCd: 14,
     activate(unit) {
-      playSfx('weapon.throw.default');
-      // Fire acid projectile toward nearest enemy
-      let nearest = null, nd = Infinity;
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        const d = dist2(unit.x, unit.y, e.x, e.y);
-        if (d < nd) { nd = d; nearest = e; }
-      }
-      if (!nearest) return;
-      const ang = Math.atan2(nearest.y - unit.y, nearest.x - unit.x);
-      state.acidShots = state.acidShots || [];
-      state.acidShots.push({
-        x: unit.x, y: unit.y,
-        vx: Math.cos(ang) * 200, vy: Math.sin(ang) * 200,
-        life: 3, maxLife: 3, dead: false,
-        owner: unit,
-      });
+      playSfx('ability_rage');
+      unit.acidGunTimer = 5;
+      unit.acidGunFireCd = 0;
+      _radialParticles(unit.x, unit.y, 12, '#40ff40', '#80ff80');
     },
   },
 

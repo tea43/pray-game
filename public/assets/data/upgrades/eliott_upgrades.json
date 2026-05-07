@@ -6,7 +6,7 @@
     "upgradeClass": "active",
     "baseDurability": 3,
     "effectType": "active_skill",
-    "description": "Eliott becomes a stone statue: immortal, enemies in 350px are drawn to him. After 4s he teleports to nearest ally."
+    "description": "Eliott becomes a green stone: immortal for 4s, all enemies in 350px are magnetically drawn to him."
   },
   {
     "id": "green_pipe",

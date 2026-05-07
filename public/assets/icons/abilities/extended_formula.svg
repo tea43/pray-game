@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Flask body -->
+  <path d="M24 8 L24 28 L10 50 Q8 56 14 58 L50 58 Q56 56 54 50 L40 28 L40 8 Z" stroke="#c8b890" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Flask neck -->
+  <rect x="24" y="6" width="16" height="4" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <!-- Plus symbol inside flask -->
+  <line x1="32" y1="38" x2="32" y2="52" stroke="#60d0a0" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="25" y1="45" x2="39" y2="45" stroke="#60d0a0" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Liquid fill line -->
+  <path d="M15 48 Q18 44 22 46 Q26 48 32 45 Q38 42 48 46" stroke="#60d0a0" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+</svg>

@@ -123,14 +123,15 @@ At the end of each 22s wave, time pauses and `UpgradeScene` appears as a slot ma
 
 | Loot | Effect |
 |---|---|
-| `medkit` | Heals the pickup survivor for up to 60 HP. |
+| `medkit` | Heals the pickup survivor over 4s (total ~60 HP). |
+| `rare_medkit` | Blue medkit; heals over 5s for 1.8× the normal amount. |
 | `stimpack` | Applies 5s rage-like buff and reduces ability cooldown by 2s. |
 | `bomb` | Immediate area explosion, radius 280. |
 | `banana_bomb` | Immediate larger explosion, radius 420, heavy knockback, and 2.5s stun on surviving enemies. |
 | `spray_gun` | Grants temporary spray gun. |
 | `samurai_sword` | Grants temporary sword cleave. |
 
-Regular enemy drop distribution after a successful drop: 60% medkit, 35% stimpack, 5% bomb.
+Regular enemy drop distribution: medkit ~52%, rare_medkit ~8%, stimpack ~35%, bomb ~5%. Loot spawn rates in difficulty configs are low (e.g. brood-hunter: medkit 6%, stimpack 3.5%, bomb 1%).
 
 Drop chance by enemy:
 

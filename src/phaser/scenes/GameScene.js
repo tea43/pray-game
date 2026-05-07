@@ -89,7 +89,7 @@ export class GameScene extends Phaser.Scene {
     const diff = DIFFICULTY_DEFS[this._difficulty] || DIFFICULTY_DEFS['brood-hunter'];
 
     Object.assign(state, {
-      units: [], enemies: [], particles: [], bolts: [], projectiles: [],
+      units: [], enemies: [], particles: [], bolts: [], projectiles: [], acidShots: [],
       loot: [], explosions: [], shockwaves: [], bloodStains: [], floatingTexts: [],
       hitStop: 0, flashAlpha: 0, selected: [], moveMarkers: [],
       time: 0, kills: 0, wave: 1, waveTimer: 0, spawnTimer: 1.5,
@@ -160,7 +160,7 @@ export class GameScene extends Phaser.Scene {
     const heliDeparting = state.helicopter?.flightState === 'departing';
     const anyAbilityActive = state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
-      u.flamethrowerTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0
+      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0
     ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0
@@ -234,6 +234,35 @@ export class GameScene extends Phaser.Scene {
       for (const e of state.enemies)  e.update(gameDt);
       for (const pr of state.projectiles) pr.update(gameDt);
       state.projectiles = state.projectiles.filter(pr => !pr.dead);
+
+      // Update acid shots
+      if (state.acidShots?.length) {
+        for (const shot of state.acidShots) {
+          if (shot.dead) continue;
+          shot.x += shot.vx * gameDt;
+          shot.y += shot.vy * gameDt;
+          shot.life -= gameDt;
+          if (shot.life <= 0 || shot.x < 0 || shot.x > G.W || shot.y < 0 || shot.y > G.PLAY_BOTTOM) {
+            shot.dead = true; continue;
+          }
+          for (const e of state.enemies) {
+            if (e.dead) continue;
+            if (dist2(shot.x, shot.y, e.x, e.y) < e.r + 6) {
+              const dmg = Math.round(15 * (shot.owner?.upgradeDmgMult || 1));
+              e.hp -= dmg;
+              e.hurtFlash = 0.4;
+              e.acidDot = Math.max(e.acidDot || 0, 3);
+              for (let i = 0; i < 10; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const v = 40 + Math.random() * 80;
+                state.particles.push({ x: shot.x, y: shot.y, vx: Math.cos(a)*v, vy: Math.sin(a)*v-20, life: 0.2+Math.random()*0.4, maxLife:0.5, color: i%2?'#40ff40':'#a0ff80', size: 2+Math.random()*3, realtime: true });
+              }
+              shot.dead = true; break;
+            }
+          }
+        }
+        state.acidShots = state.acidShots.filter(s => !s.dead);
+      }
 
       // Loot pickup
       for (const l of state.loot) {
@@ -455,6 +484,24 @@ export class GameScene extends Phaser.Scene {
     this._drawHelicopter(ctx);
     for (const ent of drawables) ent.draw(ctx);
     for (const pr of state.projectiles) pr.draw(ctx);
+
+    // Render acid shots
+    if (state.acidShots?.length) {
+      for (const shot of state.acidShots) {
+        if (shot.dead) continue;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(shot.x, shot.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(80, 255, 80, 0.85)';
+        ctx.shadowColor = '#40ff40';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.strokeStyle = '#c0ffc0';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     drawBolts();
     drawExplosions();

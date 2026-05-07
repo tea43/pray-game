@@ -81,9 +81,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      80,
       stimDuration:    8,
       itemChances: {    // independent rolls — changing one does not affect others
-        medkit:   0.70, // generous healing
-        stimpack: 0.30,
-        bomb:     0.05,
+        medkit:   0.07, // generous healing
+        stimpack: 0.03,
+        bomb:     0.01,
       },
       specialDropMult: 1.50,
     },
@@ -117,9 +117,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      60,
       stimDuration:    5,
       itemChances: {
-        medkit:   0.60,
-        stimpack: 0.35,
-        bomb:     0.05,
+        medkit:   0.06,
+        stimpack: 0.035,
+        bomb:     0.01,
       },
       specialDropMult: 1.00,
     },
@@ -153,9 +153,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      45,
       stimDuration:    4,
       itemChances: {
-        medkit:   0.50,  // fewer medkits
-        stimpack: 0.30,  // stimpack unchanged relative to medkit
-        bomb:     0.12,  // more explosives
+        medkit:   0.05,  // fewer medkits
+        stimpack: 0.03,  // stimpack unchanged relative to medkit
+        bomb:     0.024, // more explosives
       },
       specialDropMult: 0.70,
     },
@@ -188,9 +188,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      30,
       stimDuration:    3,
       itemChances: {
-        medkit:   0.35,
-        stimpack: 0.25,
-        bomb:     0.28,
+        medkit:   0.035,
+        stimpack: 0.025,
+        bomb:     0.056,
       },
       specialDropMult: 0.40,
     },
@@ -235,9 +235,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      999,
       stimDuration:    15,
       itemChances: {
-        medkit:   1.00,
-        stimpack: 0.80,
-        bomb:     0.40,
+        medkit:   0.10,
+        stimpack: 0.08,
+        bomb:     0.08,
       },
       specialDropMult: 3.00,
     },

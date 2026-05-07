@@ -22,6 +22,7 @@ export class Enemy {
     this.deathTimer = 0;
     this.hurtFlash = 0;
     this.stunTimer = 0;
+    this.acidDot = 0;
     this.kbResist = 1;
 
     this.blinkTimer = rand(2.5, 4);
@@ -181,6 +182,15 @@ export class Enemy {
       this.hp -= 6 * dt;
       if (Math.random() < dt * 8) {
         state.particles.push({ x: this.x + rand(-4, 4), y: this.y + rand(-6, 0), vx: rand(-20, 20), vy: rand(-50, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: rand(0, 1) > 0.5 ? '#ff6020' : '#ffa040', size: rand(1.5, 3), realtime: true });
+      }
+    }
+
+    // Acid DoT
+    if (this.acidDot > 0) {
+      this.acidDot = Math.max(0, this.acidDot - dt);
+      this.hp -= 5 * dt;
+      if (Math.random() < dt * 6) {
+        state.particles.push({ x: this.x + rand(-4,4), y: this.y+rand(-4,2), vx: rand(-15,15), vy: rand(-30,-5), life: rand(0.2,0.5), maxLife:0.5, color: rand(0,1)>0.5?'#40ff40':'#80ff80', size: rand(1.5,3), realtime: true });
       }
     }
 
