@@ -77,6 +77,11 @@ const DIFF_HINTS = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Hotspot: fraction of the 64×64 image where the blade tip sits after vertical flip.
+// Original blade tip ≈ (8, 52) → after flipY → (8, 12).  Tweak these to reposition the click point.
+const CURSOR_HOT_X = 8  / 64;   // ≈ 0.125
+const CURSOR_HOT_Y = 12 / 64;   // ≈ 0.1875
+
 export class MenuScene extends Phaser.Scene {
   constructor() {
     super({ key: 'MenuScene' });
@@ -84,6 +89,10 @@ export class MenuScene extends Phaser.Scene {
     this._screen = 'title';
     this._devExpanded  = false;
     this._devSub       = null;   // 'level' | 'slot' | null
+  }
+
+  preload() {
+    this.load.image('hockey_twig', './assets/icons/main/hockey_twig.png');
   }
 
   create() {
@@ -126,7 +135,7 @@ export class MenuScene extends Phaser.Scene {
 
   _clearScreen() {
     this.children.removeAll(true);
-    this._clubG = null;
+    this._clubImg = null;   // destroyed by removeAll
     this._bg = this.add.graphics();
     if (this.sys.game.canvas.style.cursor === 'none') {
       this._addCursorGraphics();
@@ -391,50 +400,22 @@ export class MenuScene extends Phaser.Scene {
   _initHockeyCursor() {
     this.sys.game.canvas.style.cursor = 'none';
     this._addCursorGraphics();
-    this.input.on('pointermove', (ptr) => this._drawClub(ptr.x, ptr.y));
+    this.input.on('pointermove', (ptr) => {
+      if (this._clubImg) { this._clubImg.x = ptr.x; this._clubImg.y = ptr.y; }
+    });
   }
 
   _addCursorGraphics() {
-    this._clubG = this.add.graphics().setDepth(9999);
-    this._drawClub(this.input.activePointer.x, this.input.activePointer.y);
-  }
-
-  _drawClub(px, py) {
-    const g = this._clubG;
-    if (!g) return;
-    g.clear();
-    g.x = px; g.y = py;
-
-    // Blade — thick curved piece at origin
-    g.lineStyle(5, 0xd4b070, 1);
-    g.beginPath();
-    g.moveTo(-2, 3);
-    g.lineTo(14, 0);
-    g.strokePath();
-    // Blade tip cap
-    g.fillStyle(0xd4b070, 1);
-    g.fillCircle(-2, 3, 2.5);
-
-    // Handle — tapered stick going up-right
-    g.lineStyle(4, 0xb88c4a, 1);
-    g.beginPath();
-    g.moveTo(4, -1);
-    g.lineTo(22, -30);
-    g.strokePath();
-    g.lineStyle(2, 0x8a6030, 1);
-    g.beginPath();
-    g.moveTo(5, -2);
-    g.lineTo(23, -31);
-    g.strokePath();
-
-    // Knob at top of handle
-    g.fillStyle(0x8a6030, 1);
-    g.fillCircle(23, -31, 3);
+    const ptr = this.input.activePointer;
+    this._clubImg = this.add.image(ptr.x, ptr.y, 'hockey_twig')
+      .setFlipY(true)
+      .setOrigin(CURSOR_HOT_X, CURSOR_HOT_Y)
+      .setDepth(9999);
   }
 
   _destroyHockeyCursor() {
     this.sys.game.canvas.style.cursor = 'default';
-    if (this._clubG) { this._clubG.destroy(); this._clubG = null; }
+    if (this._clubImg) { this._clubImg.destroy(); this._clubImg = null; }
     this.input.off('pointermove');
   }
 }
