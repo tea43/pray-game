@@ -8,4 +8,7 @@ export const LOOT_DEFS = {
   specialWeapons: ['spray_gun', 'samurai_sword', 'boomerang', 'bow'],
   bananaBombChance: 0.02,
   specialWeaponChance: 0.20,
+  // Explosion damage (falls off linearly to 0 at edge of radius)
+  bombDamage:       150,   // max damage at centre (was instant kill)
+  bananaBombDamage: 300,
 };

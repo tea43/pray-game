@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { SprayBullet } from './SprayBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ACTIVE_SKILL_DEFS } from '../systems/activeSkills.js';
+import { ABILITY_DEFS } from '../config/abilities.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -59,10 +59,14 @@ export class Unit {
     this.millAngle = 0;
     this.millCenterX = 0;
     this.millCenterY = 0;
+    this._millTargetX = 0;
+    this._millTargetY = 0;
     this.vortexTimer = 0;        // Vortex spin visual timer
     this.vortexAngle = 0;
     this.vortexCenterX = 0;
     this.vortexCenterY = 0;
+    this._vortexTargetX = 0;
+    this._vortexTargetY = 0;
     this._wpHitReturn = null;    // White Powder of Hit return data
     this._dominanceTargets = null;
     this._dominanceOrigin = null;
@@ -133,7 +137,28 @@ export class Unit {
     this.alchemyArmorTimer= Math.max(0, this.alchemyArmorTimer - dt);
     this.speedBoostTimer  = Math.max(0, this.speedBoostTimer - dt);
     this.storiesRateBoost = Math.max(0, this.storiesRateBoost - dt);
+    const _prevStoned = this.stonedTimer;
     this.stonedTimer      = Math.max(0, this.stonedTimer - dt);
+    if (_prevStoned > 0 && this.stonedTimer <= 0) {
+      let closestAlly = null, closestDist = Infinity;
+      for (const ally of state.units) {
+        if (ally === this || ally.dead) continue;
+        const d = dist2(this.x, this.y, ally.x, ally.y);
+        if (d < closestDist) { closestDist = d; closestAlly = ally; }
+      }
+      if (closestAlly) {
+        const ang = rand(0, Math.PI * 2);
+        const off = closestAlly.r + this.r + 8;
+        this.x = clamp(closestAlly.x + Math.cos(ang) * off, 6, G.W - 6);
+        this.y = clamp(closestAlly.y + Math.sin(ang) * off, 6, G.PLAY_BOTTOM);
+        this.tx = this.x; this.ty = this.y;
+        this.blinkFlash = 1;
+        for (let i = 0; i < 12; i++) {
+          const a = rand(0, Math.PI * 2), v = rand(40, 100);
+          state.particles.push({ x: this.x, y: this.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.3, 0.7), maxLife: 0.7, color: i % 2 ? '#40c840' : '#80ff80', size: rand(1.5, 3), realtime: true });
+        }
+      }
+    }
     this.flamethrowerTimer= Math.max(0, this.flamethrowerTimer - dt);
     this.acidGunTimer     = Math.max(0, this.acidGunTimer - dt);
     this.acidGunFireCd    = Math.max(0, this.acidGunFireCd - dt);
@@ -146,10 +171,13 @@ export class Unit {
       this.medkitHealRemaining = Math.max(0, this.medkitHealRemaining - tick);
     }
 
-    // Mill 360: Dick orbits around center while dealing continuous AoE
+    // Mill 360: Dick orbits around a center that drifts toward his pre-activation destination
     if (this.millTimer > 0) {
       this.millAngle += dt * 6.0;
       const orbitR = 38;
+      const mdx = this._millTargetX - this.millCenterX, mdy = this._millTargetY - this.millCenterY;
+      const md = Math.hypot(mdx, mdy);
+      if (md > 2) { const s = Math.min(md, this.speed * dt); this.millCenterX = clamp(this.millCenterX + mdx / md * s, 6, G.W - 6); this.millCenterY = clamp(this.millCenterY + mdy / md * s, 6, G.PLAY_BOTTOM); }
       this.x = clamp(this.millCenterX + Math.cos(this.millAngle) * orbitR, 6, G.W - 6);
       this.y = clamp(this.millCenterY + Math.sin(this.millAngle) * orbitR, 6, G.PLAY_BOTTOM);
       this.tx = this.x; this.ty = this.y;
@@ -168,9 +196,13 @@ export class Unit {
     }
 
     // Vortex: Dick orbits a larger circle, pulling and damaging enemies
+    // Vortex: Dick orbits a larger circle, center drifts toward pre-activation destination
     if (this.vortexTimer > 0) {
       this.vortexAngle += dt * 4.5;
       const orbitR = 50;
+      const vdx = this._vortexTargetX - this.vortexCenterX, vdy = this._vortexTargetY - this.vortexCenterY;
+      const vd = Math.hypot(vdx, vdy);
+      if (vd > 2) { const s = Math.min(vd, this.speed * dt); this.vortexCenterX = clamp(this.vortexCenterX + vdx / vd * s, 6, G.W - 6); this.vortexCenterY = clamp(this.vortexCenterY + vdy / vd * s, 6, G.PLAY_BOTTOM); }
       this.x = clamp(this.vortexCenterX + Math.cos(this.vortexAngle) * orbitR, 6, G.W - 6);
       this.y = clamp(this.vortexCenterY + Math.sin(this.vortexAngle) * orbitR, 6, G.PLAY_BOTTOM);
       this.tx = this.x; this.ty = this.y;
@@ -452,7 +484,7 @@ export class Unit {
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     const durMod = diff.hero.activeSkillDurabilityMod ?? 0;
     const wavesLeft = Math.max(2, 3 + durMod);
-    const def = kind === 'active' ? ACTIVE_SKILL_DEFS[id] : null;
+    const def = kind === 'active' ? ABILITY_DEFS[id] : null;
     const entry = kind === 'active'
       ? { kind: 'active', id, cd: 0, maxCd: def?.maxCd || 12, wavesLeft }
       : { kind: 'passive', id };
@@ -478,7 +510,7 @@ export class Unit {
   activateSkill(slotIdx) {
     const slot = this.upgradeSlots[slotIdx];
     if (!slot || slot.kind !== 'active' || slot.cd > 0 || this.dead) return false;
-    const impl = ACTIVE_SKILL_DEFS[slot.id];
+    const impl = ABILITY_DEFS[slot.id];
     if (!impl) return false;
     const result = impl.activate(this);
     if (result === false) return false;  // ability declined (e.g. no targets)
@@ -630,139 +662,8 @@ export class Unit {
 
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
-    if (this.type === 'eliott') return this._groupBlink();
-    if (this.type === 'dick')   return this._boomerangThrow();
-    if (this.type === 'habib')  return this._backdoorBlockade();
-    return false;
-  }
-
-  _groupBlink() {
-    const mx = state.mouse.x, my = state.mouse.y;
-    const dx = mx - this.x, dy = my - this.y;
-    const d = Math.hypot(dx, dy);
-    if (d < 6) return false;
-    playSfx('ability_blink');
-    const maxRange = 240;
-    const step = Math.min(d, maxRange);
-    const startX = this.x, startY = this.y;
-
-    // Departure burst
-    for (let i = 0; i < 14; i++) {
-      state.particles.push({ x: this.x, y: this.y, vx: rand(-90, 90), vy: rand(-110, 60), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
-    }
-    for (let i = 0; i < 10; i++) {
-      state.particles.push({ x: this.x, y: this.y, vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.3, 0.55), maxLife: 0.55, color: 'rgba(180, 230, 255, 1)', size: rand(2, 4), realtime: true, additive: true });
-    }
-
-    const nx = clamp(this.x + (dx / d) * step, 6, G.W - 6);
-    const ny = clamp(this.y + (dy / d) * step, 6, G.PLAY_BOTTOM);
-
-    const steps = 16;
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      state.particles.push({ x: this.x + (nx - this.x) * t + rand(-1.5, 1.5), y: this.y + (ny - this.y) * t + rand(-1.5, 1.5), vx: 0, vy: 0, life: 0.32, maxLife: 0.32, color: 'rgba(180, 230, 255, 1)', size: 3.5, realtime: true, additive: true });
-    }
-
-    this.x = nx; this.y = ny;
-    this.tx = nx; this.ty = ny;
-    this.z = 0; this.vz = 220;
-    this.blinkFlash = 1;
-
-    for (let i = 0; i < 22; i++) {
-      state.particles.push({ x: this.x, y: this.y, vx: rand(-130, 130), vy: rand(-130, 80), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
-    }
-    for (let i = 0; i < 14; i++) {
-      state.particles.push({ x: this.x, y: this.y, vx: rand(-80, 80), vy: rand(-80, 80), life: rand(0.3, 0.6), maxLife: 0.6, color: 'rgba(200, 240, 255, 1)', size: rand(2, 4), realtime: true, additive: true });
-    }
-
-    // Smokescreen passive: leave a smoke cloud at origin
-    if (this.smokescreen) {
-      for (let i = 0; i < 20; i++) {
-        state.particles.push({ x: startX + rand(-15, 15), y: startY + rand(-15, 15), vx: rand(-20, 20), vy: rand(-30, -5), life: rand(1.5, 3.0), maxLife: 3.0, color: `rgba(160,160,160,${rand(0.2, 0.5)})`, size: rand(8, 18), realtime: true });
-      }
-      // Mark smoke zone for enemy AI disruption
-      state.smokeZones = state.smokeZones || [];
-      state.smokeZones.push({ x: startX, y: startY, r: 40, life: 3.0, maxLife: 3.0 });
-    }
-
-    // Pull nearby allies (within 120px of starting position)
-    const ALLY_RADIUS = 120;
-    for (const ally of state.units) {
-      if (ally === this || ally.dead) continue;
-      if (dist2(startX, startY, ally.x, ally.y) < ALLY_RADIUS) {
-        const ang = rand(0, Math.PI * 2);
-        const off = rand(10, 38);
-        const ax = clamp(nx + Math.cos(ang) * off, 6, G.W - 6);
-        const ay = clamp(ny + Math.sin(ang) * off, 6, G.PLAY_BOTTOM);
-        ally.x = ax; ally.y = ay; ally.tx = ax; ally.ty = ay;
-        ally.blinkFlash = 0.8;
-        for (let i = 0; i < 8; i++) {
-          state.particles.push({ x: ax, y: ay, vx: rand(-60, 60), vy: rand(-70, 30), life: rand(0.2, 0.45), maxLife: 0.45, color: '#80c8ff', size: rand(1, 2.5), realtime: true });
-        }
-      }
-    }
-
-    // Residual Haze passive: slow enemies at landing point
-    if (this.residualHaze) {
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        if (dist2(nx, ny, e.x, e.y) < 80) {
-          e.stunTimer = Math.max(e.stunTimer, 2.0);
-        }
-      }
-    }
-
-    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.18); state.flashColor = '#a0d8ff'; }
-    this.abilityCd = this.abilityMaxCd;
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
-    return true;
-  }
-
-  _boomerangThrow() {
-    if (this.boomerang !== null) return false;
-    // Find heaviest enemy within 300px
-    let target = null, maxHp = -1;
-    for (const e of state.enemies) {
-      if (e.dead) continue;
-      const d = dist2(this.x, this.y, e.x, e.y);
-      if (d < 300 && e.hp > maxHp) { maxHp = e.hp; target = e; }
-    }
-    if (!target) return false;
-
-    playSfx('weapon.throw.default');
-    this.boomerang = {
-      startX: this.x, startY: this.y,
-      targetX: target.x, targetY: target.y,
-      phase: 'outbound',
-      t: 0,
-      clubX: this.x, clubY: this.y,
-      hitOut: new Set(),
-      hitRet: new Set(),
-    };
-    // Cooldown is set when caught (in _boomerangPhaseEnd return phase end)
-    return true;
-  }
-
-  _backdoorBlockade() {
-    playSfx('ability_lightning');
-    const radius = 150;
-    const affected = [];
-    for (const ally of state.units) {
-      if (ally.dead) continue;
-      if (dist2(this.x, this.y, ally.x, ally.y) < radius) {
-        ally.blockadeTimer = 6;
-        affected.push(ally);
-        for (let i = 0; i < 12; i++) {
-          const a = rand(0, Math.PI * 2);
-          const v = rand(40, 100);
-          state.particles.push({ x: ally.x, y: ally.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.3, 0.7), maxLife: 0.7, color: i % 2 ? '#c8d8ff' : '#a0b8e8', size: rand(1.5, 3), realtime: true });
-        }
-      }
-    }
-    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.15); state.flashColor = '#c0c8ff'; }
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
-    this.abilityCd = this.abilityMaxCd;
-    return true;
+    const def = ABILITY_DEFS[this.abilityId];
+    return def?.activate?.(this) ?? false;
   }
 
   // Apply incoming damage to this hero, respecting reductions.
@@ -944,58 +845,72 @@ export class Unit {
       this._drawFlyingBoomerang(ctx);
     }
 
-    // Flamethrower cone visual
+    // Flamethrower visual — dense fire particle spray
     if (this.flamethrowerTimer > 0) {
       const coneRange = 180, halfArc = Math.PI * 0.25;
-      const alpha = Math.min(1, this.flamethrowerTimer * 0.6);
+      // Hot nozzle glow
       ctx.save();
+      const nx = this.x + Math.cos(this.facing) * (this.r + 4);
+      const ny = this.y + Math.sin(this.facing) * (this.r + 4);
+      const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, 20);
+      grd.addColorStop(0,   'rgba(255, 255, 200, 0.95)');
+      grd.addColorStop(0.4, 'rgba(255, 160, 30, 0.5)');
+      grd.addColorStop(1,   'rgba(255, 80, 0, 0)');
+      ctx.fillStyle = grd;
       ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.arc(this.x, this.y, coneRange, this.facing - halfArc, this.facing + halfArc);
-      ctx.closePath();
-      ctx.fillStyle = `rgba(255, 90, 10, ${alpha * 0.18})`;
+      ctx.arc(nx, ny, 20, 0, Math.PI * 2);
       ctx.fill();
-      // Animated fire streams
-      for (let i = -2; i <= 2; i++) {
-        const ang = this.facing + (i / 2) * halfArc * 0.9;
-        const len = coneRange * (0.7 + Math.sin(state.time * 14 + i) * 0.3);
-        ctx.strokeStyle = i === 0 ? `rgba(255, 200, 40, ${alpha * 0.9})` : `rgba(255, 80, 10, ${alpha * 0.6})`;
-        ctx.lineWidth = i === 0 ? 3 : 1.5;
-        ctx.beginPath();
-        ctx.moveTo(this.x + Math.cos(ang) * this.r, this.y + Math.sin(ang) * this.r);
-        ctx.lineTo(this.x + Math.cos(ang) * len, this.y + Math.sin(ang) * len);
-        ctx.stroke();
-      }
       ctx.restore();
-      // Animated fire particles
-      if (Math.random() < 0.6) {
-        const ang = this.facing + rand(-halfArc * 0.8, halfArc * 0.8);
-        const dist = rand(this.r + 5, coneRange * 0.85);
+      // Dense fire particles
+      const count = 5 + (Math.random() < 0.5 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        const ang  = this.facing + rand(-halfArc * 0.85, halfArc * 0.85);
+        const dist = rand(this.r + 4, 20);
+        const spd  = rand(90, 220);
+        const life = rand(0.18, 0.5);
+        const r    = Math.random();
+        const color = r < 0.12 ? '#ffffff'
+                    : r < 0.30 ? '#ffee80'
+                    : r < 0.55 ? '#ffaa30'
+                    : r < 0.78 ? '#ff5010'
+                    : '#c03010';
         state.particles.push({
-          x: this.x + Math.cos(ang) * dist * rand(0.3, 0.7),
-          y: this.y + Math.sin(ang) * dist * rand(0.3, 0.7),
-          vx: Math.cos(ang) * rand(40, 100), vy: Math.sin(ang) * rand(40, 100) - 20,
-          life: rand(0.15, 0.4), maxLife: 0.4,
-          color: Math.random() > 0.5 ? '#ff6020' : '#ffb040',
-          size: rand(3, 7), realtime: true,
+          x: this.x + Math.cos(ang) * dist,
+          y: this.y + Math.sin(ang) * dist,
+          vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - rand(8, 35),
+          life, maxLife: life,
+          color, size: rand(2.5, 8), realtime: true,
+        });
+      }
+      // Sparse smoke trailing behind the flame
+      if (Math.random() < 0.4) {
+        const ang = this.facing + rand(-halfArc * 0.6, halfArc * 0.6);
+        const d   = rand(55, coneRange * 0.75);
+        state.particles.push({
+          x: this.x + Math.cos(ang) * d, y: this.y + Math.sin(ang) * d,
+          vx: rand(-12, 12), vy: rand(-28, -8),
+          life: rand(0.5, 1.1), maxLife: 1.1,
+          color: `rgba(70, 55, 45, ${rand(0.18, 0.38)})`, size: rand(6, 15), realtime: true,
         });
       }
     }
 
-    // Mill/Vortex spin arc
+    // Mill/Vortex spin arc — drawn around the orbiting center
     if (this.millTimer > 0 || this.vortexTimer > 0) {
-      const t = this.millTimer > 0 ? this.millTimer : this.vortexTimer;
-      const radius = this.vortexTimer > 0 ? 100 : 80;
+      const isVortex = this.vortexTimer > 0;
+      const t  = isVortex ? this.vortexTimer : this.millTimer;
+      const cx = isVortex ? this.vortexCenterX : this.millCenterX;
+      const cy = isVortex ? this.vortexCenterY : this.millCenterY;
+      const radius = isVortex ? 100 : 80;
       ctx.strokeStyle = `rgba(255, 180, 60, ${Math.min(1, t * 1.4)})`;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
-      // Inner glow
       ctx.strokeStyle = `rgba(255, 220, 80, ${Math.min(0.5, t * 0.7)})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, radius * 0.6, 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2);
       ctx.stroke();
     }
 

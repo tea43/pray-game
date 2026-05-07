@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { initAudio } from '../../systems/audio.js';
-import { loadUpgrades, loadAbilityIcons } from '../../systems/upgrades.js';
+import { loadUpgrades } from '../../systems/upgrades.js';
 
 export class SplashScene extends Phaser.Scene {
   constructor() { super({ key: 'SplashScene' }); }
@@ -39,7 +39,7 @@ export class SplashScene extends Phaser.Scene {
 
     const advance = async () => {
       initAudio();
-      await Promise.all([loadUpgrades(), loadAbilityIcons()]);
+      await loadUpgrades();
       this.scene.start('MenuScene');
     };
 

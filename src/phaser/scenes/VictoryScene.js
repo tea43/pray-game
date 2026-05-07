@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { playMusic } from '../../systems/audio.js';
 
+const SLIDE_X_RIGHT = 150;  // distance from right edge the panel lands at
+const SLIDE_DELAY   = 4000;
+const SLIDE_DUR     = 1200;
+
 export class VictoryScene extends Phaser.Scene {
   constructor() { super({ key: 'VictoryScene' }); }
 
@@ -18,53 +22,107 @@ export class VictoryScene extends Phaser.Scene {
       this._videoEl.style.display = 'block';
     }
 
-    // Semi-transparent dark vignette so text is legible over the video
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.55);
-    bg.fillRect(0, 0, W, H);
-    // Darker band behind the text
-    bg.fillStyle(0x020602, 0.55);
-    bg.fillRect(W / 2 - 320, H / 2 - 90, 640, 200);
+    // Full-screen vignette
+    this.add.graphics().fillStyle(0x000000, 0.5).fillRect(0, 0, W, H);
 
-    this.add.text(W / 2, H / 2 - 60, 'EXTRACTION COMPLETE', {
-      fontFamily: 'Georgia, serif', resolution: window.devicePixelRatio, fontSize: '36px', color: '#a0d040', letterSpacing: 6,
-    }).setOrigin(0.5).setAlpha(0);
+    // Right-side dark band that fades in as the panel arrives
+    const rightBand = this.add.graphics().setAlpha(0);
+    rightBand.fillStyle(0x020301, 0.92).fillRect(W - SLIDE_X_RIGHT * 2, 0, SLIDE_X_RIGHT * 2, H);
 
     const s = this._state;
-    const statLine = s ? `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s` : '';
-    this.add.text(W / 2, H / 2 + 10, statLine, {
-      fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
-    }).setOrigin(0.5).setAlpha(0);
 
-    // Fallen heroes + score
-    let scoreY = H / 2 + 32;
+    // Panel container starts centred, slides right
+    const panel = this.add.container(W / 2, 0);
+    const items = [];
+
+    const addT = (y, text, style) => {
+      const t = this.add.text(0, y, text, { resolution: window.devicePixelRatio, ...style })
+        .setOrigin(0.5, 0).setAlpha(0);
+      panel.add(t);
+      items.push(t);
+      return t;
+    };
+
+    let cy = H / 2 - 100;
+
+    addT(cy, 'EXTRACTION COMPLETE', {
+      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#a0d040', letterSpacing: 6,
+    });
+    cy += 54;
+
+    const statLine = s ? `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s` : '';
+    addT(cy, statLine, {
+      fontFamily: "'Courier New', monospace", fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
+    });
+    cy += 28;
+
+    // Fallen heroes
     if (s?.units) {
       const dead = s.units.filter(u => u.dead);
       if (dead.length > 0) {
         const names = dead.map(u => u.type.charAt(0).toUpperCase() + u.type.slice(1)).join('   ');
-        this.add.text(W / 2, scoreY, `†  ${names}  (fallen)`, {
-          fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
-          fontSize: '11px', color: '#c04030', letterSpacing: 2,
-        }).setOrigin(0.5).setAlpha(0);
-        scoreY += 18;
+        addT(cy, `†  ${names}  (fallen)`, {
+          fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#c04030', letterSpacing: 2,
+        });
+        cy += 20;
       }
     }
+
     if (s) {
       const div = s.heroesDied > 0 ? `  ·  PENALTY ÷${Math.pow(2, s.heroesDied)}` : '';
-      this.add.text(W / 2, scoreY, `SCORE: ${s.score}${div}`, {
-        fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
-        fontSize: '12px', color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
-      }).setOrigin(0.5).setAlpha(0);
+      addT(cy, `SCORE: ${s.score}${div}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '12px',
+        color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
+      });
+      cy += 28;
     }
 
-    // Fade in text (skip bg graphics which are already opaque)
-    const fadeTargets = this.children.list.filter(c => c !== bg);
-    this.tweens.add({ targets: fadeTargets, alpha: 1, duration: 3500, ease: 'Linear' });
-
-    this._makeBtn(W / 2, H / 2 + 80, 'MAIN MENU', () => {
+    // MAIN MENU button
+    this._addBtn(panel, items, cy + 10, 'MAIN MENU', () => {
       this._stopVideo();
       this.scene.start('MenuScene');
     });
+
+    // Fade in all panel items
+    this.tweens.add({ targets: items, alpha: 1, duration: 2000, ease: 'Linear' });
+
+    // Slide to right side after delay
+    this.time.delayedCall(SLIDE_DELAY, () => {
+      this.tweens.add({ targets: rightBand, alpha: 1, duration: 800 });
+      this.tweens.add({
+        targets: panel,
+        x: W - SLIDE_X_RIGHT,
+        duration: SLIDE_DUR,
+        ease: 'Cubic.easeInOut',
+      });
+    });
+  }
+
+  _addBtn(panel, items, y, label, cb) {
+    const w = 220, h = 38;
+    const g = this.add.graphics().setAlpha(0);
+    panel.add(g);
+    items.push(g);
+
+    const draw = (hover) => {
+      g.clear();
+      g.fillStyle(hover ? 0x3a2a1a : 0x2a1a0a, 1).fillRect(-w / 2, y - h / 2, w, h);
+      g.lineStyle(1, hover ? 0xc5a572 : 0x5a3a18, 1).strokeRect(-w / 2, y - h / 2, w, h);
+    };
+    draw(false);
+
+    const t = this.add.text(0, y, label, {
+      fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio,
+      fontSize: '13px', color: '#d9c7a0', letterSpacing: 3,
+    }).setOrigin(0.5).setAlpha(0);
+    panel.add(t);
+    items.push(t);
+
+    const zone = this.add.zone(-w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
+    panel.add(zone);
+    zone.on('pointerover', () => draw(true));
+    zone.on('pointerout',  () => draw(false));
+    zone.on('pointerdown', () => cb());
   }
 
   _stopVideo() {
@@ -76,22 +134,4 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   shutdown() { this._stopVideo(); }
-
-  _makeBtn(x, y, label, cb) {
-    const w = 200, h = 38;
-    const g = this.add.graphics();
-    const draw = (hover) => {
-      g.clear();
-      g.fillStyle(hover ? 0x3a2a1a : 0x2a1a0a, 1);
-      g.fillRect(x - w / 2, y - h / 2, w, h);
-      g.lineStyle(1, hover ? 0xc5a572 : 0x5a3a18, 1);
-      g.strokeRect(x - w / 2, y - h / 2, w, h);
-    };
-    draw(false);
-    this.add.text(x, y, label, { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '13px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5);
-    const zone = this.add.zone(x - w / 2, y - h / 2, w, h).setOrigin(0).setInteractive();
-    zone.on('pointerover', () => draw(true));
-    zone.on('pointerout',  () => draw(false));
-    zone.on('pointerdown', () => cb());
-  }
 }

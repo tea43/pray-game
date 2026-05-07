@@ -1,6 +1,7 @@
 import { rand, randInt, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { LOOT_DEFS } from '../config/loot.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 import { playSfx } from './audio.js';
 
@@ -75,16 +76,18 @@ function _equipWeapon(unit, weaponKey, lootX, lootY) {
 export function detonateBomb(x, y) {
   playSfx('explosion.bomb');
   const radius = 280;
+  const maxDmg = LOOT_DEFS.bombDamage ?? 150;
   for (const e of state.enemies) {
     if (e.dead) continue;
     const d = dist2(x, y, e.x, e.y);
     if (d < radius) {
+      const falloff = 1 - d / radius;
       const ang = Math.atan2(e.y - y, e.x - x);
-      const force = (1 - d / radius) * 380;
-      e.knockX += Math.cos(ang) * force;
-      e.knockY += Math.sin(ang) * force;
-      e.hp = -999;
-      e._die();
+      e.knockX += Math.cos(ang) * falloff * 380;
+      e.knockY += Math.sin(ang) * falloff * 380;
+      e.hp -= maxDmg * falloff;
+      e.hurtFlash = 1;
+      if (e.hp <= 0) e._die();
     }
   }
   // Fire debris — darker palette, no additive glow.
@@ -119,16 +122,18 @@ export function detonateBomb(x, y) {
 export function detonateBananaBomb(x, y) {
   playSfx('explosion.banana-bomb');
   const radius = 420;
+  const maxDmg = LOOT_DEFS.bananaBombDamage ?? 300;
   for (const e of state.enemies) {
     if (e.dead) continue;
     const d = dist2(x, y, e.x, e.y);
     if (d < radius) {
+      const falloff = 1 - d / radius;
       const ang = Math.atan2(e.y - y, e.x - x);
-      const force = (1 - d / radius) * 500;
-      e.knockX += Math.cos(ang) * force;
-      e.knockY += Math.sin(ang) * force;
-      e.hp = -999;
-      e._die();
+      e.knockX += Math.cos(ang) * falloff * 500;
+      e.knockY += Math.sin(ang) * falloff * 500;
+      e.hp -= maxDmg * falloff;
+      e.hurtFlash = 1;
+      if (e.hp <= 0) e._die();
       e.stunTimer = Math.max(e.stunTimer || 0, 2.5);
     }
   }

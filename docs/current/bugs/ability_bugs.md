@@ -30,4 +30,10 @@
 - [FIXED] End screens show fallen heroes by name and score penalty breakdown (÷2 per hero lost). heroesDied now incremented in GameScene on death; applyDeathPenalties + saveHighScore called before GameOver/Victory transitions; score/heroesDied reset on new game.
 - [FIXED] GameOverScene panel starts centred and slides to left side (x=150) after 4s, revealing the dark background. Dark left band fades in as the panel arrives.
 - [FIXED] Main menu shows best run at bottom of title panel: "BEST RUN · N KILLS · N PTS". Saved via new getHighScoreData() / pray_highscore_kills key alongside existing score key.
+- [FIXED] Stoned green pipe: death sound triggered even while immortal. Added `immortalTimer <= 0` guard in GameScene before calling `u._die()`.
+- [FIXED] Stoned green pipe: on expiry Eliott now teleports to the closest living ally (clamped 40px from them), with a blinkFlash and green particle burst. Implemented in Unit.js stonedTimer tick.
+- [FIXED] Mill 360 / Vortex: center drifts toward the movement destination Dick had at activation time. `_millTargetX/Y` and `_vortexTargetX/Y` saved at activate(); center moves at hero speed each tick; Dick is drawn at the center position.
+- [FIXED] Flamethrower visual replaced: hot nozzle radial gradient + dense fire particles each frame (white→yellow→orange→red spectrum) aimed at nearest enemy, replacing the old red-triangle geometry.
+- [FIXED] Bomb and banana bomb damage now configurable via `LOOT_DEFS.bombDamage` (150) and `LOOT_DEFS.bananaBombDamage` (300). Damage falls off linearly to 0 at radius edge — no longer an instant kill.
+- [FIXED] VictoryScene: panel starts centred, fades in over 2s, then slides to right side (x = W−150) after 4s with Cubic easing. Dark right band fades in as panel arrives.
 

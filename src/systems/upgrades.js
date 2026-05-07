@@ -1,19 +1,11 @@
 import { state } from '../state.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
-import { ACTIVE_SKILL_DEFS } from './activeSkills.js';
+import { ABILITY_DEFS } from '../config/abilities.js';
 
 export const GameData = {
   upgrades: { eliott: [], dick: [], habib: [] },
-  abilityIcons: {},
 };
-
-export async function loadAbilityIcons() {
-  try {
-    const res = await fetch('assets/data/ability_icons.json');
-    if (res.ok) GameData.abilityIcons = await res.json();
-  } catch (e) {}
-}
 
 export async function loadUpgrades() {
   try {
@@ -82,7 +74,7 @@ export function applyWaveUpgrades() {
     // Apply active-skill passive effects too
     for (const slot of (hero.upgradeSlots || [])) {
       if (!slot || slot.kind !== 'active') continue;
-      const def = ACTIVE_SKILL_DEFS[slot.id];
+      const def = ABILITY_DEFS[slot.id];
       if (def?.passive) def.passive(hero);
     }
 

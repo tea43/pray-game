@@ -3,6 +3,7 @@ import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 import { getHighScore } from '../systems/score.js';
 import { GameData } from '../systems/upgrades.js';
+import { ABILITY_DEFS } from '../config/abilities.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 
@@ -129,7 +130,7 @@ export function drawAbilityPanel() {
 
     // ── Active buff indicators ────────────────────────────────────────────────
     const buffY = y + HEADER_H + 1;
-    _drawBuffRow(ctx, u, x, buffY);
+    _drawBuffRow(ctx, u, x, buffY, panelY);
 
     // ── Ability buttons ───────────────────────────────────────────────────────
     const btnY = y + HEADER_H + BUFF_ROW_H + 2;
@@ -140,7 +141,16 @@ export function drawAbilityPanel() {
   if (_tooltip) _drawTooltip(ctx, _tooltip, W, panelY);
 }
 
-function _drawBuffRow(ctx, unit, sx, rowY) {
+function _weaponDesc(wDef) {
+  if (!wDef) return 'Temporary weapon active.';
+  const t = wDef.type;
+  if (t === 'ranged') return `Ranged: ${wDef.bulletCount > 1 ? wDef.bulletCount + ' shots per burst, ' : ''}${wDef.atkRange}px range, ${wDef.atkDmg} dmg/shot.`;
+  if (t === 'melee' && wDef.cleave) return `Cleave: ±${wDef.cleaveArc}° arc, ${wDef.atkRange}px range, ${wDef.atkDmg} dmg.`;
+  if (t === 'thrown') return `Thrown: ${wDef.returns ? 'returns after throw, ' : ''}${wDef.atkRange}px range, ${wDef.atkDmg} dmg.`;
+  return `Melee: ${wDef.atkRange}px range, ${wDef.atkDmg} damage${wDef.dual ? ', dual swing' : ''}.`;
+}
+
+function _drawBuffRow(ctx, unit, sx, rowY, panelY) {
   ctx.fillStyle = 'rgba(0,0,0,0.30)';
   ctx.fillRect(sx, rowY, SLOT_W, BUFF_ROW_H);
 
@@ -148,13 +158,44 @@ function _drawBuffRow(ctx, unit, sx, rowY) {
   if (unit.weaponTimer > 0) {
     const wDef = WEAPON_DEFS[unit.currentWeapon];
     const maxT = wDef?.lootDuration || 15;
-    buffs.push({ label: wDef?.displayName?.slice(0,4).toUpperCase() || 'WPN', time: unit.weaponTimer, maxTime: maxT, color: '#ffa040' });
+    buffs.push({ label: wDef?.displayName?.slice(0,4).toUpperCase() || 'WPN', time: unit.weaponTimer, maxTime: maxT, color: '#ffa040',
+      name: wDef?.displayName || 'Weapon', desc: _weaponDesc(wDef) });
   }
   if (unit.rageTimer > 0) {
-    buffs.push({ label: 'RAGE', time: unit.rageTimer, maxTime: 5, color: '#ff4020' });
+    buffs.push({ label: 'RAGE', time: unit.rageTimer, maxTime: 5, color: '#ff4020',
+      name: 'Rage', desc: 'Double attack damage, 2.5× faster attack speed, and 1.75× knockback.' });
   }
   if (unit.medkitHealRemaining > 0) {
-    buffs.push({ label: unit.medkitHealRemaining > 80 ? 'HEAL+' : 'HEAL', time: unit.medkitHealRemaining, maxTime: unit.medkitHealPerSec > 0 ? (unit.medkitHealRemaining / unit.medkitHealPerSec) : 4, color: '#40b0ff', isHeal: true });
+    const isRare = unit.medkitHealRemaining > 80;
+    buffs.push({ label: isRare ? 'HEAL+' : 'HEAL', time: unit.medkitHealRemaining,
+      maxTime: unit.medkitHealPerSec > 0 ? (unit.medkitHealRemaining / unit.medkitHealPerSec) : 4,
+      color: '#40b0ff', isHeal: true,
+      name: isRare ? 'Rare Medkit' : 'Medkit',
+      desc: isRare ? 'Enhanced healing over time (1.8× normal rate).' : 'Healing over time from medkit.' });
+  }
+  if (unit.blockadeTimer > 0) {
+    buffs.push({ label: 'SHLD', time: unit.blockadeTimer, maxTime: 6, color: '#50c0ff',
+      name: 'Backdoor Shield', desc: 'Habib\'s blockade: 50% damage reduction from all sources.' });
+  }
+  if (unit.alchemyArmorTimer > 0) {
+    buffs.push({ label: 'ARMR', time: unit.alchemyArmorTimer, maxTime: 5, color: '#60ff80',
+      name: 'Alchemy Armor', desc: 'Green Pipe potion: 40% reduction to incoming damage.' });
+  }
+  if (unit.speedBoostTimer > 0) {
+    buffs.push({ label: 'SPDD', time: unit.speedBoostTimer, maxTime: 6, color: '#80d0ff',
+      name: 'Speed Boost', desc: 'Movement speed increased by 80%.' });
+  }
+  if (unit.stonedTimer > 0) {
+    buffs.push({ label: 'STND', time: unit.stonedTimer, maxTime: 4, color: '#a0ff60',
+      name: 'Stoned', desc: 'Invincible but immovable. Nearby enemies are drawn toward this hero.' });
+  }
+  if (unit.flamethrowerTimer > 0) {
+    buffs.push({ label: 'FIRE', time: unit.flamethrowerTimer, maxTime: 6, color: '#ff8040',
+      name: 'Flamethrower', desc: 'Cone of fire active — burns enemies in front.' });
+  }
+  if (unit.acidGunTimer > 0) {
+    buffs.push({ label: 'ACID', time: unit.acidGunTimer, maxTime: 5, color: '#80ff40',
+      name: 'Acid Gun', desc: 'Sustained acid projectile fire active.' });
   }
 
   if (buffs.length === 0) {
@@ -170,8 +211,10 @@ function _drawBuffRow(ctx, unit, sx, rowY) {
   const PILL_W = 56, PILL_GAP = 3, PILL_H = BUFF_ROW_H - 3;
   let bx = sx + 2;
   const cy = rowY + BUFF_ROW_H / 2;
+  const mx = state.mouse?.x ?? -1, my = state.mouse?.y ?? -1;
 
   for (const buff of buffs) {
+    if (bx + PILL_W > sx + SLOT_W - 2) break;
     const pct = Math.max(0, Math.min(1, buff.time / buff.maxTime));
     // Pill background
     ctx.fillStyle = 'rgba(10,6,3,0.85)';
@@ -198,8 +241,21 @@ function _drawBuffRow(ctx, unit, sx, rowY) {
     ctx.textAlign = 'right';
     ctx.fillText(timeStr, bx + PILL_W - 2, cy);
     ctx.textBaseline = 'alphabetic';
+
+    // Hover → tooltip
+    if (mx >= bx && mx <= bx + PILL_W && my >= rowY + 1 && my <= rowY + 1 + PILL_H) {
+      _tooltip = {
+        x: bx, y: rowY + 1, bh: PILL_H,
+        name: buff.name,
+        description: buff.desc,
+        isBuff: true,
+        buffTimeStr: buff.isHeal ? Math.ceil(buff.time) + ' HP remaining' : Math.ceil(buff.time) + 's remaining',
+        buffColor: buff.color,
+        panelY,
+      };
+    }
+
     bx += PILL_W + PILL_GAP;
-    if (bx + PILL_W > sx + SLOT_W - 2) break;
   }
 }
 
@@ -231,7 +287,7 @@ function _drawAbilityButtons(ctx, unit, sx, btnY, BH, panelY) {
     const slot      = unit.upgradeSlots?.[si] ?? null;
     const isPassive = slot?.kind === 'passive';
     const upgDef    = slot ? upgPool.find(u => u.id === slot.id) : null;
-    const iconCfg   = slot ? (GameData.abilityIcons[slot.id] || null) : null;
+    const iconCfg   = slot ? (ABILITY_DEFS[slot.id] || null) : null;
     _processBtn(ctx, {
       x: bxs[si + 1], y: btnY, bh: BH,
       key:         keys[si + 1],
@@ -284,7 +340,7 @@ function _drawBtn(ctx, btn) {
   }
 
   // ── Icon area ──────────────────────────────────────────────────────────────
-  const iconCfg = GameData.abilityIcons[abilityId];
+  const iconCfg = ABILITY_DEFS[abilityId];
   const imgSrc  = iconCfg?.icon;
   const imgCol  = iconCfg?.color || color;
   const img     = _img(imgSrc);
@@ -389,19 +445,25 @@ function _drawKeyStrip(ctx, bx, by, bh, key, ready) {
 
 
 function _drawTooltip(ctx, data, W, panelY) {
-  const { x, y, name, description, cd, maxCd, wavesLeft, isPassive } = data;
+  const { x, y, name, description, cd, maxCd, wavesLeft, isPassive, isBuff, buffTimeStr, buffColor } = data;
   const PAD = 8, TW = 210, LH = 14;
 
   ctx.font = '9px "Courier New", monospace';
   const descLines = description ? _wrapText(ctx, description, TW - PAD * 2) : [];
-  const statusLine = isPassive ? 'PASSIVE — always active' : cd > 0 ? `CD: ${Math.ceil(cd)}s / ${Math.round(maxCd)}s` : 'READY';
-  const statusColor = isPassive ? '#c5a030' : cd > 0 ? '#c5a572' : '#80c040';
+  const statusLine = isBuff     ? (buffTimeStr || '')
+                   : isPassive  ? 'PASSIVE — always active'
+                   : cd > 0     ? `CD: ${Math.ceil(cd)}s / ${Math.round(maxCd)}s`
+                   : 'READY';
+  const statusColor = isBuff    ? (buffColor || '#80c0ff')
+                    : isPassive ? '#c5a030'
+                    : cd > 0    ? '#c5a572'
+                    : '#80c040';
   const allLines = [
     { text: name, bold: true, color: '#e8d8b0' },
     ...descLines.map(t => ({ text: t, bold: false, color: '#9a8060' })),
-    { text: statusLine, bold: isPassive || cd <= 0, color: statusColor },
+    { text: statusLine, bold: !isBuff && (isPassive || cd <= 0), color: statusColor },
   ];
-  if (!isPassive && wavesLeft !== null) {
+  if (!isBuff && !isPassive && wavesLeft !== null) {
     const col = wavesLeft >= 3 ? '#80c040' : wavesLeft === 2 ? '#c0a040' : '#c04020';
     allLines.push({ text: `${wavesLeft} wave${wavesLeft !== 1 ? 's' : ''} remaining`, bold: false, color: col });
   }

@@ -314,7 +314,7 @@ export class GameScene extends Phaser.Scene {
       state.enemies = state.enemies.filter(e => !(e.dead && e.deathTimer > 3));
 
       for (const u of state.units) {
-        if (u.hp <= 0 && !u.dead) {
+        if (u.hp <= 0 && !u.dead && u.immortalTimer <= 0) {
           u.dead = true;
           u.deathX = u.x; u.deathY = u.y;
           state.heroesDied = (state.heroesDied || 0) + 1;

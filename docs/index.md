@@ -32,6 +32,8 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `planning/future_world_sprites.md`: Eastern European environment sprites — design spec and occlusion system.
 - `planning/reworked_upgrade_plan.md`: Reworked slot-machine upgrade selector — lore-correct upgrade pools (Dick→weapons, Habib→armor, Eliott→alchemy), hidden spin-credit banking mechanic, and `UpgradeTestScene` dev harness.
 - `planning/realistic_abilities_plan.md`: Lore-accurate ability rework — weapon reassignment, 3 new base abilities, passive/active upgrade pools with per-wave durability.
+- `planning/died_conditions.md`: Assessment of the all-survivors-dead screen; what's implemented vs. missing (dim overlay during 2s window).
+- `planning/abilities_structure_rework.md`: Design doc for unifying base abilities and upgrade skills into a single modular ABILITY_DEFS system.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 
 ## executed/ — Completed Specs

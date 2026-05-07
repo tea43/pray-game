@@ -58,7 +58,7 @@ Priority order (highest first):
 - Spawn interval starts around 1.4 seconds and shrinks by 16% each wave to a 0.30 second floor.
 - After wave 21 completes, spawning stops. Once all remaining enemies are dead, a helicopter flies in from the top edge.
 - Heroes must move into the helicopter's landing zone (green circle, centre of arena) to board. When the last living hero boards, the helicopter lifts off and flies off-screen.
-- Victory screen fades in over ~3.5 s. If `public/assets/video/victory/victory.mp4` exists it plays muted as a background behind the overlay.
+- Victory screen: panel fades in over 2s centred on screen, then slides to the right side (x = W−150) after 4s with a dark right band fading in behind it. Video `heli_escape.mp4` plays as background.
 - Defeat triggers when all three survivors die.
 
 ## Heroes
@@ -80,6 +80,8 @@ Priority order (highest first):
 - Eliott, Group Blink: teleports up to 240 px toward the cursor; every allied hero within 120 px of Eliott's start position is also pulled to within ~40 px of his destination. Cooldown: 9s.
 - Dick, Boomerang Throw: auto-targets the heaviest enemy within 300 px; the hockey club flies an oval arc outbound (260 px/s, 40 dmg/hit, piercing) then returns (300 px/s, 25 dmg/hit). Dick is unarmed until the club returns. Cooldown: 10s (starts on catch).
 - Habib, Backdoor Blockade: all heroes within 150 px of Habib at activation receive 50% damage reduction for 6s (buff travels with each hero). Cooldown: 14s.
+
+All abilities (base + upgrade skills) are defined in `src/config/abilities.js` (`ABILITY_DEFS`): each entry holds `icon`, `color`, `sound`, `maxCd`, and an optional `activate(unit)` function. Passive-only entries omit `activate`. `src/systems/activeSkills.js` has been removed.
 
 ## Active Upgrade Slots
 
@@ -126,8 +128,8 @@ At the end of each 22s wave, time pauses and `UpgradeScene` appears as a slot ma
 | `medkit` | Heals the pickup survivor over 4s (total ~60 HP). |
 | `rare_medkit` | Blue medkit; heals over 5s for 1.8× the normal amount. |
 | `stimpack` | Applies 5s rage-like buff and reduces ability cooldown by 2s. |
-| `bomb` | Immediate area explosion, radius 280. |
-| `banana_bomb` | Immediate larger explosion, radius 420, heavy knockback, and 2.5s stun on surviving enemies. |
+| `bomb` | Area explosion, radius 280. Damage falls off linearly from 150 at centre to 0 at edge (`LOOT_DEFS.bombDamage`). |
+| `banana_bomb` | Larger explosion, radius 420, damage 300 at centre (`LOOT_DEFS.bananaBombDamage`), heavy knockback, 2.5s stun. |
 | `spray_gun` | Grants temporary spray gun. |
 | `samurai_sword` | Grants temporary sword cleave. |
 
@@ -225,14 +227,14 @@ src/
   config/
     heroes.js          # HERO_DEFS
     enemies.js         # ENEMY_DEFS
-    loot.js            # LOOT_DEFS
+    loot.js            # LOOT_DEFS (incl. bombDamage, bananaBombDamage)
     waves.js           # WAVE_DEFS
     assets.js          # asset registry shape
+    abilities.js       # ABILITY_DEFS — single source for all abilities (icon, color, sound, maxCd, activate)
   systems/
     input.js           # mouse/keyboard handlers
     time.js            # activity-driven time flow
     combat.js          # hit resolution, knockback, explosions
-    abilities.js       # Blink, Rage, Chain Lightning
     loot.js            # pickup, apply, expiry
     spawning.js        # wave and boss spawn logic
     world.js           # terrain generation
