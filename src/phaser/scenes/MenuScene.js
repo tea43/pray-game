@@ -175,7 +175,7 @@ export class MenuScene extends Phaser.Scene {
       { label: 'PLAY',     cb: () => this._showDifficulty() },
       { label: 'SETTINGS', cb: () => this._showSettings() },
       { label: 'CREDITS',  disabled: true },
-      { label: 'QUIT',     cb: () => window.close() },
+      { label: 'QUIT',     cb: () => { window.close(); this.time.delayedCall(120, () => { if (!window.closed) this._showQuitBlocked(); }); } },
     ];
     const btnStartY = panelY + 170;
     this._renderButtonList(panelX, btnStartY, panelW, buttons);
@@ -420,6 +420,121 @@ export class MenuScene extends Phaser.Scene {
       .setFlipY(true)
       .setOrigin(CURSOR_HOT_X, CURSOR_HOT_Y)
       .setDepth(9999);
+  }
+
+  _showQuitBlocked() {
+    const { width: W, height: H } = this.scale;
+    const isMac = /mac/i.test(navigator.platform || navigator.userAgent);
+    const key   = isMac ? '⌘ CMD + W' : 'CTRL + W';
+
+    // Kill any existing panel so double-clicking QUIT doesn't stack them
+    if (this._quitPanel) { this._quitPanel.destroy(); this._quitPanel = null; }
+
+    const objs = [];
+    const ctr  = this.add.container(W / 2, H / 2).setDepth(8000);
+    this._quitPanel = ctr;
+
+    const PW = 340, PH = 210;
+
+    // Pulsing red border (drawn via two layered graphics objects)
+    const glow = this.add.graphics();
+    ctr.add(glow);
+    objs.push(glow);
+    const gInner = this.add.graphics();
+    ctr.add(gInner);
+    objs.push(gInner);
+
+    const drawBorder = (pulse) => {
+      glow.clear();
+      glow.lineStyle(6 + pulse * 4, 0xcc2010, 0.35 + pulse * 0.25);
+      glow.strokeRect(-PW / 2 - 4, -PH / 2 - 4, PW + 8, PH + 8);
+
+      gInner.clear();
+      gInner.fillStyle(0x0a0604, 0.96).fillRect(-PW / 2, -PH / 2, PW, PH);
+      gInner.lineStyle(1.5, 0xc83018, 1).strokeRect(-PW / 2, -PH / 2, PW, PH);
+      // scanlines
+      gInner.lineStyle(1, 0x000000, 0.18);
+      for (let sy = -PH / 2 + 4; sy < PH / 2; sy += 5)
+        gInner.lineBetween(-PW / 2, sy, PW / 2, sy);
+    };
+    drawBorder(0);
+
+    // ── Text content ────────────────────────────────────────────────────────
+    const mkTxt = (y, str, style) => {
+      const t = this.add.text(0, y, str, {
+        fontFamily: "'Courier New', monospace",
+        resolution: window.devicePixelRatio,
+        align: 'center',
+        ...style,
+      }).setOrigin(0.5);
+      ctr.add(t);
+      objs.push(t);
+      return t;
+    };
+
+    mkTxt(-PH / 2 + 18, '⚠  EXTRACTION PORTAL JAMMED', {
+      fontSize: '11px', color: '#ff4422', letterSpacing: 2, fontStyle: 'bold',
+    });
+    mkTxt(-PH / 2 + 38, 'The endoserpents have sealed the exits.', {
+      fontSize: '10px', color: '#8a6050',
+    });
+
+    // Divider line
+    const div = this.add.graphics();
+    div.lineStyle(1, 0x4a1810, 1).lineBetween(-PW / 2 + 16, -PH / 2 + 58, PW / 2 - 16, -PH / 2 + 58);
+    ctr.add(div); objs.push(div);
+
+    mkTxt(-18, 'MANUAL OVERRIDE REQUIRED', {
+      fontSize: '10px', color: '#c09060', letterSpacing: 3,
+    });
+
+    // Key hint box
+    const kb = this.add.graphics();
+    kb.fillStyle(0x1a0c08, 1).fillRect(-90, 4, 180, 38);
+    kb.lineStyle(2, 0xd05030, 1).strokeRect(-90, 4, 180, 38);
+    ctr.add(kb); objs.push(kb);
+
+    mkTxt(23, key, {
+      fontSize: '20px', color: '#ff7755', letterSpacing: 4, fontStyle: 'bold',
+    });
+
+    // Countdown
+    let secs = 3;
+    const cdTxt = mkTxt(PH / 2 - 28, `closing in  ${secs}...`, {
+      fontSize: '9px', color: '#5a3828',
+    });
+
+    // ── Animations ──────────────────────────────────────────────────────────
+    // Slide-in from slightly below
+    ctr.setAlpha(0);
+    ctr.y = H / 2 + 20;
+    this.tweens.add({ targets: ctr, alpha: 1, y: H / 2, duration: 180, ease: 'Cubic.easeOut' });
+
+    // Pulsing border tween — drives drawBorder via an object property
+    const pulseObj = { v: 0 };
+    this.tweens.add({
+      targets: pulseObj, v: 1,
+      duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      onUpdate: () => drawBorder(pulseObj.v),
+    });
+
+    // Countdown timer
+    const cdTimer = this.time.addEvent({
+      delay: 1000, repeat: 2,
+      callback: () => {
+        secs--;
+        cdTxt.setText(secs > 0 ? `closing in  ${secs}...` : 'closing in  0...');
+      },
+    });
+
+    // Dismiss after 3 s
+    this.time.delayedCall(3000, () => {
+      cdTimer.remove();
+      this.tweens.add({
+        targets: ctr, alpha: 0, y: H / 2 - 10, duration: 220, ease: 'Cubic.easeIn',
+        onComplete: () => { ctr.destroy(); this._quitPanel = null; },
+      });
+    });
   }
 
   _destroyHockeyCursor() {
