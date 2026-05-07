@@ -175,6 +175,7 @@ export class MenuScene extends Phaser.Scene {
       { label: 'PLAY',     cb: () => this._showDifficulty() },
       { label: 'SETTINGS', cb: () => this._showSettings() },
       { label: 'CREDITS',  disabled: true },
+      { label: 'QUIT',     cb: () => window.close() },
     ];
     const btnStartY = panelY + 170;
     this._renderButtonList(panelX, btnStartY, panelW, buttons);

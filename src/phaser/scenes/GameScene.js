@@ -27,6 +27,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    window.__prayInGame = true;
     this._syncG();
 
     // ── Canvas 2D texture bridge ───────────────────────────────────────────────
@@ -801,6 +802,7 @@ export class GameScene extends Phaser.Scene {
         saveHighScore();
         state.gameOver = true;
         state.allDeadPending = false;
+        window.__prayInGame = false;
         this.scene.stop('HUDScene');
         this.scene.start('GameOverScene', { state });
       });
@@ -810,6 +812,7 @@ export class GameScene extends Phaser.Scene {
       applyDeathPenalties();
       saveHighScore();
       this.time.delayedCall(400, () => {
+        window.__prayInGame = false;
         this.scene.stop('HUDScene');
         this.scene.start('VictoryScene', { state });
       });

@@ -181,6 +181,7 @@ export class PauseScene extends Phaser.Scene {
     confirmObjs.push(yesLbl);
     const yesZone = this.add.zone(cx, btnY, halfW, BTN_H - 14).setOrigin(0, 0).setInteractive();
     yesZone.on('pointerdown', () => {
+      window.__prayInGame = false;
       this.scene.stop('PauseScene');
       this.scene.stop('UpgradeScene');
       this.scene.stop('UpgradeTestScene');
