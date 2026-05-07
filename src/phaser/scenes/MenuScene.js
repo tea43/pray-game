@@ -97,14 +97,13 @@ export class MenuScene extends Phaser.Scene {
       this._videoEl.play().catch(() => {});
     }
 
-    this._initHockeyCursor();
-
     this.events.on('shutdown', () => {
       if (this._videoEl) this._videoEl.style.display = 'none';
       this._destroyHockeyCursor();
     }, this);
 
     this._showTitle();
+    this._initHockeyCursor();
     this.scale.on('resize', () => {
       if      (this._screen === 'title')      this._showTitle();
       else if (this._screen === 'difficulty') this._showDifficulty();
@@ -127,7 +126,11 @@ export class MenuScene extends Phaser.Scene {
 
   _clearScreen() {
     this.children.removeAll(true);
+    this._clubG = null;
     this._bg = this.add.graphics();
+    if (this.sys.game.canvas.style.cursor === 'none') {
+      this._addCursorGraphics();
+    }
   }
 
   // Fixed-width dark panel on the left, then pixel-width fade strips.
@@ -387,9 +390,13 @@ export class MenuScene extends Phaser.Scene {
 
   _initHockeyCursor() {
     this.sys.game.canvas.style.cursor = 'none';
+    this._addCursorGraphics();
+    this.input.on('pointermove', (ptr) => this._drawClub(ptr.x, ptr.y));
+  }
+
+  _addCursorGraphics() {
     this._clubG = this.add.graphics().setDepth(9999);
     this._drawClub(this.input.activePointer.x, this.input.activePointer.y);
-    this.input.on('pointermove', (ptr) => this._drawClub(ptr.x, ptr.y));
   }
 
   _drawClub(px, py) {
