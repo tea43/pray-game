@@ -36,6 +36,15 @@ export class UpgradeScene extends Phaser.Scene {
   create() {
     const { width: W, height: H } = this.scale;
 
+    // If all heroes died exactly as the wave ended, skip upgrades and let
+    // GameScene's end-condition check handle the game-over flow.
+    if (state.units && state.units.every(u => u.dead)) {
+      state.isUpgradeScreen = false;
+      this.scene.stop();
+      this.scene.resume('GameScene');
+      return;
+    }
+
     state.upgradeSpinCredits = Math.min(state.upgradeSpinCredits + 1, 3);
     state.pendingUpgrades = { eliott: null, dick: null, habib: null };
 
@@ -142,6 +151,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.input.keyboard.addKey('ESC').on('down', () => {
       if (!this.scene.isActive('PauseScene')) {
         this.scene.launch('PauseScene', { fromUpgrade: true });
+        this.scene.bringToTop('PauseScene');
       }
     });
 

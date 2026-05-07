@@ -768,6 +768,7 @@ export class Unit {
   applyDamage(rawDmg, attacker) {
     if (this.dead) return 0;
     if (this.immortalTimer > 0) return 0;
+    if (this._dominanceTargets !== null) return 0;
 
     let dmg = rawDmg;
     if (this.blockadeTimer > 0) dmg *= 0.5;

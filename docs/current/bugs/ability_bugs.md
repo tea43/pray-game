@@ -24,5 +24,6 @@
 - [FIXED] Powder of dominance stores _dominanceOrigin before strikes begin; hero teleports back to origin after all strikes complete.
 - [FIXED] Stoned green pipe: removed teleport-to-ally code on effect end; removed stonedTimer guard from auto-attack so movement and attacking resume normally.
 - [FIXED] Loot spawn rates reduced: medkits ÷10, stimpacks ÷10, bombs ÷5 across all difficulties.
-
+- [FIXED] Wave-clear + all-heroes-dead race: UpgradeScene now checks on create() if all heroes are already dead; if so it stops itself and resumes GameScene so the death flow proceeds normally. ESC in UpgradeScene now calls bringToTop('PauseScene') so the pause panel renders above the upgrade overlay.
+- [FIXED] During powder of dominance, applyDamage() returns 0 when _dominanceTargets !== null, making all heroes fully invincible for the duration of the ability.
 
