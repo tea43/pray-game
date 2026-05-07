@@ -34,6 +34,11 @@ export function getHighScore() {
   return parseInt(localStorage.getItem(HS_KEY) ?? '0', 10);
 }
 
+export function applyDeathPenalties() {
+  const deaths = state.heroesDied || 0;
+  if (deaths > 0) state.score = Math.floor(state.score / Math.pow(2, deaths));
+}
+
 export function saveHighScore() {
   if (state.score > getHighScore()) localStorage.setItem(HS_KEY, String(state.score));
 }

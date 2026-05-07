@@ -97,6 +97,19 @@ export function drawAbilityPanel() {
       ctx.fillStyle = '#a83a2a';
       ctx.font = 'bold 11px "Courier New", monospace';
       ctx.fillText('DEAD', x + 27, y + HEADER_H + 8);
+      // Crosshatch over button area to make it visually non-interactive
+      const btnY = y + HEADER_H + 2;
+      const BH   = PANEL_H - HEADER_H - 4;
+      ctx.fillStyle = 'rgba(40, 8, 5, 0.75)';
+      ctx.fillRect(x, btnY, SLOT_W, BH);
+      ctx.strokeStyle = 'rgba(120, 30, 20, 0.45)';
+      ctx.lineWidth = 1;
+      for (let xi = 0; xi < SLOT_W; xi += 8) {
+        ctx.beginPath();
+        ctx.moveTo(x + xi, btnY);
+        ctx.lineTo(x + xi - BH, btnY + BH);
+        ctx.stroke();
+      }
       continue;
     }
 

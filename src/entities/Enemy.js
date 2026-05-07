@@ -46,6 +46,7 @@ export class Enemy {
     this.hair = def.hair; this.bloodColor = def.bloodColor;
     this.kbResist = def.kbResist || this.kbResist;
     this.name = def.name;
+    this.turnSpeed = def.turnSpeed || 5;
 
     this.bigbossMutantTorso = false; // config flag as requested
     this._anim = { name: 'walk', frame: 0, timer: 0 };
@@ -183,7 +184,7 @@ export class Enemy {
       }
     }
 
-    // Target selection: prefer stoned hero if one exists
+    // Target selection: prefer stoned hero > non-smoked nearest > smoked nearest
     let target = null, nd = Infinity;
     let stonedTarget = null;
     for (const u of state.units) {
@@ -193,17 +194,33 @@ export class Enemy {
     if (stonedTarget) {
       target = stonedTarget;
     } else {
+      // Prefer heroes not inside a smoke zone
       for (const u of state.units) {
         if (u.dead) continue;
+        if (_isSmoked(u)) continue;
         const d = dist2(this.x, this.y, u.x, u.y);
         if (d < nd) { nd = d; target = u; }
+      }
+      // Fallback: all heroes smoked — pick nearest anyway
+      if (!target) {
+        nd = Infinity;
+        for (const u of state.units) {
+          if (u.dead) continue;
+          const d = dist2(this.x, this.y, u.x, u.y);
+          if (d < nd) { nd = d; target = u; }
+        }
       }
     }
 
     if (target) {
       const dx = target.x - this.x, dy = target.y - this.y;
       const d = Math.hypot(dx, dy);
-      this.facing = Math.atan2(dy, dx);
+      // Gradual turn — worms cannot spin instantly
+      const targetFacing = Math.atan2(dy, dx);
+      let dFacing = targetFacing - this.facing;
+      while (dFacing >  Math.PI) dFacing -= Math.PI * 2;
+      while (dFacing < -Math.PI) dFacing += Math.PI * 2;
+      this.facing += Math.sign(dFacing) * Math.min(Math.abs(dFacing), this.turnSpeed * dt);
       if (d > this.r + target.r - 2) {
         this.x += (dx / d) * this.speed * dt;
         this.y += (dy / d) * this.speed * dt;
@@ -770,4 +787,10 @@ export class Enemy {
       }
     }
   }
+}
+
+function _isSmoked(unit) {
+  const zones = state.smokeZones;
+  if (!zones || zones.length === 0) return false;
+  return zones.some(sz => dist2(unit.x, unit.y, sz.x, sz.y) < sz.r);
 }

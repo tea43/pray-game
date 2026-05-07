@@ -48,6 +48,8 @@ export const state = {
   upgradeSpinCredits: 0,
   selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
   score: 0,
+  heroesDied: 0,
+  smokeZones: [],
   difficulty: 'brood-hunter',
   menuPhase: 'main',
   settings: (() => {

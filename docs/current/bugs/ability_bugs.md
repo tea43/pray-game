@@ -2,7 +2,9 @@
  - [FIXED] flamethrower is not visible, i see no flame
  - [FIXED] the hockey club for boomerang should be larger, at least the size of the clubs hero holsing in hand. The damage of the boomerang should be enough to kill initial enemy ~50 damage
  - [FIXED] mill 360 and vortex: I see the radius but Dick does not move, he should move while the ability is active. Time does not stop itself while the ability is active.
- - User should be able to stop ability execution by pressing the space and once the space is pressed again the ability should contnue. If that is not possible we can come up with different approach
-- Smokescreen ability of eliott does not work
-- Endoserpents turn around instantly, they should turn not so fast as they are snakes, I would say in normal speed it should take 1-3 seconds. It can be configurable parameter.
-- If one hero dies: the scrore divided by 2, if 2 hero died: by 4.
+ - [FIXED] Smokescreen ability of eliott does not work, enemies does no change the lock on the heroes and continue attacking the heroes they have planned. Enemy targeting now skips heroes inside active smoke zones (smoke life is ticked each frame). Stoned hero still takes priority. All-smoked fallback ensures enemies still have a target.
+ - [FIXED] Endoserpents turn around instantly. All enemies now have a configurable turnSpeed (rad/s): runners 8, hatchlings 6, phase worms 4.5, husk crawlers 4, brute 3, miniboss 2, bigboss 1.5. A half-turn for bigboss takes ~2 s.
+ - [FIXED] If one hero dies: the score divided by 2, if 2 hero died: by 4. applyDeathPenalties() divides score by 2^heroesDied at game-over and victory.
+ - [FIXED] The corpse of the hero should stay at the place of death. deathX/deathY stored on death; _drawHeroCorpse() renders a flattened silhouette and blood pool at that position.
+ - [FIXED] The ability selection block for dead hero should be non selectable on the death of hero. Dead hero cards already skip button rendering and block input; now also show a crosshatch overlay over the button area.
+ - [FIXED] For the highest level, death of the hero means the end of the game. On rear-admiral difficulty, any hero death immediately triggers game over with message "HERO FALLEN".
