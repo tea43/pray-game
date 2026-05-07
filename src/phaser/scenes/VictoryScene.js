@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { playMusic } from '../../systems/audio.js';
 
-const SLIDE_X_RIGHT = 150;  // distance from right edge the panel lands at
+const SLIDE_X_RIGHT = 160;  // distance from right edge the panel lands at
 const SLIDE_DELAY   = 4000;
 const SLIDE_DUR     = 1200;
 
@@ -43,38 +43,57 @@ export class VictoryScene extends Phaser.Scene {
       return t;
     };
 
-    let cy = H / 2 - 100;
+    let cy = H / 2 - 120;
 
-    addT(cy, 'EXTRACTION COMPLETE', {
-      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#a0d040', letterSpacing: 6,
+    // Title split across two lines so it fits the narrow side panel
+    addT(cy, 'EXTRACTION', {
+      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#a0d040', letterSpacing: 5,
     });
-    cy += 54;
+    cy += 36;
+    addT(cy, 'COMPLETE', {
+      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#a0d040', letterSpacing: 5,
+    });
+    cy += 48;
 
-    const statLine = s ? `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s` : '';
-    addT(cy, statLine, {
-      fontFamily: "'Courier New', monospace", fontSize: '14px', color: '#d9c7a0', letterSpacing: 2,
-    });
-    cy += 28;
+    if (s) {
+      addT(cy, `KILLS: ${s.kills}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
+      });
+      cy += 22;
+      addT(cy, `SURVIVED: ${Math.floor(s.survivedSeconds)}s`, {
+        fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
+      });
+      cy += 28;
+    }
 
     // Fallen heroes
     if (s?.units) {
       const dead = s.units.filter(u => u.dead);
       if (dead.length > 0) {
-        const names = dead.map(u => u.type.charAt(0).toUpperCase() + u.type.slice(1)).join('   ');
-        addT(cy, `†  ${names}  (fallen)`, {
-          fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#c04030', letterSpacing: 2,
+        dead.forEach(u => {
+          const name = u.type.charAt(0).toUpperCase() + u.type.slice(1);
+          addT(cy, `†  ${name}  (fallen)`, {
+            fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#c04030', letterSpacing: 2,
+          });
+          cy += 18;
         });
-        cy += 20;
+        cy += 6;
       }
     }
 
     if (s) {
-      const div = s.heroesDied > 0 ? `  ·  PENALTY ÷${Math.pow(2, s.heroesDied)}` : '';
-      addT(cy, `SCORE: ${s.score}${div}`, {
-        fontFamily: "'Courier New', monospace", fontSize: '12px',
+      const div = s.heroesDied > 0 ? `PENALTY ÷${Math.pow(2, s.heroesDied)}` : '';
+      if (div) {
+        addT(cy, div, {
+          fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#8a5040', letterSpacing: 1,
+        });
+        cy += 18;
+      }
+      addT(cy, `SCORE: ${s.score}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '13px',
         color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
       });
-      cy += 28;
+      cy += 30;
     }
 
     // MAIN MENU button
@@ -99,7 +118,7 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   _addBtn(panel, items, y, label, cb) {
-    const w = 220, h = 38;
+    const w = 200, h = 36;
     const g = this.add.graphics().setAlpha(0);
     panel.add(g);
     items.push(g);

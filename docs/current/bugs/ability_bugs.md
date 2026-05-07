@@ -36,4 +36,5 @@
 - [FIXED] Flamethrower visual replaced: hot nozzle radial gradient + dense fire particles each frame (white→yellow→orange→red spectrum) aimed at nearest enemy, replacing the old red-triangle geometry.
 - [FIXED] Bomb and banana bomb damage now configurable via `LOOT_DEFS.bombDamage` (150) and `LOOT_DEFS.bananaBombDamage` (300). Damage falls off linearly to 0 at radius edge — no longer an instant kill.
 - [FIXED] VictoryScene: panel starts centred, fades in over 2s, then slides to right side (x = W−150) after 4s with Cubic easing. Dark right band fades in as panel arrives.
-
+- [FIXED] After mill/vortex ends, Dick now snaps to the orbit center and resumes walking to the pre-activation destination (_millTargetX/Y / _vortexTargetX/Y restored to tx/ty on expiry).
+- [FIXED] VictoryScene: "EXTRACTION COMPLETE" split into two lines (28px each), all stats stacked in a single centred column, panel slides to W−160. Each fallen hero listed on its own line; penalty shown separately above score.

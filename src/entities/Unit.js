@@ -162,6 +162,8 @@ export class Unit {
     this.flamethrowerTimer= Math.max(0, this.flamethrowerTimer - dt);
     this.acidGunTimer     = Math.max(0, this.acidGunTimer - dt);
     this.acidGunFireCd    = Math.max(0, this.acidGunFireCd - dt);
+    const _prevMill   = this.millTimer;
+    const _prevVortex = this.vortexTimer;
     this.millTimer        = Math.max(0, this.millTimer - dt);
     this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
 
@@ -194,8 +196,12 @@ export class Unit {
         }
       }
     }
+    // On mill expiry: snap Dick to center and resume walking to original destination
+    if (_prevMill > 0 && this.millTimer <= 0) {
+      this.x = this.millCenterX; this.y = this.millCenterY;
+      this.tx = this._millTargetX; this.ty = this._millTargetY;
+    }
 
-    // Vortex: Dick orbits a larger circle, pulling and damaging enemies
     // Vortex: Dick orbits a larger circle, center drifts toward pre-activation destination
     if (this.vortexTimer > 0) {
       this.vortexAngle += dt * 4.5;
@@ -220,6 +226,11 @@ export class Unit {
           e.knockY += Math.sin(ax) * 60 * dt;
         }
       }
+    }
+    // On vortex expiry: snap Dick to center and resume walking to original destination
+    if (_prevVortex > 0 && this.vortexTimer <= 0) {
+      this.x = this.vortexCenterX; this.y = this.vortexCenterY;
+      this.tx = this._vortexTargetX; this.ty = this._vortexTargetY;
     }
 
     if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
