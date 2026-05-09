@@ -121,7 +121,7 @@ export const ABILITY_DEFS = {
   boomerang: {
     icon:  'assets/icons/abilities/boomerang.svg',
     color: '#ff6040',
-    sound: 'weapon.throw.default',
+    sound: 'ability.boomerang',
     maxCd: 10,
     activate(unit) {
       if (unit.boomerang !== null) return false;
@@ -150,7 +150,7 @@ export const ABILITY_DEFS = {
   backdoor_blockade: {
     icon:  'assets/icons/abilities/backdoor_blockade.svg',
     color: '#c8a0ff',
-    sound: 'ability.lightning',
+    sound: 'ability.backdoor_blockade',
     maxCd: 14,
     activate(unit) {
       const radius = 150;
@@ -177,7 +177,7 @@ export const ABILITY_DEFS = {
   stoned_green_pipe: {
     icon:  'assets/icons/abilities/stoned_green_pipe.svg',
     color: '#40c840',
-    sound: 'ability.blink',
+    sound: 'ability.stoned_green_pipe',
     maxCd: 25,
     activate(unit) {
       unit.stonedTimer = 4;
@@ -190,7 +190,7 @@ export const ABILITY_DEFS = {
   green_pipe: {
     icon:  'assets/icons/abilities/green_pipe.svg',
     color: '#60c060',
-    sound: 'ability.blink',
+    sound: 'ability.green_pipe',
     maxCd: 12,
     activate(unit) {
       const radius = _alchemyRadius(unit, 150);
@@ -225,7 +225,7 @@ export const ABILITY_DEFS = {
   blue_cubes_speed: {
     icon:  'assets/icons/abilities/blue_cubes_speed.svg',
     color: '#6060ff',
-    sound: 'ability.blink',
+    sound: 'ability.blue_cubes_speed',
     maxCd: 16,
     activate(unit) {
       const radius = _alchemyRadius(unit, 150);
@@ -242,7 +242,7 @@ export const ABILITY_DEFS = {
   white_powder_hit: {
     icon:  'assets/icons/abilities/white_powder_hit.svg',
     color: '#e8e0ff',
-    sound: 'ability.blink',
+    sound: 'ability.white_powder_hit',
     maxCd: 18,
     activate(unit) {
       const radius = _alchemyRadius(unit, 150);
@@ -277,7 +277,7 @@ export const ABILITY_DEFS = {
   white_powder_dominance: {
     icon:  'assets/icons/abilities/white_powder_dominance.svg',
     color: '#c0a0ff',
-    sound: 'ability.blink',
+    sound: 'ability.white_powder_dominance',
     maxCd: 22,
     activate(unit) {
       const radius = _alchemyRadius(unit, 150);
@@ -346,7 +346,7 @@ export const ABILITY_DEFS = {
   flamethrower: {
     icon:  'assets/icons/abilities/flamethrower.svg',
     color: '#ff6020',
-    sound: 'ability.rage',
+    sound: 'ability.flamethrower',
     maxCd: 20,
     activate(unit) {
       unit.flamethrowerTimer = 6;
@@ -357,7 +357,7 @@ export const ABILITY_DEFS = {
   acid_gun: {
     icon:  'assets/icons/abilities/acid_gun.svg',
     color: '#60ff40',
-    sound: 'ability.rage',
+    sound: 'ability.acid_gun',
     maxCd: 14,
     activate(unit) {
       unit.acidGunTimer = 5;
@@ -371,7 +371,7 @@ export const ABILITY_DEFS = {
   inappropriate_stories: {
     icon:  'assets/icons/abilities/inappropriate_stories.svg',
     color: '#ff8030',
-    sound: 'ability.rage',
+    sound: 'ability.inappropriate_stories',
     maxCd: 16,
     activate(unit) {
       for (const ally of state.units) {
@@ -397,7 +397,7 @@ export const ABILITY_DEFS = {
   scream: {
     icon:  'assets/icons/abilities/scream.svg',
     color: '#ff4040',
-    sound: 'ability.rage',
+    sound: 'ability.scream',
     maxCd: 14,
     activate(unit) {
       for (const e of state.enemies) {
@@ -419,7 +419,7 @@ export const ABILITY_DEFS = {
   mill_360: {
     icon:  'assets/icons/abilities/mill_360.svg',
     color: '#ff8020',
-    sound: 'ability.rage',
+    sound: 'ability.mill_360',
     maxCd: 10,
     activate(unit) {
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.2);
@@ -437,7 +437,7 @@ export const ABILITY_DEFS = {
   vortex: {
     icon:  'assets/icons/abilities/vortex.svg',
     color: '#ff6010',
-    sound: 'ability.rage',
+    sound: 'ability.vortex',
     maxCd: 12,
     activate(unit) {
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.8);
@@ -455,7 +455,7 @@ export const ABILITY_DEFS = {
   smashing_time: {
     icon:  'assets/icons/abilities/smashing_time.svg',
     color: '#ff3010',
-    sound: 'ability.rage',
+    sound: 'ability.smashing_time',
     maxCd: 20,
     activate(unit) {
       // Find highest-HP enemy within 350px
@@ -502,6 +502,7 @@ export const ABILITY_DEFS = {
   smokescreen: {
     icon:  'assets/icons/abilities/smokescreen.svg',
     color: '#a0a0c0',
+    sound: 'ability.smokescreen',
   },
 
   iron_knuckles: {

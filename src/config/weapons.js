@@ -23,7 +23,7 @@ export const WEAPON_DEFS = {
     knockback:     90,
     swingArc:      2.2,
     swingOffset:   1.1,
-    sfxAttack:     'weapon.dualClubs.attack',
+    sfxAttack:     'weapon.hockeyClub.attack',
     sfxFallback:   'weapon.attack.default',
     lootDuration:  null,
   },
