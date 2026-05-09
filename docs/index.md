@@ -22,6 +22,7 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `current/bugs.md`: Active bug tracker. Statuses: TBD → IPG → VAL → DON. Take the first TBD bug, mark IPG, fix it, mark VAL, commit, remove entry.
 - `current/bugs/performance_improvements.md`: Log of completed performance optimisations (background cache, shadowBlur removal, DPR cap, particle throttle).
 - `current/smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
+- `current/adding_assets.md`: How to add audio, ability icons, sprites, and video assets — file locations, manifest commands, and wiring steps.
 
 ## planning/ — Active Plans
 

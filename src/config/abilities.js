@@ -1,7 +1,6 @@
 import { G } from '../globals.js';
 import { state } from '../state.js';
 import { rand, dist2, clamp } from '../utils/math.js';
-import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,14 +34,13 @@ export const ABILITY_DEFS = {
   group_blink: {
     icon:  'assets/icons/abilities/group_blink.svg',
     color: '#80c8ff',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 9,
     activate(unit) {
       const mx = state.mouse.x, my = state.mouse.y;
       const dx = mx - unit.x, dy = my - unit.y;
       const d = Math.hypot(dx, dy);
       if (d < 6) return false;
-      playSfx('ability_blink');
       const maxRange = 240;
       const step = Math.min(d, maxRange);
       const startX = unit.x, startY = unit.y;
@@ -135,8 +133,6 @@ export const ABILITY_DEFS = {
         if (d < 300 && e.hp > maxHp) { maxHp = e.hp; target = e; }
       }
       if (!target) return false;
-
-      playSfx('weapon.throw.default');
       unit.boomerang = {
         startX: unit.x, startY: unit.y,
         targetX: target.x, targetY: target.y,
@@ -154,10 +150,9 @@ export const ABILITY_DEFS = {
   backdoor_blockade: {
     icon:  'assets/icons/abilities/backdoor_blockade.svg',
     color: '#c8a0ff',
-    sound: 'ability_lightning',
+    sound: 'ability.lightning',
     maxCd: 14,
     activate(unit) {
-      playSfx('ability_lightning');
       const radius = 150;
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -182,10 +177,9 @@ export const ABILITY_DEFS = {
   stoned_green_pipe: {
     icon:  'assets/icons/abilities/stoned_green_pipe.svg',
     color: '#40c840',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 25,
     activate(unit) {
-      playSfx('ability_blink');
       unit.stonedTimer = 4;
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 4);
       unit.tx = unit.x; unit.ty = unit.y; unit.aggroTarget = null;
@@ -196,10 +190,9 @@ export const ABILITY_DEFS = {
   green_pipe: {
     icon:  'assets/icons/abilities/green_pipe.svg',
     color: '#60c060',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 12,
     activate(unit) {
-      playSfx('ability_blink');
       const radius = _alchemyRadius(unit, 150);
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -214,10 +207,9 @@ export const ABILITY_DEFS = {
   blue_cubes_rage: {
     icon:  'assets/icons/abilities/blue_cubes_rage.svg',
     color: '#4080ff',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 14,
     activate(unit) {
-      playSfx('ability_rage');
       const radius = _alchemyRadius(unit, 150);
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -233,10 +225,9 @@ export const ABILITY_DEFS = {
   blue_cubes_speed: {
     icon:  'assets/icons/abilities/blue_cubes_speed.svg',
     color: '#6060ff',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 16,
     activate(unit) {
-      playSfx('ability_blink');
       const radius = _alchemyRadius(unit, 150);
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -251,10 +242,9 @@ export const ABILITY_DEFS = {
   white_powder_hit: {
     icon:  'assets/icons/abilities/white_powder_hit.svg',
     color: '#e8e0ff',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 18,
     activate(unit) {
-      playSfx('ability_blink');
       const radius = _alchemyRadius(unit, 150);
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -287,10 +277,9 @@ export const ABILITY_DEFS = {
   white_powder_dominance: {
     icon:  'assets/icons/abilities/white_powder_dominance.svg',
     color: '#c0a0ff',
-    sound: 'ability_blink',
+    sound: 'ability.blink',
     maxCd: 22,
     activate(unit) {
-      playSfx('ability_blink');
       const radius = _alchemyRadius(unit, 150);
       for (const ally of state.units) {
         if (ally.dead) continue;
@@ -312,14 +301,13 @@ export const ABILITY_DEFS = {
   chain_lightning: {
     icon:  'assets/icons/abilities/chain_lightning.svg',
     color: '#a0e0ff',
-    sound: 'ability_lightning',
+    sound: 'ability.lightning',
     maxCd: 8,
     activate(unit) {
       const maxRange = 200;
       // Don't activate if no enemies in range
       const hasTarget = state.enemies.some(e => !e.dead && dist2(unit.x, unit.y, e.x, e.y) < maxRange);
       if (!hasTarget) return false;
-      playSfx('ability_lightning');
       const chains = 5;
       let cx = unit.x, cy = unit.y;
       const hit = new Set();
@@ -358,10 +346,9 @@ export const ABILITY_DEFS = {
   flamethrower: {
     icon:  'assets/icons/abilities/flamethrower.svg',
     color: '#ff6020',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 20,
     activate(unit) {
-      playSfx('ability_rage');
       unit.flamethrowerTimer = 6;
       _radialParticles(unit.x, unit.y, 14, '#ff6020', '#ffb040');
     },
@@ -370,10 +357,9 @@ export const ABILITY_DEFS = {
   acid_gun: {
     icon:  'assets/icons/abilities/acid_gun.svg',
     color: '#60ff40',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 14,
     activate(unit) {
-      playSfx('ability_rage');
       unit.acidGunTimer = 5;
       unit.acidGunFireCd = 0;
       _radialParticles(unit.x, unit.y, 12, '#40ff40', '#80ff80');
@@ -385,10 +371,9 @@ export const ABILITY_DEFS = {
   inappropriate_stories: {
     icon:  'assets/icons/abilities/inappropriate_stories.svg',
     color: '#ff8030',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 16,
     activate(unit) {
-      playSfx('ability_rage');
       for (const ally of state.units) {
         if (ally.dead) continue;
         if (dist2(unit.x, unit.y, ally.x, ally.y) < 250) {
@@ -412,10 +397,9 @@ export const ABILITY_DEFS = {
   scream: {
     icon:  'assets/icons/abilities/scream.svg',
     color: '#ff4040',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 14,
     activate(unit) {
-      playSfx('ability_rage');
       for (const e of state.enemies) {
         if (e.dead) continue;
         if (dist2(unit.x, unit.y, e.x, e.y) < 250) {
@@ -435,10 +419,9 @@ export const ABILITY_DEFS = {
   mill_360: {
     icon:  'assets/icons/abilities/mill_360.svg',
     color: '#ff8020',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 10,
     activate(unit) {
-      playSfx('ability_rage');
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.2);
       unit.millTimer = 2.2;
       unit.millAngle = unit.facing;
@@ -454,10 +437,9 @@ export const ABILITY_DEFS = {
   vortex: {
     icon:  'assets/icons/abilities/vortex.svg',
     color: '#ff6010',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 12,
     activate(unit) {
-      playSfx('ability_rage');
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.8);
       unit.vortexTimer = 2.8;
       unit.vortexAngle = unit.facing;
@@ -473,7 +455,7 @@ export const ABILITY_DEFS = {
   smashing_time: {
     icon:  'assets/icons/abilities/smashing_time.svg',
     color: '#ff3010',
-    sound: 'ability_rage',
+    sound: 'ability.rage',
     maxCd: 20,
     activate(unit) {
       // Find highest-HP enemy within 350px
@@ -482,8 +464,7 @@ export const ABILITY_DEFS = {
         if (e.dead) continue;
         if (dist2(unit.x, unit.y, e.x, e.y) < 350 && e.hp > maxHp) { maxHp = e.hp; target = e; }
       }
-      if (!target) return;
-      playSfx('ability_rage');
+      if (!target) return false;
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 0.5);
       unit.x = clamp(target.x + rand(-20, 20), 6, G.W - 6);
       unit.y = clamp(target.y + rand(-20, 20), 6, G.PLAY_BOTTOM);

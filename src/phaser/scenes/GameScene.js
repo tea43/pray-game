@@ -804,7 +804,8 @@ export class GameScene extends Phaser.Scene {
         state.allDeadPending = false;
         window.__prayInGame = false;
         this.scene.stop('HUDScene');
-        this.scene.start('GameOverScene', { state });
+        this.scene.pause('GameScene');
+        this.scene.launch('GameOverScene', { state });
       });
     }
     if (state.victory && !this._victoryTriggered) {

@@ -4,8 +4,8 @@ import { DIFFICULTY_ORDER } from '../../config/difficulty.js';
 
 const GAME_OVER_MESSAGES = [
   'The Endoserpents won this round.',
-  'Your squad fell, but humanity fights on.',
-  'They gave everything — it was not enough this time.',
+  'Your squad fell. Humanity fights on.',
+  'They gave everything — it was not enough.',
   'The worms devoured the last of your crew.',
   'P-RAY could not save them now.',
   'Humanity lost this battle. Do you have strength for another?',
@@ -25,10 +25,10 @@ const GAME_OVER_MESSAGES = [
   'The wasteland is unforgiving. So are you.',
 ];
 
-// x the panel slides to (left-side position matching MenuScene layout)
-const SLIDE_X      = 150;
-const SLIDE_DELAY  = 4000;
-const SLIDE_DUR    = 1200;
+// panel lands at x = SLIDE_X from the left edge
+const SLIDE_X     = 150;
+const SLIDE_DELAY = 4000;
+const SLIDE_DUR   = 1200;
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super({ key: 'GameOverScene' }); }
@@ -39,93 +39,114 @@ export class GameOverScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     playMusic('menu');
 
-    this.add.graphics().fillStyle(0x0a0302, 1).fillRect(0, 0, W, H);
+    // Semi-transparent overlay — keeps the frozen game frame visible underneath
+    this.add.graphics().fillStyle(0x080202, 0.82).fillRect(0, 0, W, H);
 
-    // Dark band that appears on the left as the panel slides over
+    // Dark band on the left that fades in as the panel slides over
     const leftBand = this.add.graphics().setAlpha(0);
-    leftBand.fillStyle(0x050201, 0.92).fillRect(0, 0, SLIDE_X * 2, H);
+    leftBand.fillStyle(0x050101, 0.94).fillRect(0, 0, SLIDE_X * 2, H);
 
-    const s = this._state;
-    const msg = GAME_OVER_MESSAGES[Math.floor(Math.random() * GAME_OVER_MESSAGES.length)];
+    const s    = this._state;
+    const diff = s?.difficulty || 'brood-hunter';
+    const msg  = GAME_OVER_MESSAGES[Math.floor(Math.random() * GAME_OVER_MESSAGES.length)];
 
-    // Container starts centred, slides left
+    // Container starts centred then slides left — all children centred at x=0
     const panel = this.add.container(W / 2, 0);
     const items = [];
 
     const addT = (y, text, style) => {
-      const t = this.add.text(0, y, text, { resolution: window.devicePixelRatio, ...style })
-        .setOrigin(0.5, 0).setAlpha(0);
+      const t = this.add.text(0, y, text, {
+        resolution: window.devicePixelRatio,
+        align: 'center',
+        ...style,
+      }).setOrigin(0.5, 0).setAlpha(0);
       panel.add(t);
       items.push(t);
       return t;
     };
 
-    let cy = H / 2 - 96;
+    let cy = H / 2 - 120;
 
-    addT(cy, 'ALL SURVIVORS DEAD', {
-      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#a83a2a', letterSpacing: 6,
+    // Title — two lines so it fits the narrow left band after sliding
+    addT(cy, 'ALL SURVIVORS', {
+      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c83020', letterSpacing: 5,
     });
-    cy += 54;
+    cy += 32;
+    addT(cy, 'DEAD', {
+      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c83020', letterSpacing: 8,
+    });
+    cy += 44;
 
+    // Flavour message — narrow word-wrap to stay in column
     addT(cy, msg, {
-      fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#8a6a4a',
-      letterSpacing: 1, wordWrap: { width: 380 }, align: 'center',
+      fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#8a6a4a',
+      letterSpacing: 1, wordWrap: { width: 240 },
     });
-    cy += 46;
+    cy += 50;
 
-    // Fallen heroes
+    // Fallen heroes — one per line
     if (s?.units) {
       const dead = s.units.filter(u => u.dead);
-      if (dead.length > 0) {
-        const names = dead.map(u => u.type.charAt(0).toUpperCase() + u.type.slice(1)).join('   ');
-        addT(cy, `†  ${names}`, {
+      dead.forEach(u => {
+        const name = u.type.charAt(0).toUpperCase() + u.type.slice(1);
+        addT(cy, `†  ${name}`, {
           fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#c04030', letterSpacing: 3,
         });
-        cy += 22;
-      }
+        cy += 20;
+      });
+      if (dead.length) cy += 6;
     }
 
-    // Kill + time stats
+    // Stats — split across two lines
     if (s) {
-      addT(cy, `KILLS: ${s.kills}   SURVIVED: ${Math.floor(s.survivedSeconds)}s   WAVE: ${s.wave}`, {
-        fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
+      addT(cy, `KILLS: ${s.kills}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#d9c7a0', letterSpacing: 2,
       });
       cy += 20;
+      addT(cy, `SURVIVED: ${Math.floor(s.survivedSeconds)}s  ·  WAVE: ${s.wave}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#b0a080', letterSpacing: 1,
+      });
+      cy += 24;
     }
 
-    // Score with penalty breakdown
+    // Score with optional penalty
     if (s) {
       if (s.heroesDied > 0) {
         const div = Math.pow(2, s.heroesDied);
-        addT(cy, `SCORE: ${s.score}  ·  PENALTY ÷${div}  (${s.heroesDied} hero${s.heroesDied > 1 ? 'es' : ''} lost)`, {
-          fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#8a5040', letterSpacing: 1,
+        addT(cy, `PENALTY ÷${div}`, {
+          fontFamily: "'Courier New', monospace", fontSize: '10px', color: '#8a5040', letterSpacing: 1,
         });
-      } else {
-        addT(cy, `SCORE: ${s.score}`, {
-          fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
-        });
+        cy += 18;
       }
-      cy += 28;
+      addT(cy, `SCORE: ${s.score}`, {
+        fontFamily: "'Courier New', monospace", fontSize: '13px',
+        color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
+      });
+      cy += 30;
     }
 
-    // Buttons
-    const diff     = s?.difficulty || 'brood-hunter';
-    const diffIdx  = DIFFICULTY_ORDER.indexOf(diff);
+    // Buttons — narrower to stay within column
+    const diffIdx    = DIFFICULTY_ORDER.indexOf(diff);
     const easierDiff = diffIdx > 0 ? DIFFICULTY_ORDER[diffIdx - 1] : null;
 
+    const stopAll = () => {
+      this.scene.stop('GameScene');
+      this.scene.stop('GameOverScene');
+    };
+
     this._addBtn(panel, items, cy + 10,  'RETRY',
-      () => this.scene.start('GameScene', { difficulty: diff }));
-    this._addBtn(panel, items, cy + 58,  'MAIN MENU',
-      () => this.scene.start('MenuScene'));
-    this._addBtn(panel, items, cy + 106,
+      () => { stopAll(); this.scene.start('GameScene', { difficulty: diff }); });
+    this._addBtn(panel, items, cy + 56,  'MAIN MENU',
+      () => { stopAll(); this.scene.start('MenuScene'); });
+    this._addBtn(panel, items, cy + 102,
       easierDiff ? `EASIER  (${easierDiff.replace(/-/g, ' ').toUpperCase()})` : 'EASIEST ALREADY',
-      easierDiff ? () => this.scene.start('GameScene', { difficulty: easierDiff }) : null,
+      easierDiff ? () => { stopAll(); this.scene.start('GameScene', { difficulty: easierDiff }); } : null,
       !easierDiff);
 
-    // Fade in all panel items
+    // Fade in
     this.tweens.add({ targets: items, alpha: 1, duration: 1200, ease: 'Linear' });
 
-    // Slide to left after delay
+    // Slide left after delay
     this.time.delayedCall(SLIDE_DELAY, () => {
       this.tweens.add({ targets: leftBand, alpha: 1, duration: 800 });
       this.tweens.add({ targets: panel, x: SLIDE_X, duration: SLIDE_DUR, ease: 'Cubic.easeInOut' });
@@ -133,7 +154,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   _addBtn(panel, items, y, label, cb, disabled = false) {
-    const w = 260, h = 38;
+    const w = 210, h = 36;
     const g = this.add.graphics().setAlpha(0);
     panel.add(g);
     items.push(g);
@@ -142,7 +163,7 @@ export class GameOverScene extends Phaser.Scene {
       g.clear();
       const bgCol  = disabled ? 0x1a1010 : hover ? 0x3a2a1a : 0x2a1a0a;
       const border = disabled ? 0x2a1818 : hover ? 0xc5a572 : 0x5a3a18;
-      g.fillStyle(bgCol,  1).fillRect(-w / 2, y - h / 2, w, h);
+      g.fillStyle(bgCol, 1).fillRect(-w / 2, y - h / 2, w, h);
       g.lineStyle(1, border, 1).strokeRect(-w / 2, y - h / 2, w, h);
     };
     draw(false);

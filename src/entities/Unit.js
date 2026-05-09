@@ -525,6 +525,7 @@ export class Unit {
     if (!impl) return false;
     const result = impl.activate(this);
     if (result === false) return false;  // ability declined (e.g. no targets)
+    if (impl.sound) playSfx(impl.sound);
     slot.cd = slot.maxCd;
     return true;
   }
@@ -674,7 +675,10 @@ export class Unit {
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
     const def = ABILITY_DEFS[this.abilityId];
-    return def?.activate?.(this) ?? false;
+    if (!def?.activate) return false;
+    const result = def.activate(this);
+    if (result !== false && def.sound) playSfx(def.sound);
+    return result ?? true;
   }
 
   // Apply incoming damage to this hero, respecting reductions.
