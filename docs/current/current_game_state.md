@@ -98,7 +98,7 @@ Active upgrades have a durability counter (3 waves by default; modified by diffi
 
 Temporary weapons replace or modify a survivor's normal attack after pickup.
 
-- `spray_gun` (displayed as **Shotgun**): 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate 1.10 s (5× slower than original).
+- `shotgun` (displayed as **Shotgun**): 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate 1.10 s (5× slower than original).
 - `samurai_sword`: 20s duration. Wide 120-degree cleave within 80 px. Damage is multiplied by 2.2.
 
 ## Between-Wave Upgrades (Slot Machine)
@@ -130,7 +130,7 @@ At the end of each 22s wave, `UpgradeScene` appears as a slot machine overlay. I
 | `stimpack` | Applies 5s rage-like buff and reduces ability cooldown by 2s. |
 | `bomb` | Area explosion, radius 280. Damage falls off linearly from 150 at centre to 0 at edge (`LOOT_DEFS.bombDamage`). |
 | `banana_bomb` | Larger explosion, radius 420, damage 300 at centre (`LOOT_DEFS.bananaBombDamage`), heavy knockback, 2.5s stun. |
-| `spray_gun` | Grants temporary spray gun. |
+| `shotgun` | Grants temporary spray gun. |
 | `samurai_sword` | Grants temporary sword cleave. |
 
 Regular enemy drop distribution: medkit ~52%, rare_medkit ~8%, stimpack ~35%, bomb ~5%. Loot spawn rates in difficulty configs are low (e.g. brood-hunter: medkit 6%, stimpack 3.5%, bomb 1%).
@@ -242,7 +242,7 @@ src/
     Unit.js            # survivor stats, movement, attack
     Enemy.js           # enemy AI, behaviors, drops
     Projectile.js      # thrown club
-    SprayBullet.js     # spray gun bullet
+    ShotgunBullet.js   # shotgun bullet
     Loot.js            # pickup state and icon
   render/
     background.js      # terrain, debris, vignette

@@ -4,7 +4,7 @@ import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
-export class SprayBullet {
+export class ShotgunBullet {
   constructor(x, y, angle, dmg, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;

@@ -370,7 +370,7 @@ export class Enemy {
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
       state.loot.push(new Loot(clamp(this.x + 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), 'banana_bomb'));
-      const bbWeapons = ['spray_gun', 'samurai_sword'];
+      const bbWeapons = ['shotgun', 'samurai_sword'];
       const bbPick = bbWeapons[Math.floor(Math.random() * bbWeapons.length)];
       state.loot.push(new Loot(clamp(this.x - 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), bbPick));
       return;
@@ -383,7 +383,7 @@ export class Enemy {
         const ly = clamp(this.y + Math.sin(ang) * 18, 12, G.PLAY_BOTTOM - 12);
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
-      const mbWeapons = ['spray_gun', 'samurai_sword'];
+      const mbWeapons = ['shotgun', 'samurai_sword'];
       const mbPick = mbWeapons[Math.floor(Math.random() * mbWeapons.length)];
       const mbAng = Math.PI;
       state.loot.push(new Loot(

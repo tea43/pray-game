@@ -49,7 +49,7 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 - Confirm base attacks work for all three heroes.
 - Pick up medkit and stimpack.
 - Pick up bomb or banana bomb if available.
-- Pick up spray gun and samurai sword if available.
+- Pick up shotgun and samurai sword if available.
 - Confirm temporary weapon indicator and expiry.
 
 ## Waves And End States

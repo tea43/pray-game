@@ -148,7 +148,7 @@ export const WEAPON_DEFS = {
 
   // ── Ranged ─────────────────────────────────────────────────────────────────
 
-  spray_gun: {
+  shotgun: {
     displayName:       'Shotgun',
     type:              'ranged',
     atkRange:          300,
@@ -157,9 +157,9 @@ export const WEAPON_DEFS = {
     bulletCount:       5,
     spread:            0.35,       // half-angle spread in radians
     projectileSpeed:   480,
-    sfxFire:           'weapon.sprayGun.fire',
+    sfxFire:           'weapon.shotgun.fire',
     sfxFallback:       'shoot',
-    sprite:            'spray_gun',
+    sprite:            'shotgun',
     lootDuration:      15,
   },
 

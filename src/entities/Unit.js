@@ -6,7 +6,7 @@ import { WEAPON_DEFS } from '../config/weapons.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { resolveAsset } from '../config/assets.js';
 import { Projectile } from './Projectile.js';
-import { SprayBullet } from './SprayBullet.js';
+import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { ABILITY_DEFS } from '../config/abilities.js';
@@ -669,7 +669,7 @@ export class Unit {
       const ang = this.facing + offset;
       const sx = this.x + Math.cos(ang) * (this.r + 6);
       const sy = this.y + Math.sin(ang) * (this.r + 6);
-      state.projectiles.push(new SprayBullet(sx, sy, ang, dmgPer, wDef));
+      state.projectiles.push(new ShotgunBullet(sx, sy, ang, dmgPer, wDef));
     }
     if (!state.settings.noShake) state.shake = Math.max(state.shake, count > 1 ? 2.5 : 1.2);
   }

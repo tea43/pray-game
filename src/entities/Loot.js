@@ -49,7 +49,7 @@ export class Loot {
     const glowColor = this.type === 'medkit'       ? 'rgba(255, 90, 80, 0.22)'
                     : this.type === 'rare_medkit'   ? 'rgba(60, 160, 255, 0.40)'
                     : this.type === 'stimpack'      ? 'rgba(80, 240, 130, 0.22)'
-                    : this.type === 'spray_gun'     ? 'rgba(255, 160, 40, 0.35)'
+                    : this.type === 'shotgun'     ? 'rgba(255, 160, 40, 0.35)'
                     : this.type === 'samurai_sword' ? 'rgba(220, 220, 80, 0.35)'
                     : this.type === 'banana_bomb'   ? 'rgba(200, 240, 60, 0.4)'
                     : 'rgba(255, 170, 60, 0.28)';
@@ -159,7 +159,7 @@ export class Loot {
       ctx.beginPath();
       ctx.arc(5.5, -7, 0.4, 0, Math.PI * 2);
       ctx.fill();
-    } else if (this.type === 'spray_gun') {
+    } else if (this.type === 'shotgun') {
       ctx.fillStyle = '#3a3a4a';
       ctx.fillRect(-7, -2.5, 13, 5);
       ctx.strokeStyle = '#1a1a28';

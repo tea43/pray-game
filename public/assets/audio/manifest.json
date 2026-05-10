@@ -385,9 +385,15 @@
       "volume": 0.75,
       "pitchJitter": 0.04
     },
-    "loot.weapon.spray-gun": {
+    "loot.weapon.shotgun": {
       "variants": [],
       "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "weapon.shotgun.fire": {
+      "variants": [],
+      "fallback": "synthetic.shoot",
       "volume": 0.75,
       "pitchJitter": 0.05
     },
