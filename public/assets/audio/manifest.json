@@ -228,7 +228,7 @@
     },
     "ability.smokescreen": {
       "variants": [],
-      "fallback": "synthetic.ability",
+      "fallback": "ability.blink",
       "volume": 0.65,
       "pitchJitter": 0.05
     },
@@ -281,13 +281,13 @@
     },
     "ability.white_powder_hit": {
       "variants": [],
-      "fallback": "synthetic.ability",
+      "fallback": "ability.blink",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
     "ability.white_powder_dominance": {
       "variants": [],
-      "fallback": "synthetic.ability",
+      "fallback": "ability.blink",
       "volume": 0.8,
       "pitchJitter": 0.04
     },
