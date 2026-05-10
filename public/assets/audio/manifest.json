@@ -397,6 +397,12 @@
       "volume": 0.75,
       "pitchJitter": 0.05
     },
+    "weapon.bow.fire": {
+      "variants": [],
+      "fallback": "synthetic.shoot",
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
     "loot.weapon.samurai-sword": {
       "variants": [],
       "fallback": "loot.weapon",
