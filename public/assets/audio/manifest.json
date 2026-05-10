@@ -68,6 +68,7 @@
     },
     "alien.death.default": {
       "variants": [],
+      "fallback": "synthetic.death",
       "volume": 0.55,
       "pitchJitter": 0.08,
       "cooldown": 0.04

@@ -9,7 +9,7 @@ import { spawnEnemy, spawnBoss, spawnAt } from '../../systems/spawning.js';
 import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2 } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
-import { playMusic } from '../../systems/audio.js';
+import { playMusic, playSfx } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
@@ -316,6 +316,7 @@ export class GameScene extends Phaser.Scene {
 
       for (const u of state.units) {
         if (u.hp <= 0 && !u.dead && u.immortalTimer <= 0) {
+          playSfx('character.death.' + u.type);
           u.dead = true;
           u.deathX = u.x; u.deathY = u.y;
           state.heroesDied = (state.heroesDied || 0) + 1;
