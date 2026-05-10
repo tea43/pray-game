@@ -436,7 +436,6 @@ export const ABILITY_DEFS = {
   mill_360: {
     icon:  'assets/icons/abilities/mill_360.svg',
     color: '#ff8020',
-    sound: 'ability.mill_360',
     maxCd: 10,
     activate(unit) {
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.2);
@@ -446,6 +445,8 @@ export const ABILITY_DEFS = {
       unit.millCenterY = unit.y;
       unit._millTargetX = unit.tx;
       unit._millTargetY = unit.ty;
+      // Store handle so Unit.update can stop it when millTimer expires.
+      unit._millSoundHandle = playSfx('ability.mill_360');
       _radialParticles(unit.x, unit.y, 22, '#ff8020', '#ffd060');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 8);
     },
@@ -454,7 +455,6 @@ export const ABILITY_DEFS = {
   vortex: {
     icon:  'assets/icons/abilities/vortex.svg',
     color: '#ff6010',
-    sound: 'ability.vortex',
     maxCd: 12,
     activate(unit) {
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.8);
@@ -464,6 +464,8 @@ export const ABILITY_DEFS = {
       unit.vortexCenterY = unit.y;
       unit._vortexTargetX = unit.tx;
       unit._vortexTargetY = unit.ty;
+      // Store handle so Unit.update can stop it when vortexTimer expires.
+      unit._vortexSoundHandle = playSfx('ability.vortex');
       _radialParticles(unit.x, unit.y, 30, '#ff6010', '#ffe050');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 10);
     },
@@ -483,10 +485,24 @@ export const ABILITY_DEFS = {
       }
       if (!target) return false;
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, 0.5);
-      unit.x = clamp(target.x + rand(-20, 20), 6, G.W - 6);
-      unit.y = clamp(target.y + rand(-20, 20), 6, G.PLAY_BOTTOM);
+      // Leap arc: scatter particles along the jump path before teleporting
+      const leapSteps = 12;
+      const fromX = unit.x, fromY = unit.y;
+      const toX = clamp(target.x + rand(-20, 20), 6, G.W - 6);
+      const toY = clamp(target.y + rand(-20, 20), 6, G.PLAY_BOTTOM);
+      const midX = (fromX + toX) / 2, midY = Math.min(fromY, toY) - 40;
+      for (let i = 0; i <= leapSteps; i++) {
+        const t = i / leapSteps;
+        const px = (1-t)*(1-t)*fromX + 2*(1-t)*t*midX + t*t*toX;
+        const py = (1-t)*(1-t)*fromY + 2*(1-t)*t*midY + t*t*toY;
+        for (let j = 0; j < 3; j++) {
+          state.particles.push({ x: px + rand(-4, 4), y: py + rand(-4, 4), vx: rand(-40, 40), vy: rand(-60, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: j % 2 ? '#ff3010' : '#ffb030', size: rand(2, 4), realtime: true });
+        }
+      }
+      unit.x = toX; unit.y = toY;
       unit.tx = unit.x; unit.ty = unit.y;
       unit.blinkFlash = 1;
+      unit.vz = 180; unit.z = 0;
       const dmg = Math.min(500, target.hp);
       target.hp -= dmg;
       target.hurtFlash = 1;

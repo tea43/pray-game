@@ -117,7 +117,11 @@
       "pitchJitter": 0.06
     },
     "weapon.hockeyClub.attack": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/weapons/hockey-club/melee_5.mp3",
+        "./assets/audio/weapons/hockey-club/melee_6.mp3",
+        "./assets/audio/weapons/hockey-club/melee_7.mp3"
+      ],
       "fallback": "weapon.dualClubs.attack",
       "volume": 0.55,
       "pitchJitter": 0.07,
@@ -228,7 +232,7 @@
     },
     "ability.smokescreen": {
       "variants": [],
-      "fallback": "ability.blink",
+      "fallback": "synthetic.ability",
       "volume": 0.65,
       "pitchJitter": 0.05
     },
@@ -281,13 +285,13 @@
     },
     "ability.white_powder_hit": {
       "variants": [],
-      "fallback": "ability.blink",
+      "fallback": "synthetic.ability",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
     "ability.white_powder_dominance": {
       "variants": [],
-      "fallback": "ability.blink",
+      "fallback": "synthetic.ability",
       "volume": 0.8,
       "pitchJitter": 0.04
     },
@@ -393,9 +397,20 @@
       "volume": 0.75,
       "pitchJitter": 0.04
     },
-    "loot.weapon.spray-gun": {
+    "loot.weapon.shotgun": {
       "variants": [],
       "fallback": "loot.weapon",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "weapon.shotgun.fire": {
+      "variants": [
+        "./assets/audio/weapons/shotgun/shotgun_1.mp3",
+        "./assets/audio/weapons/shotgun/shotgun_2.mp3",
+        "./assets/audio/weapons/shotgun/shotgun_3.mp3",
+        "./assets/audio/weapons/shotgun/shotgun_4.mp3"
+      ],
+      "fallback": "synthetic.shoot",
       "volume": 0.75,
       "pitchJitter": 0.05
     },

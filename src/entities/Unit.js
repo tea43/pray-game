@@ -200,6 +200,7 @@ export class Unit {
     if (_prevMill > 0 && this.millTimer <= 0) {
       this.x = this.millCenterX; this.y = this.millCenterY;
       this.tx = this._millTargetX; this.ty = this._millTargetY;
+      this._millSoundHandle?.stop(); this._millSoundHandle = null;
     }
 
     // Vortex: Dick orbits a larger circle, center drifts toward pre-activation destination
@@ -231,6 +232,7 @@ export class Unit {
     if (_prevVortex > 0 && this.vortexTimer <= 0) {
       this.x = this.vortexCenterX; this.y = this.vortexCenterY;
       this.tx = this._vortexTargetX; this.ty = this._vortexTargetY;
+      this._vortexSoundHandle?.stop(); this._vortexSoundHandle = null;
     }
 
     if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
@@ -465,6 +467,8 @@ export class Unit {
         const ang = Math.atan2(e.y - b.clubY, e.x - b.clubX);
         e.knockX += Math.cos(ang) * 60;
         e.knockY += Math.sin(ang) * 60;
+        playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+        playSfx('alien.hit.default', { synthetic: 'hit' });
         pushDamageNumber(e.x, e.y - e.r - 4, dmg, { rgb: [210, 185, 130] });
         for (let i = 0; i < 6; i++) {
           state.particles.push({ x: e.x + rand(-3,3), y: e.y + rand(-3,3), vx: rand(-70,70), vy: rand(-90,-10), life: rand(0.2,0.5), maxLife: 0.5, color: e.bloodColor, size: rand(1.2, 2.5), realtime: true });
@@ -676,6 +680,18 @@ export class Unit {
 
   moveTo(x, y) {
     if (this.stonedTimer > 0) return;
+    // During mill/vortex redirect the destination to the orbit center target
+    // so the player can steer the spin with right-click like normal movement.
+    if (this.millTimer > 0) {
+      this._millTargetX = clamp(x, 6, G.W - 6);
+      this._millTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      return;
+    }
+    if (this.vortexTimer > 0) {
+      this._vortexTargetX = clamp(x, 6, G.W - 6);
+      this._vortexTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      return;
+    }
     this.tx = clamp(x, 6, G.W - 6);
     this.ty = clamp(y, 6, G.PLAY_BOTTOM);
     this.aggroTarget = null;

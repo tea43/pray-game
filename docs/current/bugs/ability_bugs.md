@@ -1,3 +1,7 @@
-- on the hit the boomerant ability does not produce any sound
-- for the mill and vortex: can we cut off the sound execution once the ability has ended
-- while the mill or vortex eecuted: unit does not get additional movement commands. I think we can control the center of the mill or votex by clicking the mouse. The control should be similar to Dick contol.
+- [FIXED] on the hit the boomerant ability does not produce any sound
+- [FIXED] for the mill and vortex: can we cut off the sound execution once the ability has ended
+- [FIXED] while the mill or vortex eecuted: unit does not get additional movement commands. I think we can control the center of the mill or votex by clicking the mouse. The control should be similar to Dick contol.
+- [FIXED] sound for the shotgun still uses deafult value instead of using the shotgun sound
+- [FIXED] weapon/hockey-club is not used for the sound of hit, the hit sounds are silent
+- [FIXED] is it possible for the smashing time add animation like dick jumping and flying over to the enemy and then hit it
+- [FIXED] white powder of dominanace uses the sound of blink and does not uses the sound of hockey-club hitting the enemies
