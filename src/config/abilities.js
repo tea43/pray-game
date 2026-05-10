@@ -2,6 +2,7 @@ import { G } from '../globals.js';
 import { state } from '../state.js';
 import { rand, dist2, clamp } from '../utils/math.js';
 import { pushDamageNumber } from '../render/effects.js';
+import { playSfx } from '../systems/audio.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,10 @@ export const ABILITY_DEFS = {
   white_powder_hit: {
     icon:  'assets/icons/abilities/white_powder_hit.svg',
     color: '#e8e0ff',
+    // SOUND POINT 1 — ACTIVATION (sniff / intake hit).
+    // This key is played automatically by Unit.cast() / Unit.activateSkill()
+    // immediately when the player presses the ability key, before any teleport.
+    // To change it: edit the string below and add the file to the audio manifest.
     sound: 'ability.white_powder_hit',
     maxCd: 18,
     activate(unit) {
@@ -263,11 +268,18 @@ export const ABILITY_DEFS = {
         ally.x = bx; ally.y = by; ally.tx = bx; ally.ty = by;
         ally.blinkFlash = 1;
         ally.immortalTimer = Math.max(ally.immortalTimer || 0, 0.6);
+        // SOUND POINT 2 — BLINK-IN: reuses Eliott's blink whoosh.
+        playSfx('ability.blink');
         const dmg = Math.round(ally.atkDmg * 1.5 * (ally.upgradeDmgMult || 1));
         nearest.hp -= dmg;
         nearest.hurtFlash = 1;
+        // SOUND POINT 3 — IMPACT: ally's current weapon attack + alien hit.
+        playSfx(ally._wDef.sfxAttack || 'weapon.attack.default', { fallback: ally._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+        playSfx('alien.hit.default', { synthetic: 'hit' });
         pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
-        // teleport back after 0.3s
+        // teleport back after 0.3s — return blink is handled in Unit.update()
+        // SOUND POINT 4 — BLINK-OUT (return teleport, 0.3 s later).
+        // Handled in Unit.js where _wpHitReturn timer expires — see comment there.
         ally._wpHitReturn = { timer: 0.3, x: origX, y: origY };
         _radialParticles(bx, by, 8, '#ffffff', '#ffe0ff');
       }
@@ -277,6 +289,9 @@ export const ABILITY_DEFS = {
   white_powder_dominance: {
     icon:  'assets/icons/abilities/white_powder_dominance.svg',
     color: '#c0a0ff',
+    // SOUND POINT 1 — ACTIVATION (intense sniff / surge).
+    // Same mechanism as white_powder_hit — played once on key press by Unit.cast().
+    // To change: edit the string below and add the file to the audio manifest.
     sound: 'ability.white_powder_dominance',
     maxCd: 22,
     activate(unit) {
@@ -291,6 +306,8 @@ export const ABILITY_DEFS = {
         ally._dominanceOrigin = { x: ally.x, y: ally.y };
         ally._dominanceTargets = [...targets];
         ally._dominanceTimer = 0;
+        // SOUND POINT 2 — CHAIN START: blink whoosh once per ally when the chain begins.
+        playSfx('ability.blink');
         _radialParticles(ally.x, ally.y, 12, '#ffffff', '#e0c0ff');
       }
     },

@@ -258,14 +258,21 @@ export class Unit {
         this.tx = this._wpHitReturn.x;
         this.ty = this._wpHitReturn.y;
         this.blinkFlash = 0.7;
+        // SOUND POINT 4 — BLINK-OUT: same blink whoosh as the outbound teleport.
+        playSfx('ability.blink');
         this._wpHitReturn = null;
       }
     }
 
     // White Powder of Dominance sequential strike
+    // Each strike fires every 0.25 s (_dominanceTimer). Sound should fire
+    // once per strike so the chain feels rapid and escalating.
     if (this._dominanceTargets && this._dominanceTargets.length > 0) {
       this._dominanceTimer -= dt;
       if (this._dominanceTimer <= 0) {
+        while (this._dominanceTargets.length > 0 && this._dominanceTargets[0]?.dead) {
+          this._dominanceTargets.shift();
+        }
         const e = this._dominanceTargets.shift();
         if (e && !e.dead) {
           const ang = e.facing + Math.PI;
@@ -276,6 +283,10 @@ export class Unit {
           const dmg = Math.round(this.atkDmg * (this.upgradeDmgMult || 1));
           e.hp -= dmg;
           e.hurtFlash = 1;
+          // SOUND POINT 3 — CHAIN STRIKE: blink whoosh + hero's weapon hit, every 0.25 s.
+          playSfx('ability.blink');
+          playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+          playSfx('alien.hit.default', { synthetic: 'hit' });
           pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
         }
         this._dominanceTimer = 0.25;
@@ -525,6 +536,11 @@ export class Unit {
     if (!impl) return false;
     const result = impl.activate(this);
     if (result === false) return false;  // ability declined (e.g. no targets)
+    // Plays the `sound` key defined on the ability in config/abilities.js.
+    // This is SOUND POINT 1 for upgrade-slot actives (white_powder_hit,
+    // white_powder_dominance, etc.) — fires once on activation only.
+    // Mid-ability sounds (blink, impact, chain strikes) must be added as
+    // explicit playSfx() calls inside activate() or in the update timers above.
     if (impl.sound) playSfx(impl.sound);
     slot.cd = slot.maxCd;
     return true;
@@ -677,6 +693,8 @@ export class Unit {
     const def = ABILITY_DEFS[this.abilityId];
     if (!def?.activate) return false;
     const result = def.activate(this);
+    // Same as activateSkill — plays `sound` once on activation (SOUND POINT 1).
+    // Used for the three base hero abilities (group_blink, boomerang, backdoor_blockade).
     if (result !== false && def.sound) playSfx(def.sound);
     return result ?? true;
   }

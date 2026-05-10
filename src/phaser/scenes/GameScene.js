@@ -100,7 +100,7 @@ export class GameScene extends Phaser.Scene {
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
       survivedSeconds: 0, menuPhase: 'playing', score: 0, heroesDied: 0,
-      isUpgradeScreen: false,
+      isUpgradeScreen: false, _pendingWaveUpgrade: false,
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
     });
@@ -339,6 +339,14 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _anyAbilityInProgress() {
+    return state.units.some(u => !u.dead && (
+      (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
+      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 ||
+      u.millTimer > 0 || u.vortexTimer > 0 || u.boomerang !== null
+    ));
+  }
+
   _updateWaves(gameDt) {
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
 
@@ -356,6 +364,11 @@ export class GameScene extends Phaser.Scene {
     if (!state.allWavesCleared) state.waveTimer += gameDt;
     if (!state.allWavesCleared && state.waveTimer > WAVE_DEFS.duration) {
       state.waveTimer = 0;
+      state._pendingWaveUpgrade = true;
+    }
+
+    if (state._pendingWaveUpgrade && !state.allWavesCleared && !this._anyAbilityInProgress()) {
+      state._pendingWaveUpgrade = false;
       if (state.wave < WAVE_DEFS.maxWave) {
         state.isUpgradeScreen = true;
         removeWaveUpgrades();

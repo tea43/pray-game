@@ -98,12 +98,12 @@ Active upgrades have a durability counter (3 waves by default; modified by diffi
 
 Temporary weapons replace or modify a survivor's normal attack after pickup.
 
-- `spray_gun`: 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate is multiplied by 0.25.
+- `spray_gun` (displayed as **Shotgun**): 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate 1.10 s (5× slower than original).
 - `samurai_sword`: 20s duration. Wide 120-degree cleave within 80 px. Damage is multiplied by 2.2.
 
 ## Between-Wave Upgrades (Slot Machine)
 
-At the end of each 22s wave, time pauses and `UpgradeScene` appears as a slot machine overlay.
+At the end of each 22s wave, `UpgradeScene` appears as a slot machine overlay. If any ability is still executing (blink chain, mill, vortex, dominance chain, etc.) the popup is deferred until the ability finishes, then appears immediately.
 
 **Selection:** Three vertical reels, one per hero column (Elliot | Dick | Habib). Each reel scrolls through that hero's upgrade pool and stops on a card. The player clicks **one** centred card from **any one** column — that upgrade is applied and the next wave begins automatically (no confirm button).
 

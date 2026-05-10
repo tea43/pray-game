@@ -149,11 +149,11 @@ export const WEAPON_DEFS = {
   // ── Ranged ─────────────────────────────────────────────────────────────────
 
   spray_gun: {
-    displayName:       'Spray Gun',
+    displayName:       'Shotgun',
     type:              'ranged',
     atkRange:          300,
     atkDmg:            18,         // per bullet
-    atkRate:           0.22,
+    atkRate:           1.10,
     bulletCount:       5,
     spread:            0.35,       // half-angle spread in radians
     projectileSpeed:   480,

@@ -111,12 +111,7 @@
       "pitchJitter": 0.05
     },
     "weapon.longClub.attack": {
-      "variants": [
-        "./assets/audio/weapons/attack/long-club/melee_1.mp3",
-        "./assets/audio/weapons/attack/long-club/melee_2.mp3",
-        "./assets/audio/weapons/attack/long-club/melee_3.mp3",
-        "./assets/audio/weapons/attack/long-club/melee_4.mp3"
-      ],
+      "variants": [],
       "fallback": "weapon.attack.default",
       "volume": 0.55,
       "pitchJitter": 0.06
@@ -129,11 +124,7 @@
       "cooldown": 0.04
     },
     "weapon.dualClubs.attack": {
-      "variants": [
-        "./assets/audio/weapons/attack/dual-clubs/melee_5.mp3",
-        "./assets/audio/weapons/attack/dual-clubs/melee_6.mp3",
-        "./assets/audio/weapons/attack/dual-clubs/melee_7.mp3"
-      ],
+      "variants": [],
       "fallback": "weapon.attack.default",
       "volume": 0.5,
       "pitchJitter": 0.08,
@@ -147,26 +138,24 @@
       "cooldown": 0.04
     },
     "weapon.thrownClub.throw": {
-      "variants": [
-        "./assets/audio/weapons/throw/thrown-club/boomerang.mp3"
-      ],
+      "variants": [],
       "fallback": "weapon.throw.default",
       "volume": 0.55,
       "pitchJitter": 0.06
     },
     "weapon.impact.default": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/weapons/impact/default/sword_1.mp3",
+        "./assets/audio/weapons/impact/default/sword_2.mp3",
+        "./assets/audio/weapons/impact/default/sword_3.mp3"
+      ],
       "fallback": "synthetic.hit",
       "volume": 0.55,
       "pitchJitter": 0.08,
       "cooldown": 0.04
     },
     "weapon.thrownClub.impact": {
-      "variants": [
-        "./assets/audio/weapons/impact/thrown-club/sword_1.mp3",
-        "./assets/audio/weapons/impact/thrown-club/sword_2.mp3",
-        "./assets/audio/weapons/impact/thrown-club/sword_3.mp3"
-      ],
+      "variants": [],
       "fallback": "weapon.impact.default",
       "volume": 0.6,
       "pitchJitter": 0.06
@@ -219,10 +208,7 @@
     "ability.rage": {
       "variants": [
         "./assets/audio/characters/abilities/rage/rage_1.mp3",
-        "./assets/audio/characters/abilities/rage/rage_2.mp3",
-        "./assets/audio/characters/abilities/rage/rage_3.mp3",
-        "./assets/audio/characters/abilities/rage/rage_5.mp3",
-        "./assets/audio/characters/abilities/rage/rege_4.mp3"
+        "./assets/audio/characters/abilities/rage/rage_2.mp3"
       ],
       "fallback": "synthetic.ability",
       "volume": 0.8,
@@ -247,13 +233,19 @@
       "pitchJitter": 0.05
     },
     "ability.boomerang": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/boomerang/boomerang.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
       "pitchJitter": 0.06
     },
     "ability.backdoor_blockade": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/backdoor_blockade/shield_1.mp3",
+        "./assets/audio/characters/abilities/backdoor_blockade/shield_2.mp3",
+        "./assets/audio/characters/abilities/backdoor_blockade/shield_3.mp3"
+      ],
       "fallback": "ability.lightning",
       "volume": 0.75,
       "pitchJitter": 0.04
@@ -265,13 +257,20 @@
       "pitchJitter": 0.05
     },
     "ability.green_pipe": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/green_pipe/green_pipe.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.65,
       "pitchJitter": 0.05
     },
     "ability.blue_cubes_speed": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/blue_cubes_speed/cube_1.mp3",
+        "./assets/audio/characters/abilities/blue_cubes_speed/cube_2.mp3",
+        "./assets/audio/characters/abilities/blue_cubes_speed/cube_3.mp3",
+        "./assets/audio/characters/abilities/blue_cubes_speed/cube_4.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
       "pitchJitter": 0.05
@@ -316,7 +315,9 @@
       "pitchJitter": 0.04
     },
     "ability.acid_gun": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/acid_gun/acidgun_1.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
       "pitchJitter": 0.05
@@ -333,19 +334,27 @@
       "pitchJitter": 0.04
     },
     "ability.scream": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/scream/rage_3.mp3",
+        "./assets/audio/characters/abilities/scream/rage_5.mp3",
+        "./assets/audio/characters/abilities/scream/rege_4.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.85,
       "pitchJitter": 0.03
     },
     "ability.mill_360": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/mill_360/360mill.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.75,
       "pitchJitter": 0.05
     },
     "ability.vortex": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/vortex/vortex_1.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.75,
       "pitchJitter": 0.05
