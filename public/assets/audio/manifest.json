@@ -251,7 +251,11 @@
       "pitchJitter": 0.04
     },
     "ability.stoned_green_pipe": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/stoned_green_pipe/stoned_1.mp3",
+        "./assets/audio/characters/abilities/stoned_green_pipe/stoned_2.mp3",
+        "./assets/audio/characters/abilities/stoned_green_pipe/stoned_3.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.7,
       "pitchJitter": 0.05
@@ -360,7 +364,11 @@
       "pitchJitter": 0.05
     },
     "ability.smashing_time": {
-      "variants": [],
+      "variants": [
+        "./assets/audio/characters/abilities/smashing_time/smashing_1.mp3",
+        "./assets/audio/characters/abilities/smashing_time/smashing_2.mp3",
+        "./assets/audio/characters/abilities/smashing_time/smashing_3.mp3"
+      ],
       "fallback": "synthetic.ability",
       "volume": 0.85,
       "pitchJitter": 0.04
@@ -385,23 +393,11 @@
       "volume": 0.75,
       "pitchJitter": 0.04
     },
-    "loot.weapon.shotgun": {
+    "loot.weapon.spray-gun": {
       "variants": [],
       "fallback": "loot.weapon",
       "volume": 0.75,
       "pitchJitter": 0.05
-    },
-    "weapon.shotgun.fire": {
-      "variants": [],
-      "fallback": "synthetic.shoot",
-      "volume": 0.75,
-      "pitchJitter": 0.05
-    },
-    "weapon.bow.fire": {
-      "variants": [],
-      "fallback": "synthetic.shoot",
-      "volume": 0.65,
-      "pitchJitter": 0.06
     },
     "loot.weapon.samurai-sword": {
       "variants": [],
