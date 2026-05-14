@@ -1,0 +1,4 @@
+- boomerang club
+- a.s.s. protection wrong sound 
+- bow sound incorrect
+- spray gun too fast should be a shotgun slower 5 times

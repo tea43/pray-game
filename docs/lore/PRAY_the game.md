@@ -15,24 +15,54 @@ Story moments injected in a comic style photos where player can check the next c
 
 ## Characters: 
 
-#### Dickiy(Richard):
+#### Dick(Richard):
 
  Huge guy with the cap and short beard, wearing light color shirt with the blue and red stripes and blue shorts  
 Can craft weapons, main weapon: hockey club.  
 Abilities: 
 
-- Rage ( additional damage and speed of attack ),   
-- Melee weapon throw ( boomerang with low damage / non boomerang with colossal damage) 
+- Rage ( additional damage and speed of attack ),
+- Inappropriate stories boost all allies around:
+  - movement speed ++
+  - Attack speed ++
+  - Stun aura: enemies are stunned due to the stories
+- Melee weapon throw: Slow throw of a melee weapon in a form of boomerang
+- Melee weapon special swings (hero is immortal during these actions)
+  - Swing 360: heavy damage all enemies around
+  - Vortex: similar to swing, but the hero also move in a circle and rotating, covering even more area
+  - Smashing time: Hero selects the juciest enemy in radious of X, jumps to it and kill it from a single slam
+
+- Weapon upgrades (story mode only).
+  - Neck of a bottle (Glassing)
+  - Metal pipe
+  - Piece of benchwood
+  - Hammer
+  - Some black rubber heavy thing that looks like a pipe
+  - Hockey club
 
 Basic skillset: Low armor, high hp, high damage
 
-#### Habib Umarov Izmail: HUI
+#### Habib Umarov Ismail
 
 Slender guy with short hair,  white Tshirt with some african american character on it  with сщ and red shorts. Tshirt tucked into the shorts, Shorts sitting high on the waist. Wearing mechanical protection glasses.  
 Can craft armor. Main weapon mechanical key, also used to open some doors and fix devices  
 Abilities: 
 
-- Can craft devices that gives different effects: chain lightning.   
+- Can craft devices that gives different effects: chain lightning, stun, flamethrower
+- Can craft armor.
+  Types:
+  - Helmet
+  - Main 
+  - Legs
+  - Arse protection
+  Abilities:
+  - Just armor
+  - Returning damage to the enemy
+  - Fire up enemy
+  - Set enemy on fire
+  - Make enemy explode and damage enemies around 
+
+
 - Climb high locations  
 - Open doors with mechanical divides  
 - Reading
@@ -42,15 +72,26 @@ Basic skillset: Medium Hp, High armor, medium damage
 #### Eliott
 
 Short guy with a bucket hat and a Hawaiian shirt. Wearing green shorts. And yellow aviators with transparent yellow lenses.  
-Can craft alchemy substances: Green coarse powder for decrease damage,, Blue cubes for increased speed and damage, White fine powdered substance to slow down time  
-Each character get’s additional perks from each substance.  
-Optional:   
-	Dick getting Trumple ability from Blue cubes, Green powder makes him slower and decrease his damage, white powder activates rage for the entire slowdown time  
-HUI getting additional features if craft armor under different substances. Can craft G36 gun under White powder ( not sure if HUI or Dick will craft G36)  
-Abilities: 
+Only for story mode: 
+  Can craft alchemy substances: Green coarse powder for decrease damage,, Blue cubes for increased speed and damage, White fine powdered substance to slow down time  
+  Each character get’s additional perks from each substance.  
+  Optional:   
+    Dick getting Trumple ability from Blue cubes, Green powder makes him slower and decrease his damage, white powder activates rage for the entire slowdown time  
+  HUI getting additional features if craft armor under different substances. Can craft G36 gun under White powder ( not sure if HUI or Dick will craft G36)  
+Abilities ( for story and arena modes)
 
-- Blink  
-- Alchemy
+- Blink
+  - Blinking just with self
+  - Can blink and summon all allies to self
+- Alchemy: 
+  Affecting only eliott: 
+  - Green stoned pipe ( affecting eliott only, immortal when ability is active): Eliott turn into a green stone, all enemies in a large radius attacks it. Eliott is immortal in this state. Once the ability is passed, Eliott teleports to the closets ally
+  Affecting everyone in a small radious:
+  - Green pipe: decreased damage from the enemy
+  - Blue cubes of rage: setting allies into the rage for a short period of time
+  - Blue cubes of choo choo train: all heroes gain an ability to run at high speed and damage the enemies they penetrating though, for a short period of time
+  - White powder of hit: alies gain immortality during this ability. Upon activation each ally in a small radious teleports to the back of a nearest enemy, hit it from behind and back to the original spot, or to the spot closer to the point they were heading to.
+  - White powder of dominance: similar to white powder of hit, but each alies teleports to each enemy in a radious and hit once in a back over short period of time. Works as a lightning but with the blinking allies.
 
 Basic skillset: Low HP, Medium Armor, Low Damage  
 The main goal of this character will be to buff the characters. ? G36 usage as an ultimate skill ? 
