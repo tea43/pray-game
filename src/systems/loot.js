@@ -1,17 +1,21 @@
 import { rand, randInt, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { LOOT_DEFS } from '../config/loot.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 import { playSfx } from './audio.js';
 
 export function applyLoot(loot, unit) {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
-  if (loot.type === 'medkit') {
+  if (loot.type === 'medkit' || loot.type === 'rare_medkit') {
     playSfx('loot.medkit');
-    const heal = diff.loot.healAmount;
-    const before = unit.hp;
-    unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-    const actual = unit.hp - before;
+    const isRare = loot.type === 'rare_medkit';
+    const totalHeal = isRare ? Math.round(diff.loot.healAmount * 1.8) : diff.loot.healAmount;
+    const duration  = isRare ? 5 : 4;
+    unit.medkitHealRemaining = Math.min(unit.maxHp - unit.hp, totalHeal);
+    unit.medkitHealPerSec    = totalHeal / duration;
+    const particleColor = isRare ? '#60b0ff' : '#5fd06a';
+    const particleColor2 = isRare ? '#a0d8ff' : '#ffffff';
     for (let i = 0; i < 18; i++) {
       const a = rand(0, Math.PI * 2);
       const v = rand(20, 90);
@@ -19,11 +23,11 @@ export function applyLoot(loot, unit) {
         x: loot.x, y: loot.y,
         vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60,
         life: rand(0.4, 0.9), maxLife: 0.9,
-        color: i % 3 === 0 ? '#ffffff' : '#5fd06a',
+        color: i % 3 === 0 ? particleColor2 : particleColor,
         size: rand(1.5, 3), realtime: true,
       });
     }
-    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + actual });
+    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'heal', text: '+' + totalHeal });
   } else if (loot.type === 'stimpack') {
     playSfx('loot.stimpack');
     unit.rageTimer = Math.max(unit.rageTimer, diff.loot.stimDuration);
@@ -72,16 +76,18 @@ function _equipWeapon(unit, weaponKey, lootX, lootY) {
 export function detonateBomb(x, y) {
   playSfx('explosion.bomb');
   const radius = 280;
+  const maxDmg = LOOT_DEFS.bombDamage ?? 150;
   for (const e of state.enemies) {
     if (e.dead) continue;
     const d = dist2(x, y, e.x, e.y);
     if (d < radius) {
+      const falloff = 1 - d / radius;
       const ang = Math.atan2(e.y - y, e.x - x);
-      const force = (1 - d / radius) * 380;
-      e.knockX += Math.cos(ang) * force;
-      e.knockY += Math.sin(ang) * force;
-      e.hp = -999;
-      e._die();
+      e.knockX += Math.cos(ang) * falloff * 380;
+      e.knockY += Math.sin(ang) * falloff * 380;
+      e.hp -= maxDmg * falloff;
+      e.hurtFlash = 1;
+      if (e.hp <= 0) e._die();
     }
   }
   // Fire debris — darker palette, no additive glow.
@@ -116,16 +122,18 @@ export function detonateBomb(x, y) {
 export function detonateBananaBomb(x, y) {
   playSfx('explosion.banana-bomb');
   const radius = 420;
+  const maxDmg = LOOT_DEFS.bananaBombDamage ?? 300;
   for (const e of state.enemies) {
     if (e.dead) continue;
     const d = dist2(x, y, e.x, e.y);
     if (d < radius) {
+      const falloff = 1 - d / radius;
       const ang = Math.atan2(e.y - y, e.x - x);
-      const force = (1 - d / radius) * 500;
-      e.knockX += Math.cos(ang) * force;
-      e.knockY += Math.sin(ang) * force;
-      e.hp = -999;
-      e._die();
+      e.knockX += Math.cos(ang) * falloff * 500;
+      e.knockY += Math.sin(ang) * falloff * 500;
+      e.hp -= maxDmg * falloff;
+      e.hurtFlash = 1;
+      if (e.hp <= 0) e._die();
       e.stunTimer = Math.max(e.stunTimer || 0, 2.5);
     }
   }

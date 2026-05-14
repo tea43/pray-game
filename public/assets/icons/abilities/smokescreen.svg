@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Cloud main body -->
+  <circle cx="28" cy="34" r="12" stroke="#c8b890" stroke-width="2"/>
+  <circle cx="40" cy="36" r="10" stroke="#c8b890" stroke-width="2"/>
+  <circle cx="20" cy="38" r="8" stroke="#c8b890" stroke-width="2"/>
+  <circle cx="33" cy="26" r="9" stroke="#c8b890" stroke-width="2"/>
+  <!-- Cloud base line to hide bottom overlaps visually -->
+  <rect x="12" y="38" width="40" height="10" fill="#0c0702"/>
+  <line x1="12" y1="46" x2="52" y2="46" stroke="#c8b890" stroke-width="2"/>
+  <!-- Smoke wisps from bottom -->
+  <path d="M22 46 Q20 52 22 56" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M32 46 Q30 53 33 57" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M42 46 Q44 52 42 56" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+</svg>

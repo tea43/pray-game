@@ -19,7 +19,7 @@ export class InputSystem {
     // ── Mouse ────────────────────────────────────────────────────────────────
 
     scene.input.on('pointerdown', (ptr) => {
-      if (state.gameOver || state.isUpgradeScreen) return;
+      if (state.gameOver || state.allDeadPending || state.isUpgradeScreen) return;
       const { x, y } = ptr;
       state.mouse.x = x; state.mouse.y = y;
 
@@ -91,7 +91,7 @@ export class InputSystem {
 
     scene.input.on('pointerup', (ptr) => {
       if (ptr.rightButtonReleased()) return;
-      if (state.gameOver || state.mouse.clickedPortrait || state.isUpgradeScreen) {
+      if (state.gameOver || state.allDeadPending || state.mouse.clickedPortrait || state.isUpgradeScreen) {
         state.mouse.down = false; state.mouse.clickedPortrait = false; return;
       }
       if (!state.mouse.down) return;
@@ -137,7 +137,7 @@ export class InputSystem {
     const kb = scene.input.keyboard;
 
     kb.on('keydown', (e) => {
-      if (state.gameOver || state.isUpgradeScreen) return;
+      if (state.gameOver || state.allDeadPending || state.isUpgradeScreen) return;
       const k = e.key.toLowerCase();
 
       if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
@@ -150,7 +150,14 @@ export class InputSystem {
         state.timeSpeed = clamp(state.timeSpeed - 1, 1, 3);
         return;
       }
-      if (k === 's') { for (const u of state.selected) u.stop(); return; }
+      if (k === 'v') { for (const u of state.selected) u.stop(); return; }
+
+      if (k === 's') {
+        for (const u of state.units) {
+          if (u.type === 'dick' && !u.dead) u.activateSkill(1);
+        }
+        return;
+      }
 
       if (e.key === ' ') {
         e.preventDefault();
@@ -163,10 +170,27 @@ export class InputSystem {
         for (const u of state.units) u.selected = state.selected.includes(u);
         return;
       }
-      if (k === 'q' || k === 'w' || k === 'e') {
+
+      // Basic abilities: 1/2/3 (Eliott/Dick/Habib)
+      if (k === '1' || k === '2' || k === '3') {
         e.preventDefault();
-        for (const u of state.selected) {
-          if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+        for (const u of state.units) {
+          if (u.abilityKey === k && !u.dead) u.cast();
+        }
+      }
+
+      // Active skill slot 0: Q/W/E; slot 1: A/D (S handled above)
+      const ACTIVE_KEYS = {
+        'q': { type: 'eliott', slot: 0 },
+        'w': { type: 'dick',   slot: 0 },
+        'e': { type: 'habib',  slot: 0 },
+        'a': { type: 'eliott', slot: 1 },
+        'd': { type: 'habib',  slot: 1 },
+      };
+      if (ACTIVE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
+        const { type, slot } = ACTIVE_KEYS[k];
+        for (const u of state.units) {
+          if (u.type === type && !u.dead) u.activateSkill(slot);
         }
       }
     });
@@ -183,7 +207,7 @@ export class InputSystem {
   }
 
   _getPortraitUnit(x, y) {
-    const slotW = 150, gap = 12;
+    const slotW = 180, gap = 12;
     const slots = this.state.units;
     const totalW = slots.length * slotW + (slots.length - 1) * gap;
     const startX = (G.W - totalW) / 2;

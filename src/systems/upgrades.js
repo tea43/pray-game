@@ -1,9 +1,10 @@
 import { state } from '../state.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
+import { ABILITY_DEFS } from '../config/abilities.js';
 
 export const GameData = {
-  upgrades: { elliot: [], dick: [], habib: [] }
+  upgrades: { eliott: [], dick: [], habib: [] },
 };
 
 export async function loadUpgrades() {
@@ -14,11 +15,11 @@ export async function loadUpgrades() {
       return await res.json();
     };
     const [eRes, dRes, hRes] = await Promise.all([
-      fetchJson('assets/data/upgrades/elliot_upgrades.json').catch(() => []),
+      fetchJson('assets/data/upgrades/eliott_upgrades.json').catch(() => []),
       fetchJson('assets/data/upgrades/dick_upgrades.json').catch(() => []),
       fetchJson('assets/data/upgrades/habib_upgrades.json').catch(() => [])
     ]);
-    GameData.upgrades.elliot = eRes;
+    GameData.upgrades.eliott = eRes;
     GameData.upgrades.dick = dRes;
     GameData.upgrades.habib = hRes;
   } catch (e) {
@@ -30,7 +31,12 @@ export function applyWaveUpgrades() {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   for (const hero of state.units) {
     if (hero.dead) continue;
-    const upgrades = state.activeUpgrades[hero.type] || [];
+    // Collect passive upgrade defs from unified upgrade slots
+    const upgPool = GameData.upgrades[hero.type] || [];
+    const upgrades = (hero.upgradeSlots || [])
+      .filter(s => s?.kind === 'passive')
+      .map(s => upgPool.find(u => u.id === s.id))
+      .filter(Boolean);
     let speedMult = 1;
     let dmgMult = 1;
     let cdMult = 1;
@@ -45,6 +51,31 @@ export function applyWaveUpgrades() {
       else if (upg.effectType === 'ability_cd_mult') cdMult *= upg.effectValue;
       else if (upg.effectType === 'atk_rate_mult') rateMult *= upg.effectValue;
       else if (upg.effectType === 'chain_dmg_mult') chainMult *= upg.effectValue;
+      // Passive upgrade handlers
+      else if (upg.effectType === 'residual_haze') hero.residualHaze = true;
+      else if (upg.effectType === 'extended_formula') hero.extendedFormula = true;
+      else if (upg.effectType === 'quick_brew') cdMult *= 0.8;
+      else if (upg.effectType === 'smokescreen') hero.smokescreen = true;
+      else if (upg.effectType === 'backdoor_armor_fire') hero.backdoorArmorFire = true;
+      else if (upg.effectType === 'backdoor_armor_lightning') hero.backdoorArmorLightning = true;
+      else if (upg.effectType === 'backdoor_armor_spikes') hero.backdoorArmorSpikes = true;
+      else if (upg.effectType === 'dense_plating') hero.densePlating = (hero.densePlating || 0) + 0.10;
+      else if (upg.effectType === 'hp_max_bonus') {
+        const bonus = Math.round(upg.effectValue);
+        if (!hero._maxHpBonusApplied || hero._maxHpBonusApplied < bonus) {
+          const prev = hero._maxHpBonusApplied || 0;
+          hero.maxHp += bonus - prev;
+          hero.hp += bonus - prev;
+          hero._maxHpBonusApplied = bonus;
+        }
+      }
+    }
+
+    // Apply active-skill passive effects too
+    for (const slot of (hero.upgradeSlots || [])) {
+      if (!slot || slot.kind !== 'active') continue;
+      const def = ABILITY_DEFS[slot.id];
+      if (def?.passive) def.passive(hero);
     }
 
     const def = HERO_DEFS[hero.type];
@@ -57,7 +88,6 @@ export function applyWaveUpgrades() {
 }
 
 export function removeWaveUpgrades() {
-  state.activeUpgrades = { elliot: [], dick: [], habib: [] };
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
   for (const hero of state.units) {
     if (!hero) continue;
@@ -67,5 +97,29 @@ export function removeWaveUpgrades() {
     hero.upgradeDmgMult = 1;
     hero.upgradeRateMult = 1;
     hero.chainMult = 1;
+    // Clear per-wave passive flags
+    hero.residualHaze = false;
+    hero.extendedFormula = false;
+    hero.smokescreen = false;
+    hero.backdoorArmorFire = false;
+    hero.backdoorArmorLightning = false;
+    hero.backdoorArmorSpikes = false;
+    hero.densePlating = 0;
+    hero._maxHpBonusApplied = 0;
   }
+}
+
+// Tick active skill durability at wave end; expire dead ones.
+export function tickActiveSkillDurability() {
+  for (const hero of state.units) {
+    if (!hero) continue;
+    hero.tickSkillDurability();
+  }
+}
+
+// Returns how many active skill slots a hero has filled.
+export function activeSkillCount(heroType) {
+  const unit = state.units.find(u => u.type === heroType);
+  if (!unit) return 0;
+  return (unit.upgradeSlots || []).filter(s => s?.kind === 'active').length;
 }

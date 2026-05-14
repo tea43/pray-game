@@ -1,0 +1,40 @@
+{
+  "group_blink":            { "icon": "assets/icons/abilities/group_blink.svg",            "color": "#80c8ff" },
+  "boomerang":              { "icon": "assets/icons/abilities/boomerang.svg",              "color": "#ff6040" },
+  "backdoor_blockade":      { "icon": "assets/icons/abilities/backdoor_blockade.svg",      "color": "#c8a0ff" },
+
+  "stoned_green_pipe":      { "icon": "assets/icons/abilities/stoned_green_pipe.svg",      "color": "#40c840" },
+  "green_pipe":             { "icon": "assets/icons/abilities/green_pipe.svg",             "color": "#60c060" },
+  "blue_cubes_rage":        { "icon": "assets/icons/abilities/blue_cubes_rage.svg",        "color": "#4080ff" },
+  "blue_cubes_speed":       { "icon": "assets/icons/abilities/blue_cubes_speed.svg",       "color": "#6060ff" },
+  "white_powder_hit":       { "icon": "assets/icons/abilities/white_powder_hit.svg",       "color": "#e8e0ff" },
+  "white_powder_dominance": { "icon": "assets/icons/abilities/white_powder_dominance.svg", "color": "#c0a0ff" },
+
+  "chain_lightning":        { "icon": "assets/icons/abilities/chain_lightning.svg",        "color": "#a0e0ff" },
+  "flamethrower":           { "icon": "assets/icons/abilities/flamethrower.svg",           "color": "#ff6020" },
+  "acid_gun":               { "icon": "assets/icons/abilities/acid_gun.svg",               "color": "#60ff40" },
+
+  "inappropriate_stories":  { "icon": "assets/icons/abilities/inappropriate_stories.svg",  "color": "#ff8030" },
+  "scream":                 { "icon": "assets/icons/abilities/scream.svg",                 "color": "#ff4040" },
+  "mill_360":               { "icon": "assets/icons/abilities/mill_360.svg",               "color": "#ff8020" },
+  "vortex":                 { "icon": "assets/icons/abilities/vortex.svg",                 "color": "#ff6010" },
+  "smashing_time":          { "icon": "assets/icons/abilities/smashing_time.svg",          "color": "#ff3010" },
+
+  "residual_haze":           { "icon": "assets/icons/abilities/residual_haze.svg",           "color": "#80c8a0" },
+  "extended_formula":        { "icon": "assets/icons/abilities/extended_formula.svg",        "color": "#60d0a0" },
+  "quick_brew":              { "icon": "assets/icons/abilities/quick_brew.svg",              "color": "#a0e060" },
+  "smokescreen":             { "icon": "assets/icons/abilities/smokescreen.svg",             "color": "#a0a0c0" },
+  "iron_knuckles":           { "icon": "assets/icons/abilities/iron_knuckles.svg",           "color": "#c0b080" },
+  "thunderfoot":             { "icon": "assets/icons/abilities/thunderfoot.svg",             "color": "#ffd040" },
+  "hard_cap":                { "icon": "assets/icons/abilities/hard_cap.svg",                "color": "#a08060" },
+  "thick_skull":             { "icon": "assets/icons/abilities/thick_skull.svg",             "color": "#d0b0a0" },
+  "battle_rhythm":           { "icon": "assets/icons/abilities/battle_rhythm.svg",           "color": "#ff6060" },
+  "backdoor_armor_fire":     { "icon": "assets/icons/abilities/backdoor_armor_fire.svg",     "color": "#ff8040" },
+  "backdoor_armor_lightning":{ "icon": "assets/icons/abilities/backdoor_armor_lightning.svg","color": "#a0d0ff" },
+  "backdoor_armor_spikes":   { "icon": "assets/icons/abilities/backdoor_armor_spikes.svg",   "color": "#c0a060" },
+  "dense_plating":           { "icon": "assets/icons/abilities/dense_plating.svg",           "color": "#909090" },
+  "reinforced_frame":        { "icon": "assets/icons/abilities/reinforced_frame.svg",        "color": "#a0b0c0" },
+  "engineers_efficiency":    { "icon": "assets/icons/abilities/engineers_efficiency.svg",    "color": "#d0c060" },
+  "weighted_swing":          { "icon": "assets/icons/abilities/weighted_swing.svg",          "color": "#c06040" },
+  "blue_cubes_rage_passive": { "icon": "assets/icons/abilities/blue_cubes_rage.svg",         "color": "#4080ff" }
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Club/bat handle -->
+  <rect x="28" y="38" width="8" height="18" rx="3" stroke="#c8b890" stroke-width="2"/>
+  <!-- Club head / weight -->
+  <ellipse cx="32" cy="28" rx="14" ry="14" stroke="#c8b890" stroke-width="2"/>
+  <!-- Weight circles on club head -->
+  <circle cx="26" cy="24" r="4" stroke="#c06040" stroke-width="2"/>
+  <circle cx="38" cy="24" r="4" stroke="#c06040" stroke-width="2"/>
+  <circle cx="32" cy="34" r="4" stroke="#c06040" stroke-width="2"/>
+  <!-- Motion arc -->
+  <path d="M10 48 Q18 20 32 14" stroke="#c8b890" stroke-width="1.5" stroke-dasharray="3,3" stroke-linecap="round" opacity="0.6"/>
+</svg>

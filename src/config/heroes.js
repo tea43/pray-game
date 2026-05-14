@@ -1,13 +1,15 @@
 export const HERO_DEFS = {
-  elliot: {
-    name: 'Elliot',
-    abilityKey: 'Q',
-    abilityName: 'BLINK',
-    abilityMaxCd: 6,
+  eliott: {
+    name: 'Eliott',
+    abilityKey: '1',
+    abilityName: 'GROUP BLINK',
+    abilityId: 'group_blink',
+    abilityDescription: 'Teleports Eliott up to 240px toward cursor. Allies within 120px are pulled to destination.',
+    abilityMaxCd: 9,
     abilityColor: '#80c8ff',
-    startingWeapon: 'long_club',
+    startingWeapon: 'short_hockey_club',
     maxHp: 100,
-    fallbackRenderer: 'elliot',
+    fallbackRenderer: 'eliott',
     palette: {
       shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
       shorts: '#8a6840', skin: '#e8b888',
@@ -16,11 +18,13 @@ export const HERO_DEFS = {
   },
   dick: {
     name: 'Dick',
-    abilityKey: 'W',
-    abilityName: 'RAGE',
-    abilityMaxCd: 12,
+    abilityKey: '2',
+    abilityName: 'BOOMERANG',
+    abilityId: 'boomerang',
+    abilityDescription: 'Throws hockey club in an oval arc at the heaviest enemy (300px). 40 dmg outbound, 25 dmg return. Dick is unarmed during flight.',
+    abilityMaxCd: 10,
     abilityColor: '#ff6040',
-    startingWeapon: 'dual_clubs',
+    startingWeapon: 'hockey_club',
     maxHp: 120,
     fallbackRenderer: 'dick',
     palette: {
@@ -30,11 +34,13 @@ export const HERO_DEFS = {
   },
   habib: {
     name: 'Habib',
-    abilityKey: 'E',
-    abilityName: 'CHAIN LTG',
-    abilityMaxCd: 8,
+    abilityKey: '3',
+    abilityName: 'BLOCKADE',
+    abilityId: 'backdoor_blockade',
+    abilityDescription: 'Active Survival Shield (A.S.S) exoshell enablement. All heroes within 150px take 50% reduced damage for 6s.',
+    abilityMaxCd: 14,
     abilityColor: '#c8a0ff',
-    startingWeapon: 'thrown_club',
+    startingWeapon: 'hockey_club',
     maxHp: 100,
     fallbackRenderer: 'habib',
     palette: {

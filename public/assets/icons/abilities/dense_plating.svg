@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Three overlapping horizontal plates -->
+  <rect x="10" y="14" width="44" height="10" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <rect x="10" y="27" width="44" height="10" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <rect x="10" y="40" width="44" height="10" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <!-- Plate detail lines (rivets/bolts) -->
+  <circle cx="18" cy="19" r="2" stroke="#c8b890" stroke-width="1.5"/>
+  <circle cx="46" cy="19" r="2" stroke="#c8b890" stroke-width="1.5"/>
+  <circle cx="18" cy="32" r="2" stroke="#c8b890" stroke-width="1.5"/>
+  <circle cx="46" cy="32" r="2" stroke="#c8b890" stroke-width="1.5"/>
+  <circle cx="18" cy="45" r="2" stroke="#c8b890" stroke-width="1.5"/>
+  <circle cx="46" cy="45" r="2" stroke="#c8b890" stroke-width="1.5"/>
+</svg>

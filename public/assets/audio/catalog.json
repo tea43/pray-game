@@ -37,8 +37,8 @@
       "volume": 0.8,
       "pitchJitter": 0.04
     },
-    "character.death.elliot": {
-      "dir": "characters/death/elliot",
+    "character.death.eliott": {
+      "dir": "characters/death/eliott",
       "fallback": "character.death.default",
       "volume": 0.85,
       "pitchJitter": 0.03
@@ -93,6 +93,13 @@
       "fallback": "weapon.attack.default",
       "volume": 0.55,
       "pitchJitter": 0.06
+    },
+    "weapon.hockeyClub.attack": {
+      "dir": "weapons/attack/hockey-club",
+      "fallback": "weapon.dualClubs.attack",
+      "volume": 0.55,
+      "pitchJitter": 0.07,
+      "cooldown": 0.04
     },
     "weapon.dualClubs.attack": {
       "dir": "weapons/attack/dual-clubs",
@@ -175,6 +182,114 @@
       "volume": 0.75,
       "pitchJitter": 0.03
     },
+    "ability.smokescreen": {
+      "dir": "characters/abilities/smokescreen",
+      "fallback": "synthetic.ability",
+      "volume": 0.65,
+      "pitchJitter": 0.05
+    },
+    "ability.boomerang": {
+      "dir": "characters/abilities/boomerang",
+      "fallback": "synthetic.ability",
+      "volume": 0.70,
+      "pitchJitter": 0.06
+    },
+    "ability.backdoor_blockade": {
+      "dir": "characters/abilities/backdoor_blockade",
+      "fallback": "ability.lightning",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "ability.stoned_green_pipe": {
+      "dir": "characters/abilities/stoned_green_pipe",
+      "fallback": "synthetic.ability",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "ability.green_pipe": {
+      "dir": "characters/abilities/green_pipe",
+      "fallback": "synthetic.ability",
+      "volume": 0.65,
+      "pitchJitter": 0.05
+    },
+    "ability.blue_cubes_speed": {
+      "dir": "characters/abilities/blue_cubes_speed",
+      "fallback": "synthetic.ability",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "ability.white_powder_hit": {
+      "dir": "characters/abilities/white_powder_hit",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "ability.white_powder_dominance": {
+      "dir": "characters/abilities/white_powder_dominance",
+      "fallback": "synthetic.ability",
+      "volume": 0.80,
+      "pitchJitter": 0.04
+    },
+    "ability.powder_teleport": {
+      "dir": "characters/abilities/powder_teleport",
+      "fallback": "ability.blink",
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
+    "ability.powder_hit": {
+      "dir": "characters/abilities/powder_hit",
+      "fallback": "synthetic.hit",
+      "volume": 0.70,
+      "pitchJitter": 0.07
+    },
+    "ability.powder_return": {
+      "dir": "characters/abilities/powder_return",
+      "fallback": "ability.powder_teleport",
+      "volume": 0.60,
+      "pitchJitter": 0.06
+    },
+    "ability.flamethrower": {
+      "dir": "characters/abilities/flamethrower",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "ability.acid_gun": {
+      "dir": "characters/abilities/acid_gun",
+      "fallback": "synthetic.ability",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "ability.inappropriate_stories": {
+      "dir": "characters/abilities/inappropriate_stories",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.04
+    },
+    "ability.scream": {
+      "dir": "characters/abilities/scream",
+      "fallback": "synthetic.ability",
+      "volume": 0.85,
+      "pitchJitter": 0.03
+    },
+    "ability.mill_360": {
+      "dir": "characters/abilities/mill_360",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "ability.vortex": {
+      "dir": "characters/abilities/vortex",
+      "fallback": "synthetic.ability",
+      "volume": 0.75,
+      "pitchJitter": 0.05
+    },
+    "ability.smashing_time": {
+      "dir": "characters/abilities/smashing_time",
+      "fallback": "synthetic.ability",
+      "volume": 0.85,
+      "pitchJitter": 0.04
+    },
     "loot.medkit": {
       "dir": "loot/medkit",
       "fallback": "synthetic.loot",
@@ -188,30 +303,30 @@
       "pitchJitter": 0.05
     },
     "loot.weapon": {
-      "dir": "loot/weapon/default",
+      "dir": "weapons/pickup/default",
       "fallback": "synthetic.loot",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
     "loot.weapon.spray-gun": {
-      "dir": "loot/weapon/spray-gun",
+      "dir": "weapons/pickup/spray-gun",
       "fallback": "loot.weapon",
       "volume": 0.75,
       "pitchJitter": 0.05
     },
     "loot.weapon.samurai-sword": {
-      "dir": "loot/weapon/samurai-sword",
+      "dir": "weapons/pickup/samurai-sword",
       "fallback": "loot.weapon",
       "volume": 0.75,
       "pitchJitter": 0.04
     },
     "explosion.bomb": {
-      "dir": "explosions/bomb",
+      "dir": "loot/explosions/bomb",
       "volume": 3.0,
       "pitchJitter": 0.06
     },
     "explosion.banana-bomb": {
-      "dir": "explosions/banana-bomb",
+      "dir": "loot/explosions/banana-bomb",
       "fallback": "explosion.bomb",
       "volume": 1.00,
       "pitchJitter": 0.04
