@@ -10,7 +10,7 @@ import { spawnEnemy, spawnBoss } from './systems/spawning.js';
 import { applyLoot } from './systems/loot.js';
 import { initInput, setNewGameFn } from './systems/input.js';
 import { initMenu, setMenuCallbacks, showMainMenu } from './systems/menu.js';
-import { resetScore, addDeathPenalty, addWaveClearBonus, saveHighScore } from './systems/score.js';
+import { resetScore, addDeathPenalty, addWaveClearBonus, applyDeathPenalties, saveHighScore } from './systems/score.js';
 import { drawBackground } from './render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from './render/effects.js';
 import { drawAbilityPanel, updateDust, updateHUD } from './render/hud.js';
@@ -75,6 +75,8 @@ function newGame() {
   state.spaceHoldDuration = 0;
   state.survivedSeconds = 0;
   state.menuPhase = 'playing';
+  state.heroesDied = 0;
+  state.smokeZones = [];
   resetScore();
   playMusic('combat');
 
@@ -82,7 +84,7 @@ function newGame() {
   document.getElementById('gameOverText').classList.remove('victory');
 
   const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
-  state.units.push(new Unit(cx - 44, cy + 8, 'elliot'));
+  state.units.push(new Unit(cx - 44, cy + 8, 'eliott'));
   state.units.push(new Unit(cx, cy - 10, 'dick'));
   state.units.push(new Unit(cx + 44, cy + 8, 'habib'));
 
@@ -241,6 +243,25 @@ function drawHelicopter(ctx) {
   ctx.restore();
 }
 
+// ==================== HERO CORPSE ====================
+function _drawHeroCorpse(ctx, u) {
+  const x = u.deathX, y = u.deathY;
+  ctx.save();
+  // Flat body silhouette
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  ctx.ellipse(x, y + u.r * 0.3, u.r * 1.4, u.r * 0.55, u.facing, 0, Math.PI * 2);
+  ctx.fillStyle = '#2a1a0a';
+  ctx.fill();
+  // Small blood pool
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.ellipse(x + u.r * 0.4, y + u.r * 0.5, u.r * 1.0, u.r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#5a0a08';
+  ctx.fill();
+  ctx.restore();
+}
+
 // ==================== GAME LOOP ====================
 let lastTime = performance.now();
 
@@ -370,8 +391,12 @@ function frame(now) {
         if (u.dead || sw.hit.has(u)) continue;
         const d = dist2(sw.x, sw.y, u.x, u.y);
         if (d > prevR - 8 && d < sw.r + 8) {
-          u.hp -= sw.dmg;
-          u.hurtFlash = 1;
+          if (u.applyDamage) {
+            u.applyDamage(sw.dmg, null);
+          } else {
+            u.hp -= sw.dmg;
+            u.hurtFlash = 1;
+          }
           sw.hit.add(u);
           const ang = Math.atan2(u.y - sw.y, u.x - sw.x);
           for (let i = 0; i < 10; i++) {
@@ -390,6 +415,42 @@ function frame(now) {
     }
     state.shockwaves = state.shockwaves.filter(sw => sw.life > 0);
 
+    // Acid shots
+    if (state.acidShots && state.acidShots.length) {
+      for (const a of state.acidShots) {
+        if (a.dead) continue;
+        a.x += a.vx * gameDt;
+        a.y += a.vy * gameDt;
+        a.life -= gameDt;
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          if (dist2(a.x, a.y, e.x, e.y) < e.r + 14) {
+            for (const e2 of state.enemies) {
+              if (e2.dead) continue;
+              if (dist2(a.x, a.y, e2.x, e2.y) < 60 + e2.r) {
+                e2.hp -= 35;
+                e2.hurtFlash = 1;
+                if (!e2.stunTimer || e2.stunTimer < 3) e2.stunTimer = 3;
+              }
+            }
+            for (let i = 0; i < 14; i++) {
+              state.particles.push({ x: a.x + rand(-8,8), y: a.y + rand(-8,8), vx: rand(-80,80), vy: rand(-80,20), life: rand(0.3,0.7), maxLife: 0.7, color: '#60c040', size: rand(2,4), realtime: true });
+            }
+            a.dead = true;
+            break;
+          }
+        }
+        if (a.life <= 0) a.dead = true;
+      }
+      state.acidShots = state.acidShots.filter(a => !a.dead);
+    }
+
+    // Tick smoke zones from Eliott's smokescreen passive
+    if (state.smokeZones.length) {
+      for (const sz of state.smokeZones) sz.life -= gameDt;
+      state.smokeZones = state.smokeZones.filter(sz => sz.life > 0);
+    }
+
     for (const e of state.enemies) {
       if (e.dead && e.deathTimer < 0.1 && e.deathTimer + gameDt >= 0.1) {
         state.bloodStains.push({ x: e.x, y: e.y + 2, r: e.r * 1.4, rot: rand(0, Math.PI), a: 0.55 });
@@ -397,9 +458,14 @@ function frame(now) {
     }
     state.enemies = state.enemies.filter(e => !(e.dead && e.deathTimer > 3));
 
+    let heroJustDied = false;
     for (const u of state.units) {
       if (u.hp <= 0 && !u.dead) {
         u.dead = true;
+        u.deathX = u.x;
+        u.deathY = u.y;
+        state.heroesDied++;
+        heroJustDied = true;
         playSfx(`character.death.${u.type}`, { fallback: 'character.death.default', synthetic: 'death' });
         addDeathPenalty();
         const idx = state.selected.indexOf(u);
@@ -416,6 +482,20 @@ function frame(now) {
         }
         if (!state.settings.noShake) state.shake = Math.max(state.shake, 7);
       }
+    }
+
+    // Rear Admiral: any hero death ends the run immediately
+    if (heroJustDied && state.difficulty === 'rear-admiral' && !state.gameOver) {
+      state.gameOver = true;
+      playMusic('menu');
+      applyDeathPenalties();
+      saveHighScore();
+      const total = Math.floor(state.survivedSeconds);
+      document.getElementById('gameOverText').textContent = 'HERO FALLEN';
+      document.getElementById('gameOverText').classList.remove('victory');
+      document.getElementById('finalStats').textContent =
+        `SURVIVED ${total}s · KILLS ${state.kills} · SCORE ${state.score} · WAVE ${state.wave}`;
+      document.getElementById('overlay').classList.add('show');
     }
 
     if (state.bloodStains.length > 200) {
@@ -546,6 +626,7 @@ function frame(now) {
           state.gameOver = true;
           state.victory = true;
           playMusic('menu');
+          applyDeathPenalties();
           saveHighScore();
           const total = Math.floor(state.survivedSeconds);
           document.getElementById('gameOverText').textContent = 'YOU SURVIVED';
@@ -557,9 +638,10 @@ function frame(now) {
       }
     }
 
-    if (state.units.every(u => u.dead)) {
+    if (state.units.every(u => u.dead) && !state.gameOver) {
       state.gameOver = true;
       playMusic('menu');
+      applyDeathPenalties();
       saveHighScore();
       const total = Math.floor(state.survivedSeconds);
       document.getElementById('finalStats').textContent =
@@ -614,10 +696,25 @@ function frame(now) {
   drawables.sort((a, b) => a.y - b.y);
 
   for (const e of state.enemies) if (e.dead) e.draw(ctx);
+  for (const u of state.units) if (u.dead && u.deathX !== undefined) _drawHeroCorpse(ctx, u);
   for (const l of state.loot) l.draw(ctx);
   drawHelicopter(ctx);
   for (const ent of drawables) ent.draw(ctx);
   for (const pr of state.projectiles) pr.draw(ctx);
+
+  // Draw acid shots
+  if (state.acidShots) {
+    for (const a of state.acidShots) {
+      if (a.dead) continue;
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#50b030';
+      ctx.fill();
+      ctx.strokeStyle = '#80e050';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
 
   drawBolts();
   drawExplosions();

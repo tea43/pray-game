@@ -1,0 +1,84 @@
+[
+  {
+    "id": "stoned_green_pipe",
+    "name": "Stoned Green Pipe",
+    "rarity": "Epic",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Eliott becomes a green stone: immortal for 4s, all enemies in 350px are magnetically drawn to him."
+  },
+  {
+    "id": "green_pipe",
+    "name": "Green Pipe",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "All heroes in 150px take 40% reduced damage for 5s."
+  },
+  {
+    "id": "blue_cubes_rage",
+    "name": "Blue Cubes of Rage",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Heroes in 150px enter rage for 4s: +50% damage, +30% attack speed."
+  },
+  {
+    "id": "blue_cubes_speed",
+    "name": "Blue Cubes of Speed",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Heroes in 150px gain speed burst for 5s and deal contact damage (20/pass) while running through enemies."
+  },
+  {
+    "id": "white_powder_hit",
+    "name": "White Powder of Hit",
+    "rarity": "Epic",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Each hero in 150px teleports behind their nearest enemy, strikes once (1.5× dmg), and blinks back. Immortal during sequence."
+  },
+  {
+    "id": "white_powder_dominance",
+    "name": "White Powder of Dominance",
+    "rarity": "Legendary",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Heroes in 150px sequentially blink to every enemy in 200px, strike from behind, and return. Immortal for ~2s."
+  },
+  {
+    "id": "residual_haze",
+    "name": "Residual Haze",
+    "rarity": "Common",
+    "effectType": "residual_haze",
+    "description": "Enemies near Eliott's blink landing point are slowed 40% for 2s."
+  },
+  {
+    "id": "extended_formula",
+    "name": "Extended Formula",
+    "rarity": "Rare",
+    "effectType": "extended_formula",
+    "description": "All alchemy ability radii increased by 30%."
+  },
+  {
+    "id": "quick_brew",
+    "name": "Quick Brew",
+    "rarity": "Common",
+    "effectType": "quick_brew",
+    "description": "All of Eliott's active ability cooldowns reduced by 20%."
+  },
+  {
+    "id": "smokescreen",
+    "name": "Smokescreen",
+    "rarity": "Rare",
+    "effectType": "smokescreen",
+    "description": "Eliott leaves a smoke cloud at his blink origin. Enemies inside attack the cloud for 3s instead of heroes."
+  }
+]

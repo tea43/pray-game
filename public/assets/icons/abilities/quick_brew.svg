@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Flask body -->
+  <path d="M24 8 L24 28 L10 50 Q8 56 14 58 L50 58 Q56 56 54 50 L40 28 L40 8 Z" stroke="#c8b890" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Flask neck -->
+  <rect x="24" y="6" width="16" height="4" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <!-- Lightning bolt inside -->
+  <path d="M36 34 L28 44 L33 44 L28 56 L40 42 L34 42 Z" stroke="#a0e060" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Speed lines on right -->
+  <line x1="44" y1="20" x2="52" y2="20" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="46" y1="25" x2="54" y2="25" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="44" y1="30" x2="52" y2="30" stroke="#c8b890" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

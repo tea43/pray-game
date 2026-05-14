@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Gun barrel -->
+  <rect x="10" y="28" width="36" height="8" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <!-- Gun grip -->
+  <rect x="22" y="36" width="8" height="12" rx="2" stroke="#c8b890" stroke-width="2"/>
+  <!-- Muzzle extension -->
+  <rect x="46" y="30" width="8" height="4" rx="1" stroke="#c8b890" stroke-width="2"/>
+  <!-- Acid drops dripping from barrel -->
+  <ellipse cx="30" cy="44" rx="2" ry="3" stroke="#40ff40" stroke-width="1.5"/>
+  <ellipse cx="38" cy="47" rx="1.5" ry="2.5" stroke="#40ff40" stroke-width="1.5"/>
+  <ellipse cx="22" cy="46" rx="1.5" ry="2" stroke="#40ff40" stroke-width="1.5"/>
+  <!-- Drop trails -->
+  <line x1="30" y1="36" x2="30" y2="41" stroke="#40ff40" stroke-width="1" stroke-dasharray="1,2"/>
+  <line x1="38" y1="36" x2="38" y2="44" stroke="#40ff40" stroke-width="1" stroke-dasharray="1,2"/>
+</svg>

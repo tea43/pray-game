@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- ECG heartbeat line -->
+  <polyline points="4,32 14,32 18,20 22,44 26,26 30,38 36,12 40,52 44,32 60,32" stroke="#ff6060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Heart shape (small, at peak) -->
+  <path d="M30 18 Q30 14 34 14 Q38 14 38 18 Q38 22 34 26 Q30 22 30 18 Z" stroke="#ff6060" stroke-width="1.5"/>
+</svg>
