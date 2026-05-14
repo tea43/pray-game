@@ -9,11 +9,12 @@ import { spawnEnemy, spawnBoss, spawnAt } from '../../systems/spawning.js';
 import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2 } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
-import { playMusic } from '../../systems/audio.js';
+import { playMusic, playSfx } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
-import { removeWaveUpgrades, applyWaveUpgrades } from '../../systems/upgrades.js';
+import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
+import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -26,6 +27,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    window.__prayInGame = true;
     this._syncG();
 
     // ── Canvas 2D texture bridge ───────────────────────────────────────────────
@@ -89,18 +91,18 @@ export class GameScene extends Phaser.Scene {
     const diff = DIFFICULTY_DEFS[this._difficulty] || DIFFICULTY_DEFS['brood-hunter'];
 
     Object.assign(state, {
-      units: [], enemies: [], particles: [], bolts: [], projectiles: [],
+      units: [], enemies: [], particles: [], bolts: [], projectiles: [], acidShots: [],
       loot: [], explosions: [], shockwaves: [], bloodStains: [], floatingTexts: [],
       hitStop: 0, flashAlpha: 0, selected: [], moveMarkers: [],
       time: 0, kills: 0, wave: 1, waveTimer: 0, spawnTimer: 1.5,
       spawnInterval: WAVE_DEFS.spawnIntervalStart / diff.enemy.spawnMult,
-      gameOver: false, victory: false, allWavesCleared: false,
+      gameOver: false, allDeadPending: false, victory: false, allWavesCleared: false,
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
-      survivedSeconds: 0, menuPhase: 'playing',
-      isUpgradeScreen: false, activeUpgrades: { elliot: [], dick: [], habib: [] },
-      pendingUpgrades: { elliot: null, dick: null, habib: null },
-      upgradeSpinCredits: 0, selectedUpgradeHistory: { elliot: [], dick: [], habib: [] },
+      survivedSeconds: 0, menuPhase: 'playing', score: 0, heroesDied: 0,
+      isUpgradeScreen: false, _pendingWaveUpgrade: false,
+      pendingUpgrades: { eliott: null, dick: null, habib: null },
+      upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
     });
 
     if (diff.devWaves?.length > 0) {
@@ -116,7 +118,7 @@ export class GameScene extends Phaser.Scene {
     clearBackgroundCache();
 
     const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
-    state.units.push(new Unit(cx - 44, cy + 8,  'elliot'));
+    state.units.push(new Unit(cx - 44, cy + 8,  'eliott'));
     state.units.push(new Unit(cx,       cy - 10, 'dick'));
     state.units.push(new Unit(cx + 44,  cy + 8,  'habib'));
 
@@ -158,11 +160,16 @@ export class GameScene extends Phaser.Scene {
     if (state.spaceHeld) state.spaceHoldDuration += realDt;
     const anyMoving     = state.units.some(u => !u.dead && !u.boarded && u.moving);
     const heliDeparting = state.helicopter?.flightState === 'departing';
+    const anyAbilityActive = state.units.some(u => !u.dead && (
+      (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
+      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0
+    ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0
+                     : state.allDeadPending  ? 1
                      : spaceHoldDriving      ? state.timeSpeed
                      : state.manualPause || state.isUpgradeScreen ? 0
-                     : (anyMoving || heliDeparting) ? state.timeSpeed
+                     : (anyMoving || heliDeparting || anyAbilityActive) ? state.timeSpeed
                      : 0;
     state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
     if (state.timeFlow < 0.001) state.timeFlow = 0;
@@ -230,6 +237,35 @@ export class GameScene extends Phaser.Scene {
       for (const pr of state.projectiles) pr.update(gameDt);
       state.projectiles = state.projectiles.filter(pr => !pr.dead);
 
+      // Update acid shots
+      if (state.acidShots?.length) {
+        for (const shot of state.acidShots) {
+          if (shot.dead) continue;
+          shot.x += shot.vx * gameDt;
+          shot.y += shot.vy * gameDt;
+          shot.life -= gameDt;
+          if (shot.life <= 0 || shot.x < 0 || shot.x > G.W || shot.y < 0 || shot.y > G.PLAY_BOTTOM) {
+            shot.dead = true; continue;
+          }
+          for (const e of state.enemies) {
+            if (e.dead) continue;
+            if (dist2(shot.x, shot.y, e.x, e.y) < e.r + 6) {
+              const dmg = Math.round(15 * (shot.owner?.upgradeDmgMult || 1));
+              e.hp -= dmg;
+              e.hurtFlash = 0.4;
+              e.acidDot = Math.max(e.acidDot || 0, 3);
+              for (let i = 0; i < 10; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const v = 40 + Math.random() * 80;
+                state.particles.push({ x: shot.x, y: shot.y, vx: Math.cos(a)*v, vy: Math.sin(a)*v-20, life: 0.2+Math.random()*0.4, maxLife:0.5, color: i%2?'#40ff40':'#a0ff80', size: 2+Math.random()*3, realtime: true });
+              }
+              shot.dead = true; break;
+            }
+          }
+        }
+        state.acidShots = state.acidShots.filter(s => !s.dead);
+      }
+
       // Loot pickup
       for (const l of state.loot) {
         if (l.picked) continue;
@@ -279,8 +315,11 @@ export class GameScene extends Phaser.Scene {
       state.enemies = state.enemies.filter(e => !(e.dead && e.deathTimer > 3));
 
       for (const u of state.units) {
-        if (u.hp <= 0 && !u.dead) {
+        if (u.hp <= 0 && !u.dead && u.immortalTimer <= 0) {
+          playSfx('character.death.' + u.type);
           u.dead = true;
+          u.deathX = u.x; u.deathY = u.y;
+          state.heroesDied = (state.heroesDied || 0) + 1;
           const idx = state.selected.indexOf(u);
           if (idx >= 0) state.selected.splice(idx, 1);
           u.selected = false;
@@ -301,6 +340,14 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _anyAbilityInProgress() {
+    return state.units.some(u => !u.dead && (
+      (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
+      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 ||
+      u.millTimer > 0 || u.vortexTimer > 0 || u.boomerang !== null
+    ));
+  }
+
   _updateWaves(gameDt) {
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
 
@@ -318,9 +365,15 @@ export class GameScene extends Phaser.Scene {
     if (!state.allWavesCleared) state.waveTimer += gameDt;
     if (!state.allWavesCleared && state.waveTimer > WAVE_DEFS.duration) {
       state.waveTimer = 0;
+      state._pendingWaveUpgrade = true;
+    }
+
+    if (state._pendingWaveUpgrade && !state.allWavesCleared && !this._anyAbilityInProgress()) {
+      state._pendingWaveUpgrade = false;
       if (state.wave < WAVE_DEFS.maxWave) {
         state.isUpgradeScreen = true;
         removeWaveUpgrades();
+        tickActiveSkillDurability();
         this.scene.pause();
         this.scene.launch('UpgradeScene');
       } else {
@@ -449,6 +502,24 @@ export class GameScene extends Phaser.Scene {
     this._drawHelicopter(ctx);
     for (const ent of drawables) ent.draw(ctx);
     for (const pr of state.projectiles) pr.draw(ctx);
+
+    // Render acid shots
+    if (state.acidShots?.length) {
+      for (const shot of state.acidShots) {
+        if (shot.dead) continue;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(shot.x, shot.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(80, 255, 80, 0.85)';
+        ctx.shadowColor = '#40ff40';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.strokeStyle = '#c0ffc0';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     drawBolts();
     drawExplosions();
@@ -737,16 +808,26 @@ export class GameScene extends Phaser.Scene {
   // ── End conditions ───────────────────────────────────────────────────────────
 
   _checkEndConditions() {
-    if (!state.gameOver && state.units.every(u => u.dead)) {
-      state.gameOver = true;
-      this.time.delayedCall(800, () => {
+    if (!state.gameOver && !state.allDeadPending && state.units.every(u => u.dead)) {
+      state.allDeadPending = true;
+      this.time.delayedCall(2000, () => {
+        if (!state.allDeadPending) return;
+        applyDeathPenalties();
+        saveHighScore();
+        state.gameOver = true;
+        state.allDeadPending = false;
+        window.__prayInGame = false;
         this.scene.stop('HUDScene');
-        this.scene.start('GameOverScene', { state });
+        this.scene.pause('GameScene');
+        this.scene.launch('GameOverScene', { state });
       });
     }
     if (state.victory && !this._victoryTriggered) {
       this._victoryTriggered = true;
+      applyDeathPenalties();
+      saveHighScore();
       this.time.delayedCall(400, () => {
+        window.__prayInGame = false;
         this.scene.stop('HUDScene');
         this.scene.start('VictoryScene', { state });
       });

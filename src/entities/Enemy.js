@@ -22,6 +22,7 @@ export class Enemy {
     this.deathTimer = 0;
     this.hurtFlash = 0;
     this.stunTimer = 0;
+    this.acidDot = 0;
     this.kbResist = 1;
 
     this.blinkTimer = rand(2.5, 4);
@@ -46,6 +47,7 @@ export class Enemy {
     this.hair = def.hair; this.bloodColor = def.bloodColor;
     this.kbResist = def.kbResist || this.kbResist;
     this.name = def.name;
+    this.turnSpeed = def.turnSpeed || 5;
 
     this.bigbossMutantTorso = false; // config flag as requested
     this._anim = { name: 'walk', frame: 0, timer: 0 };
@@ -174,17 +176,61 @@ export class Enemy {
       }
     }
 
+    // Fire DoT
+    if (this.fireDot > 0) {
+      this.fireDot = Math.max(0, this.fireDot - dt);
+      this.hp -= 6 * dt;
+      if (Math.random() < dt * 8) {
+        state.particles.push({ x: this.x + rand(-4, 4), y: this.y + rand(-6, 0), vx: rand(-20, 20), vy: rand(-50, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: rand(0, 1) > 0.5 ? '#ff6020' : '#ffa040', size: rand(1.5, 3), realtime: true });
+      }
+    }
+
+    // Acid DoT
+    if (this.acidDot > 0) {
+      this.acidDot = Math.max(0, this.acidDot - dt);
+      this.hp -= 5 * dt;
+      if (Math.random() < dt * 6) {
+        state.particles.push({ x: this.x + rand(-4,4), y: this.y+rand(-4,2), vx: rand(-15,15), vy: rand(-30,-5), life: rand(0.2,0.5), maxLife:0.5, color: rand(0,1)>0.5?'#40ff40':'#80ff80', size: rand(1.5,3), realtime: true });
+      }
+    }
+
+    // Target selection: prefer stoned hero > non-smoked nearest > smoked nearest
     let target = null, nd = Infinity;
+    let stonedTarget = null;
     for (const u of state.units) {
       if (u.dead) continue;
-      const d = dist2(this.x, this.y, u.x, u.y);
-      if (d < nd) { nd = d; target = u; }
+      if (u.stonedTimer > 0) { stonedTarget = u; break; }
+    }
+    if (stonedTarget) {
+      target = stonedTarget;
+    } else {
+      // Prefer heroes not inside a smoke zone
+      for (const u of state.units) {
+        if (u.dead) continue;
+        if (_isSmoked(u)) continue;
+        const d = dist2(this.x, this.y, u.x, u.y);
+        if (d < nd) { nd = d; target = u; }
+      }
+      // Fallback: all heroes smoked — pick nearest anyway
+      if (!target) {
+        nd = Infinity;
+        for (const u of state.units) {
+          if (u.dead) continue;
+          const d = dist2(this.x, this.y, u.x, u.y);
+          if (d < nd) { nd = d; target = u; }
+        }
+      }
     }
 
     if (target) {
       const dx = target.x - this.x, dy = target.y - this.y;
       const d = Math.hypot(dx, dy);
-      this.facing = Math.atan2(dy, dx);
+      // Gradual turn — worms cannot spin instantly
+      const targetFacing = Math.atan2(dy, dx);
+      let dFacing = targetFacing - this.facing;
+      while (dFacing >  Math.PI) dFacing -= Math.PI * 2;
+      while (dFacing < -Math.PI) dFacing += Math.PI * 2;
+      this.facing += Math.sign(dFacing) * Math.min(Math.abs(dFacing), this.turnSpeed * dt);
       if (d > this.r + target.r - 2) {
         this.x += (dx / d) * this.speed * dt;
         this.y += (dy / d) * this.speed * dt;
@@ -193,19 +239,23 @@ export class Enemy {
           playSfx('boss.walk.default', { cooldownKey: `boss.walk.${this.kind}` });
         }
       } else if (this.dmgCd <= 0) {
-        target.hp -= this.dmg;
-        target.hurtFlash = 1;
-        this.dmgCd = 0.75;
-        playSfx('alien.attack.default', { synthetic: 'hit' });
-        playSfx('character.damaged.default', { synthetic: 'hit' });
-        if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
-        for (let i = 0; i < 6; i++) {
-          state.particles.push({
-            x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
-            vx: rand(-60, 60), vy: rand(-80, -10),
-            life: 0.5, maxLife: 0.5,
-            color: '#a83a2a', size: rand(1, 2), realtime: true,
-          });
+        const actualDmg = target.applyDamage ? target.applyDamage(this.dmg, this) : this.dmg;
+        if (actualDmg > 0) {
+          if (!target.applyDamage) { target.hp -= actualDmg; target.hurtFlash = 1; }
+          this.dmgCd = 0.75;
+          playSfx('alien.attack.default', { synthetic: 'hit' });
+          playSfx('character.damaged.default', { synthetic: 'hit' });
+          if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
+          for (let i = 0; i < 6; i++) {
+            state.particles.push({
+              x: target.x + rand(-3, 3), y: target.y + rand(-3, 3),
+              vx: rand(-60, 60), vy: rand(-80, -10),
+              life: 0.5, maxLife: 0.5,
+              color: '#a83a2a', size: rand(1, 2), realtime: true,
+            });
+          }
+        } else {
+          this.dmgCd = 0.75; // still apply cooldown even if blocked
         }
       }
     }
@@ -320,7 +370,7 @@ export class Enemy {
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
       state.loot.push(new Loot(clamp(this.x + 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), 'banana_bomb'));
-      const bbWeapons = ['spray_gun', 'samurai_sword'];
+      const bbWeapons = ['shotgun', 'samurai_sword'];
       const bbPick = bbWeapons[Math.floor(Math.random() * bbWeapons.length)];
       state.loot.push(new Loot(clamp(this.x - 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), bbPick));
       return;
@@ -333,7 +383,7 @@ export class Enemy {
         const ly = clamp(this.y + Math.sin(ang) * 18, 12, G.PLAY_BOTTOM - 12);
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
-      const mbWeapons = ['spray_gun', 'samurai_sword'];
+      const mbWeapons = ['shotgun', 'samurai_sword'];
       const mbPick = mbWeapons[Math.floor(Math.random() * mbWeapons.length)];
       const mbAng = Math.PI;
       state.loot.push(new Loot(
@@ -747,4 +797,10 @@ export class Enemy {
       }
     }
   }
+}
+
+function _isSmoked(unit) {
+  const zones = state.smokeZones;
+  if (!zones || zones.length === 0) return false;
+  return zones.some(sz => dist2(unit.x, unit.y, sz.x, sz.y) < sz.r);
 }

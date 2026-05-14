@@ -114,7 +114,74 @@ export class PauseScene extends Phaser.Scene {
     // ── Main menu ─────────────────────────────────────────────────────────
     y += ROW.divider;
 
-    btn(this, cx, y, BOX.width - BOX.padding * 2, BTN_H, 'MAIN MENU', () => {
+    this._addMainMenuArea(cx, y);
+
+    this.input.keyboard.on('keydown-ESC', resume);
+  }
+
+  // Draws the MAIN MENU button. Clears _mainMenuObjs first if they exist.
+  _addMainMenuArea(cx, y) {
+    if (this._mainMenuObjs) {
+      for (const o of this._mainMenuObjs) o.destroy();
+    }
+    this._mainMenuObjs = [];
+
+    const btnW  = BOX.width - BOX.padding * 2;
+
+    // Graphics background
+    const g = this.add.graphics();
+    g.fillStyle(0x2a1a0a, 1).fillRect(cx, y, btnW, BTN_H);
+    g.lineStyle(1, 0x8a6b3a, 1).strokeRect(cx, y, btnW, BTN_H);
+    this._mainMenuObjs.push(g);
+
+    const label = this.add.text(cx + btnW / 2, y + BTN_H / 2, 'MAIN MENU', {
+      fontFamily: "'Courier New', monospace", fontSize: '13px', color: TC.primary,
+      resolution: window.devicePixelRatio,
+    }).setOrigin(0.5, 0.5);
+    this._mainMenuObjs.push(label);
+
+    const zone = this.add.zone(cx, y, btnW, BTN_H).setOrigin(0, 0).setInteractive();
+    zone.on('pointerover',  () => { g.clear(); g.fillStyle(0x3a2a1a, 1).fillRect(cx, y, btnW, BTN_H); g.lineStyle(1, 0xc5a572, 1).strokeRect(cx, y, btnW, BTN_H); });
+    zone.on('pointerout',   () => { g.clear(); g.fillStyle(0x2a1a0a, 1).fillRect(cx, y, btnW, BTN_H); g.lineStyle(1, 0x8a6b3a, 1).strokeRect(cx, y, btnW, BTN_H); });
+    zone.on('pointerdown',  () => this._showConfirmPanel(cx, y));
+    this._mainMenuObjs.push(zone);
+  }
+
+  _showConfirmPanel(cx, y) {
+    // Hide main menu button objects
+    for (const o of this._mainMenuObjs) o.setVisible(false);
+
+    const confirmObjs = [];
+    const btnW = BOX.width - BOX.padding * 2;
+
+    // Background overlay for confirm area
+    const g = this.add.graphics();
+    g.fillStyle(0x0c0702, 1).fillRect(cx - 2, y - 6, btnW + 4, BTN_H + 24);
+    confirmObjs.push(g);
+
+    // Prompt text
+    const label = this.add.text(cx + btnW / 2, y - 2, 'RETURN TO MAIN MENU?', {
+      fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#d0c090',
+      resolution: window.devicePixelRatio,
+    }).setOrigin(0.5, 0);
+    confirmObjs.push(label);
+
+    const halfW = (btnW - 6) / 2;
+    const btnY  = y + 14;
+
+    // YES button
+    const yesG = this.add.graphics();
+    yesG.fillStyle(0x2a1a0a, 1).fillRect(cx, btnY, halfW, BTN_H - 14);
+    yesG.lineStyle(1, 0x8a6b3a, 1).strokeRect(cx, btnY, halfW, BTN_H - 14);
+    confirmObjs.push(yesG);
+    const yesLbl = this.add.text(cx + halfW / 2, btnY + (BTN_H - 14) / 2, 'YES', {
+      fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0',
+      resolution: window.devicePixelRatio,
+    }).setOrigin(0.5, 0.5);
+    confirmObjs.push(yesLbl);
+    const yesZone = this.add.zone(cx, btnY, halfW, BTN_H - 14).setOrigin(0, 0).setInteractive();
+    yesZone.on('pointerdown', () => {
+      window.__prayInGame = false;
       this.scene.stop('PauseScene');
       this.scene.stop('UpgradeScene');
       this.scene.stop('UpgradeTestScene');
@@ -122,7 +189,24 @@ export class PauseScene extends Phaser.Scene {
       this.scene.stop('GameScene');
       this.scene.start('MenuScene');
     });
+    confirmObjs.push(yesZone);
 
-    this.input.keyboard.on('keydown-ESC', resume);
+    // CANCEL button
+    const cancelX = cx + halfW + 6;
+    const cancelG = this.add.graphics();
+    cancelG.fillStyle(0x2a1a0a, 1).fillRect(cancelX, btnY, halfW, BTN_H - 14);
+    cancelG.lineStyle(1, 0x8a6b3a, 1).strokeRect(cancelX, btnY, halfW, BTN_H - 14);
+    confirmObjs.push(cancelG);
+    const cancelLbl = this.add.text(cancelX + halfW / 2, btnY + (BTN_H - 14) / 2, 'CANCEL', {
+      fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0',
+      resolution: window.devicePixelRatio,
+    }).setOrigin(0.5, 0.5);
+    confirmObjs.push(cancelLbl);
+    const cancelZone = this.add.zone(cancelX, btnY, halfW, BTN_H - 14).setOrigin(0, 0).setInteractive();
+    cancelZone.on('pointerdown', () => {
+      for (const o of confirmObjs) o.destroy();
+      for (const o of this._mainMenuObjs) o.setVisible(true);
+    });
+    confirmObjs.push(cancelZone);
   }
 }

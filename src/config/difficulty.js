@@ -57,9 +57,10 @@ export const DIFFICULTY_DEFS = {
     label: 'Cavity Cadet',
 
     hero: {
-      hpMult:        1.25,  // survivors start with 25% more HP
-      armorMult:     1.20,  // 20% damage reduction (reserved)
-      abilityCdMult: 0.75,  // abilities recharge 25% faster
+      hpMult:                  1.25,
+      armorMult:               1.20,
+      abilityCdMult:           0.75,
+      activeSkillDurabilityMod: 1,   // +1 wave → 4 waves default
     },
 
     enemy: {
@@ -80,9 +81,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      80,
       stimDuration:    8,
       itemChances: {    // independent rolls — changing one does not affect others
-        medkit:   0.70, // generous healing
-        stimpack: 0.30,
-        bomb:     0.05,
+        medkit:   0.07, // generous healing
+        stimpack: 0.03,
+        bomb:     0.01,
       },
       specialDropMult: 1.50,
     },
@@ -92,9 +93,10 @@ export const DIFFICULTY_DEFS = {
     label: 'Brood Hunter',
 
     hero: {
-      hpMult:        1.00,
-      armorMult:     1.00,  // reserved
-      abilityCdMult: 1.00,
+      hpMult:                  1.00,
+      armorMult:               1.00,
+      abilityCdMult:           1.00,
+      activeSkillDurabilityMod: 0,
     },
 
     enemy: {
@@ -115,9 +117,9 @@ export const DIFFICULTY_DEFS = {
       healAmount:      60,
       stimDuration:    5,
       itemChances: {
-        medkit:   0.60,
-        stimpack: 0.35,
-        bomb:     0.05,
+        medkit:   0.06,
+        stimpack: 0.035,
+        bomb:     0.01,
       },
       specialDropMult: 1.00,
     },
@@ -127,9 +129,10 @@ export const DIFFICULTY_DEFS = {
     label: 'The Crack Knight',
 
     hero: {
-      hpMult:        0.85,
-      armorMult:     1.00,  // reserved
-      abilityCdMult: 1.15,  // abilities recharge 15% slower
+      hpMult:                  0.85,
+      armorMult:               1.00,
+      abilityCdMult:           1.15,
+      activeSkillDurabilityMod: -1,  // 2 waves (minimum)
     },
 
     enemy: {
@@ -150,11 +153,46 @@ export const DIFFICULTY_DEFS = {
       healAmount:      45,
       stimDuration:    4,
       itemChances: {
-        medkit:   0.50,  // fewer medkits
-        stimpack: 0.30,  // stimpack unchanged relative to medkit
-        bomb:     0.12,  // more explosives
+        medkit:   0.05,  // fewer medkits
+        stimpack: 0.03,  // stimpack unchanged relative to medkit
+        bomb:     0.024, // more explosives
       },
       specialDropMult: 0.70,
+    },
+  },
+
+  'rear-admiral': {
+    label: 'Rear Admiral',
+
+    hero: {
+      hpMult:                  0.70,
+      armorMult:               0.85,
+      abilityCdMult:           1.35,
+      activeSkillDurabilityMod: -1,  // 2 waves (minimum)
+    },
+
+    enemy: {
+      hpMult:          1.70,
+      dmgMult:         1.70,
+      speedMult:       1.40,
+      spawnMult:       1.55,
+      burstChanceMult: 1.80,
+      bosses: {
+        miniboss: { 3: 2, 6: 1, 10: 2, 14: 1, 18: 1 },
+        bigboss:  { 7: 1, 14: 1, 21: 1 },
+      },
+    },
+
+    loot: {
+      dropChanceMult:  0.40,
+      healAmount:      30,
+      stimDuration:    3,
+      itemChances: {
+        medkit:   0.035,
+        stimpack: 0.025,
+        bomb:     0.056,
+      },
+      specialDropMult: 0.40,
     },
   },
 
@@ -174,9 +212,10 @@ export const DIFFICULTY_DEFS = {
     ],
 
     hero: {
-      hpMult:        2.00,
-      armorMult:     2.00,
-      abilityCdMult: 0.50,
+      hpMult:                  2.00,
+      armorMult:               2.00,
+      abilityCdMult:           0.50,
+      activeSkillDurabilityMod: 0,
     },
 
     enemy: {
@@ -196,46 +235,11 @@ export const DIFFICULTY_DEFS = {
       healAmount:      999,
       stimDuration:    15,
       itemChances: {
-        medkit:   1.00,
-        stimpack: 0.80,
-        bomb:     0.40,
+        medkit:   0.10,
+        stimpack: 0.08,
+        bomb:     0.08,
       },
       specialDropMult: 3.00,
-    },
-  },
-
-  'rear-admiral': {
-    label: 'Rear Admiral',
-
-    hero: {
-      hpMult:        0.70,
-      armorMult:     0.85,  // take ~18% extra damage (reserved)
-      abilityCdMult: 1.35,
-    },
-
-    enemy: {
-      hpMult:          1.70,
-      dmgMult:         1.70,
-      speedMult:       1.40,
-      spawnMult:       1.55,  // spawns are 55% faster
-      burstChanceMult: 1.80,
-      bosses: {
-        miniboss: { 3: 2, 6: 1, 10: 2, 14: 1, 18: 1 },  // wave 3 and 10 spawn 2 minibosses
-        bigboss:  { 7: 1, 14: 1, 21: 1 },                // wave 14: miniboss + bigboss together
-        // megaboss: {}  // reserved
-      },
-    },
-
-    loot: {
-      dropChanceMult:  0.40,
-      healAmount:      30,
-      stimDuration:    3,
-      itemChances: {
-        medkit:   0.35,  // healing is rare
-        stimpack: 0.25,
-        bomb:     0.28,  // mostly explosives when loot does drop
-      },
-      specialDropMult: 0.40,
     },
   },
 

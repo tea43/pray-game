@@ -13,6 +13,36 @@ export const WEAPON_DEFS = {
 
   // ── Melee ──────────────────────────────────────────────────────────────────
 
+  hockey_club: {
+    displayName:   'Hockey Club',
+    type:          'melee',
+    dual:          true,            // alternating swings
+    atkRange:      40,
+    atkDmg:        26,
+    atkRate:       0.34,
+    knockback:     90,
+    swingArc:      2.2,
+    swingOffset:   1.1,
+    sfxAttack:     'weapon.hockeyClub.attack',
+    sfxFallback:   'weapon.attack.default',
+    lootDuration:  null,
+  },
+
+  short_hockey_club: {
+    displayName:   'Short Hockey Club',
+    type:          'melee',
+    shortClub:     true,            // use scaled-down club draw
+    atkRange:      32,
+    atkDmg:        18,
+    atkRate:       0.28,
+    knockback:     55,
+    swingArc:      2.0,
+    swingOffset:   1.0,
+    sfxAttack:     'weapon.attack.default',
+    sfxFallback:   'weapon.attack.default',
+    lootDuration:  null,
+  },
+
   long_club: {
     displayName:   'Long Club',
     type:          'melee',
@@ -118,18 +148,18 @@ export const WEAPON_DEFS = {
 
   // ── Ranged ─────────────────────────────────────────────────────────────────
 
-  spray_gun: {
-    displayName:       'Spray Gun',
+  shotgun: {
+    displayName:       'Shotgun',
     type:              'ranged',
     atkRange:          300,
     atkDmg:            18,         // per bullet
-    atkRate:           0.22,
+    atkRate:           1.10,
     bulletCount:       5,
     spread:            0.35,       // half-angle spread in radians
     projectileSpeed:   480,
-    sfxFire:           'weapon.sprayGun.fire',
+    sfxFire:           'weapon.shotgun.fire',
     sfxFallback:       'shoot',
-    sprite:            'spray_gun',
+    sprite:            'shotgun',
     lootDuration:      15,
   },
 
@@ -137,8 +167,8 @@ export const WEAPON_DEFS = {
     displayName:       'Bow',
     type:              'ranged',
     atkRange:          380,
-    atkDmg:            45,
-    atkRate:           1.1,
+    atkDmg:            90,
+    atkRate:           2.5,
     bulletCount:       1,
     spread:            0,
     projectileSpeed:   620,

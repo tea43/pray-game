@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { state } from '../../state.js';
 import { GameData } from '../../systems/upgrades.js';
 import { playSfx } from '../../systems/audio.js';
+import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 
 const DPR  = window.devicePixelRatio || 1;
 const CARD_H   = 76;
@@ -15,10 +16,10 @@ const RARITY = {
   Legendary: { tint: 0xffaa18, alpha: 0.22 },
 };
 
-const HERO_ICON = { elliot: 'upg-alchemy', dick: 'upg-weapon', habib: 'upg-armor' };
+const HERO_ICON = { eliott: 'upg-alchemy', dick: 'upg-weapon', habib: 'upg-armor' };
 
 const HEROES = [
-  { id: 'elliot', label: 'ELLIOT' },
+  { id: 'eliott', label: 'ELIOTT' },
   { id: 'dick',   label: 'DICK'   },
   { id: 'habib',  label: 'HABIB'  },
 ];
@@ -30,24 +31,22 @@ export class UpgradeScene extends Phaser.Scene {
   // Capture init data fresh each launch so stale data never bleeds between runs
   init(data) { this._initData = data || {}; }
 
-  // ── Asset loading ──────────────────────────────────────────────────────────
-  preload() {
-    const px = Math.ceil(20 * DPR * 2);   // load at 2x render size for crispness
-    const svgCfg = { width: px, height: px };
-    const tryLoad = (key, path) => {
-      if (!this.textures.exists(key)) this.load.svg(key, path, svgCfg);
-    };
-    tryLoad('upg-alchemy', 'assets/tbd/icons/fizzing-flask.svg');
-    tryLoad('upg-weapon',  'assets/tbd/icons/hockey.svg');
-    tryLoad('upg-armor',   'assets/tbd/icons/round-shield.svg');
-  }
 
   // ── Scene entry ────────────────────────────────────────────────────────────
   create() {
     const { width: W, height: H } = this.scale;
 
+    // If all heroes died exactly as the wave ended, skip upgrades and let
+    // GameScene's end-condition check handle the game-over flow.
+    if (state.units && state.units.every(u => u.dead)) {
+      state.isUpgradeScreen = false;
+      this.scene.stop();
+      this.scene.resume('GameScene');
+      return;
+    }
+
     state.upgradeSpinCredits = Math.min(state.upgradeSpinCredits + 1, 3);
-    state.pendingUpgrades = { elliot: null, dick: null, habib: null };
+    state.pendingUpgrades = { eliott: null, dick: null, habib: null };
 
     // Dim the frozen GameScene behind
     this.add.graphics().fillStyle(0x000000, 0.62).fillRect(0, 0, W, H);
@@ -95,9 +94,11 @@ export class UpgradeScene extends Phaser.Scene {
     // ── Hero name labels ──────────────────────────────────────────────────────
     const LABEL_Y = FY + HDR_H + 8;
     HEROES.forEach((h, i) => {
-      this._txt(this._colCX[i], LABEL_Y, h.label, {
+      const heroUnit = state.units?.find(u => u.type === h.id);
+      const isDead = heroUnit?.dead ?? false;
+      this._txt(this._colCX[i], LABEL_Y, isDead ? `✝ ${h.label}` : h.label, {
         fontSize: '13px', fontFamily: "'Courier New', monospace",
-        fontStyle: 'bold', color: '#e8d8b0', letterSpacing: 3,
+        fontStyle: 'bold', color: isDead ? '#5a2a1a' : '#e8d8b0', letterSpacing: 3,
       }).setOrigin(0.5, 0);
     });
 
@@ -150,6 +151,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.input.keyboard.addKey('ESC').on('down', () => {
       if (!this.scene.isActive('PauseScene')) {
         this.scene.launch('PauseScene', { fromUpgrade: true });
+        this.scene.bringToTop('PauseScene');
       }
     });
 
@@ -191,7 +193,27 @@ export class UpgradeScene extends Phaser.Scene {
     const cardW   = this._cardW;
 
     const history = state.selectedUpgradeHistory[hero.id] || [];
-    const pool    = (GameData.upgrades[hero.id] || []).filter(u => !history.includes(u.id));
+    const unit = state.units?.find(u => u.type === hero.id);
+
+    // Dead hero column: show FALLEN, no selection allowed
+    if (unit?.dead) {
+      this._txt(cx, centreY - 10, '†', {
+        fontSize: '28px', fontFamily: 'Georgia, serif', color: '#5a2a1a',
+      }).setOrigin(0.5);
+      this._txt(cx, centreY + 20, 'FALLEN', {
+        fontSize: '10px', fontFamily: "'Courier New', monospace",
+        fontStyle: 'bold', color: '#6a2a1a',
+      }).setOrigin(0.5);
+      state.pendingUpgrades[hero.id] = 'none';
+      this._reels.push(null);
+      return;
+    }
+
+    // Filter out already-selected upgrades (in history or currently in slots)
+    const pool    = (GameData.upgrades[hero.id] || []).filter(u => {
+      if (history.includes(u.id)) return false;
+      return true;
+    });
 
     if (pool.length === 0) {
       this._txt(cx, centreY, 'EXHAUSTED', {
@@ -493,7 +515,11 @@ export class UpgradeScene extends Phaser.Scene {
 
   _advance() {
     const { heroId, upg } = this._selected;
-    state.activeUpgrades[heroId].push(upg);
+    const unit = state.units?.find(u => u.type === heroId);
+    if (unit) {
+      const kind = upg.upgradeClass === 'active' ? 'active' : 'passive';
+      unit.pushUpgrade(upg.id, kind, upg.baseDurability ?? 3);
+    }
     state.selectedUpgradeHistory[heroId].push(upg.id);
 
     const initData = this._initData || {};
@@ -509,7 +535,7 @@ export class UpgradeScene extends Phaser.Scene {
   _clearSelection() {
     this._selected = null;
     this._ready    = false;
-    state.pendingUpgrades = { elliot: null, dick: null, habib: null };
+    state.pendingUpgrades = { eliott: null, dick: null, habib: null };
 
     this._reels.forEach(reel => {
       if (!reel) return;

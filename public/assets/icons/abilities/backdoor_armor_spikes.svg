@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Shield outline -->
+  <path d="M32 6 L54 16 L54 34 Q54 52 32 58 Q10 52 10 34 L10 16 Z" stroke="#c8b890" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Spikes pointing outward from shield edges -->
+  <line x1="32" y1="6" x2="32" y2="0" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <line x1="54" y1="16" x2="60" y2="12" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <line x1="54" y1="34" x2="60" y2="34" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="16" x2="4" y2="12" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="34" x2="4" y2="34" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="58" x2="32" y2="62" stroke="#c0a060" stroke-width="2" stroke-linecap="round"/>
+  <!-- Cross inside shield -->
+  <line x1="32" y1="22" x2="32" y2="46" stroke="#c0a060" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="20" y1="34" x2="44" y2="34" stroke="#c0a060" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

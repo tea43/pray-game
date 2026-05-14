@@ -6,9 +6,10 @@ import { WEAPON_DEFS } from '../config/weapons.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { resolveAsset } from '../config/assets.js';
 import { Projectile } from './Projectile.js';
-import { SprayBullet } from './SprayBullet.js';
+import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
+import { ABILITY_DEFS } from '../config/abilities.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -34,32 +35,87 @@ export class Unit {
     this.blinkFlash = 0;
     this.dualSide = false;
     this.throwArm = 0;
-    this.currentWeapon = null;    // set below from hero def
-    this.previousWeapon = null;   // starting weapon to restore when timed pickup expires
-    this.weaponTimer = 0;         // seconds remaining on a timed loot weapon
+    this.currentWeapon = null;
+    this.previousWeapon = null;
+    this.weaponTimer = 0;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
 
-    const def = HERO_DEFS[type] || HERO_DEFS.elliot;
+    // Unified upgrade slots: holds actives {kind:'active',id,cd,maxCd,wavesLeft}
+    // and passives {kind:'passive',id}. Max 2; 3rd push drops oldest (FIFO).
+    this.upgradeSlots = [null, null];
+
+    // Timers for various effects
+    this.immortalTimer = 0;      // while > 0, incoming damage is absorbed
+    this.blockadeTimer = 0;      // Habib's Backdoor Blockade: 50% dmg reduction
+    this.alchemyArmorTimer = 0;  // Eliott's Green Pipe: 40% dmg reduction
+    this.speedBoostTimer = 0;    // speed burst (Blue Cubes of Speed, Inappropriate Stories)
+    this.storiesRateBoost = 0;   // attack rate boost from Inappropriate Stories
+    this.alchemyRageMult = 1;    // extra atk speed multiplier from Blue Cubes of Rage
+    this.stonedTimer = 0;        // Stoned Green Pipe: enemy magnet + immortal
+    this.flamethrowerTimer = 0;  // Flamethrower cone active
+    this.acidGunTimer = 0;       // Acid gun sustained fire
+    this.acidGunFireCd = 0;      // Acid gun fire rate cooldown
+    this.millTimer = 0;          // 360 Mill spin visual timer
+    this.millAngle = 0;
+    this.millCenterX = 0;
+    this.millCenterY = 0;
+    this._millTargetX = 0;
+    this._millTargetY = 0;
+    this.vortexTimer = 0;        // Vortex spin visual timer
+    this.vortexAngle = 0;
+    this.vortexCenterX = 0;
+    this.vortexCenterY = 0;
+    this._vortexTargetX = 0;
+    this._vortexTargetY = 0;
+    this._wpHitReturn = null;    // White Powder of Hit return data
+    this._dominanceTargets = null;
+    this._dominanceOrigin = null;
+    this._dominanceTimer = 0;
+
+    // Medkit over-time heal
+    this.medkitHealRemaining = 0;  // HP remaining to be healed
+    this.medkitHealPerSec    = 0;  // HP/s rate
+
+    // Dick boomerang state
+    this.boomerang = null; // {startX, startY, targetX, targetY, phase, t, clubX, clubY, hitOut, hitRet}
+
+    // Passive upgrade flags (set per-wave by applyWaveUpgrades)
+    this.residualHaze = false;
+    this.extendedFormula = false;
+    this.smokescreen = false;
+    this.backdoorArmorFire = false;
+    this.backdoorArmorLightning = false;
+    this.backdoorArmorSpikes = false;
+    this.densePlating = 0;
+    this._maxHpBonusApplied = 0;
+
+    const def = HERO_DEFS[type] || HERO_DEFS.eliott;
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     this.name = def.name;
     this.abilityKey = def.abilityKey;
     this.abilityName = def.abilityName;
+    this.abilityId = def.abilityId || '';
+    this.abilityDescription = def.abilityDescription || '';
     this.abilityMaxCd = def.abilityMaxCd * diff.hero.abilityCdMult;
     this.abilityColor = def.abilityColor;
-    this.currentWeapon = def.startingWeapon || 'long_club';
+    this.currentWeapon = def.startingWeapon || 'hockey_club';
     this.maxHp = Math.round(def.maxHp * diff.hero.hpMult);
     this.hp = this.maxHp;
     this.palette = { ...def.palette };
   }
 
   get _wDef() { return WEAPON_DEFS[this.currentWeapon] ?? {}; }
-  get atkDmg()  {
+  get atkDmg() {
     const base = this._wDef.atkDmg ?? 24;
-    return (this.rageTimer > 0 ? base * 2 : base) * (this.upgradeDmgMult || 1);
+    const rageMult = this.rageTimer > 0 ? 2 : 1;
+    return base * rageMult * (this.upgradeDmgMult || 1);
   }
-  get atkRate()  {
+  get atkRate() {
     const base = this._wDef.atkRate ?? 0.5;
-    return (this.rageTimer > 0 ? base * 0.4 : base) * (this.upgradeRateMult || 1);
+    const rageMult = this.rageTimer > 0 ? 0.4 : 1;
+    const alchMult = this.rageTimer > 0 ? (1 / Math.max(1, this.alchemyRageMult)) : 1;
+    const storiesMult = this.storiesRateBoost > 0 ? (1 / 1.3) : 1;
+    return base * rageMult * alchMult * storiesMult * (this.upgradeRateMult || 1);
   }
   get atkRange() { return this._wDef.atkRange ?? 50; }
   get moving()   { return dist2(this.x, this.y, this.tx, this.ty) > 2.5; }
@@ -70,14 +126,122 @@ export class Unit {
     if (this.z > 0 || this.vz !== 0) {
       this.vz -= 800 * dt;
       this.z += this.vz * dt;
-      if (this.z <= 0) {
-        this.z = 0;
-        this.vz = 0;
-      }
+      if (this.z <= 0) { this.z = 0; this.vz = 0; }
     }
 
-    this.rageTimer = Math.max(0, this.rageTimer - dt);
-    this.abilityCd = Math.max(0, this.abilityCd - dt);
+    // Tick all timers
+    this.rageTimer        = Math.max(0, this.rageTimer - dt);
+    this.abilityCd        = Math.max(0, this.abilityCd - dt);
+    this.immortalTimer    = Math.max(0, this.immortalTimer - dt);
+    this.blockadeTimer    = Math.max(0, this.blockadeTimer - dt);
+    this.alchemyArmorTimer= Math.max(0, this.alchemyArmorTimer - dt);
+    this.speedBoostTimer  = Math.max(0, this.speedBoostTimer - dt);
+    this.storiesRateBoost = Math.max(0, this.storiesRateBoost - dt);
+    const _prevStoned = this.stonedTimer;
+    this.stonedTimer      = Math.max(0, this.stonedTimer - dt);
+    if (_prevStoned > 0 && this.stonedTimer <= 0) {
+      let closestAlly = null, closestDist = Infinity;
+      for (const ally of state.units) {
+        if (ally === this || ally.dead) continue;
+        const d = dist2(this.x, this.y, ally.x, ally.y);
+        if (d < closestDist) { closestDist = d; closestAlly = ally; }
+      }
+      if (closestAlly) {
+        const ang = rand(0, Math.PI * 2);
+        const off = closestAlly.r + this.r + 8;
+        this.x = clamp(closestAlly.x + Math.cos(ang) * off, 6, G.W - 6);
+        this.y = clamp(closestAlly.y + Math.sin(ang) * off, 6, G.PLAY_BOTTOM);
+        this.tx = this.x; this.ty = this.y;
+        this.blinkFlash = 1;
+        for (let i = 0; i < 12; i++) {
+          const a = rand(0, Math.PI * 2), v = rand(40, 100);
+          state.particles.push({ x: this.x, y: this.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.3, 0.7), maxLife: 0.7, color: i % 2 ? '#40c840' : '#80ff80', size: rand(1.5, 3), realtime: true });
+        }
+      }
+    }
+    this.flamethrowerTimer= Math.max(0, this.flamethrowerTimer - dt);
+    this.acidGunTimer     = Math.max(0, this.acidGunTimer - dt);
+    this.acidGunFireCd    = Math.max(0, this.acidGunFireCd - dt);
+    const _prevMill   = this.millTimer;
+    const _prevVortex = this.vortexTimer;
+    this.millTimer        = Math.max(0, this.millTimer - dt);
+    this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
+
+    if (this.medkitHealRemaining > 0) {
+      const tick = Math.min(this.medkitHealPerSec * dt, this.medkitHealRemaining);
+      this.hp = Math.min(this.maxHp, this.hp + tick);
+      this.medkitHealRemaining = Math.max(0, this.medkitHealRemaining - tick);
+    }
+
+    // Mill 360: Dick orbits around a center that drifts toward his pre-activation destination
+    if (this.millTimer > 0) {
+      this.millAngle += dt * 6.0;
+      const orbitR = 38;
+      const mdx = this._millTargetX - this.millCenterX, mdy = this._millTargetY - this.millCenterY;
+      const md = Math.hypot(mdx, mdy);
+      if (md > 2) { const s = Math.min(md, this.speed * dt); this.millCenterX = clamp(this.millCenterX + mdx / md * s, 6, G.W - 6); this.millCenterY = clamp(this.millCenterY + mdy / md * s, 6, G.PLAY_BOTTOM); }
+      this.x = clamp(this.millCenterX + Math.cos(this.millAngle) * orbitR, 6, G.W - 6);
+      this.y = clamp(this.millCenterY + Math.sin(this.millAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      this.tx = this.x; this.ty = this.y;
+      this.facing = this.millAngle + Math.PI * 0.5;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(this.x, this.y, e.x, e.y) < 80 + e.r) {
+          const dmg = this.atkDmg * 2 * (this.upgradeDmgMult || 1) * dt;
+          e.hp -= dmg;
+          e.hurtFlash = Math.max(e.hurtFlash, 0.15);
+          const ang = Math.atan2(e.y - this.y, e.x - this.x);
+          e.knockX += Math.cos(ang) * 40 * dt;
+          e.knockY += Math.sin(ang) * 40 * dt;
+        }
+      }
+    }
+    // On mill expiry: snap Dick to center and resume walking to original destination
+    if (_prevMill > 0 && this.millTimer <= 0) {
+      this.x = this.millCenterX; this.y = this.millCenterY;
+      this.tx = this._millTargetX; this.ty = this._millTargetY;
+      this._millSoundHandle?.stop(); this._millSoundHandle = null;
+    }
+
+    // Vortex: Dick orbits a larger circle, center drifts toward pre-activation destination
+    if (this.vortexTimer > 0) {
+      this.vortexAngle += dt * 4.5;
+      const orbitR = 50;
+      const vdx = this._vortexTargetX - this.vortexCenterX, vdy = this._vortexTargetY - this.vortexCenterY;
+      const vd = Math.hypot(vdx, vdy);
+      if (vd > 2) { const s = Math.min(vd, this.speed * dt); this.vortexCenterX = clamp(this.vortexCenterX + vdx / vd * s, 6, G.W - 6); this.vortexCenterY = clamp(this.vortexCenterY + vdy / vd * s, 6, G.PLAY_BOTTOM); }
+      this.x = clamp(this.vortexCenterX + Math.cos(this.vortexAngle) * orbitR, 6, G.W - 6);
+      this.y = clamp(this.vortexCenterY + Math.sin(this.vortexAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      this.tx = this.x; this.ty = this.y;
+      this.facing = this.vortexAngle + Math.PI * 0.5;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const ed = dist2(this.x, this.y, e.x, e.y);
+        if (ed < 100 + e.r) {
+          const dmg = this.atkDmg * 2.2 * (this.upgradeDmgMult || 1) * dt;
+          e.hp -= dmg;
+          e.hurtFlash = Math.max(e.hurtFlash, 0.15);
+          // Pull toward center
+          const ax = Math.atan2(this.vortexCenterY - e.y, this.vortexCenterX - e.x);
+          e.knockX += Math.cos(ax) * 60 * dt;
+          e.knockY += Math.sin(ax) * 60 * dt;
+        }
+      }
+    }
+    // On vortex expiry: snap Dick to center and resume walking to original destination
+    if (_prevVortex > 0 && this.vortexTimer <= 0) {
+      this.x = this.vortexCenterX; this.y = this.vortexCenterY;
+      this.tx = this._vortexTargetX; this.ty = this._vortexTargetY;
+      this._vortexSoundHandle?.stop(); this._vortexSoundHandle = null;
+    }
+
+    if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
+
+    // Tick active skill cooldowns
+    for (const slot of this.upgradeSlots) {
+      if (slot?.kind === 'active') slot.cd = Math.max(0, slot.cd - dt);
+    }
+
     if (this.weaponTimer > 0) {
       this.weaponTimer -= dt;
       if (this.weaponTimer <= 0) {
@@ -87,15 +251,139 @@ export class Unit {
       }
     }
 
+    // White Powder of Hit return
+    if (this._wpHitReturn) {
+      this._wpHitReturn.timer -= dt;
+      if (this._wpHitReturn.timer <= 0) {
+        this.x = this._wpHitReturn.x;
+        this.y = this._wpHitReturn.y;
+        this.tx = this._wpHitReturn.x;
+        this.ty = this._wpHitReturn.y;
+        this.blinkFlash = 0.7;
+        // SOUND POINT 4 — BLINK-OUT: same blink whoosh as the outbound teleport.
+        playSfx('ability.blink');
+        this._wpHitReturn = null;
+      }
+    }
+
+    // White Powder of Dominance sequential strike
+    // Each strike fires every 0.25 s (_dominanceTimer). Sound should fire
+    // once per strike so the chain feels rapid and escalating.
+    if (this._dominanceTargets && this._dominanceTargets.length > 0) {
+      this._dominanceTimer -= dt;
+      if (this._dominanceTimer <= 0) {
+        while (this._dominanceTargets.length > 0 && this._dominanceTargets[0]?.dead) {
+          this._dominanceTargets.shift();
+        }
+        const e = this._dominanceTargets.shift();
+        if (e && !e.dead) {
+          const ang = e.facing + Math.PI;
+          this.x = clamp(e.x + Math.cos(ang) * 28, 6, G.W - 6);
+          this.y = clamp(e.y + Math.sin(ang) * 28, 6, G.PLAY_BOTTOM);
+          this.tx = this.x; this.ty = this.y;
+          this.blinkFlash = 0.7;
+          const dmg = Math.round(this.atkDmg * (this.upgradeDmgMult || 1));
+          e.hp -= dmg;
+          e.hurtFlash = 1;
+          // SOUND POINT 3 — CHAIN STRIKE: blink whoosh + hero's weapon hit, every 0.25 s.
+          playSfx('ability.blink');
+          playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+          playSfx('alien.hit.default', { synthetic: 'hit' });
+          pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
+        }
+        this._dominanceTimer = 0.25;
+        if (this._dominanceTargets.length === 0) {
+          if (this._dominanceOrigin) {
+            this.x = clamp(this._dominanceOrigin.x, 6, G.W - 6);
+            this.y = clamp(this._dominanceOrigin.y, 6, G.PLAY_BOTTOM);
+            this.tx = this.x; this.ty = this.y;
+            this._dominanceOrigin = null;
+          }
+          this._dominanceTargets = null;
+          this.blinkFlash = 1;
+        }
+      }
+    }
+
+    // Flamethrower cone damage
+    if (this.flamethrowerTimer > 0) {
+      const coneRange = 180, halfArc = Math.PI * 0.25; // 90° cone
+      // Auto-aim toward nearest living enemy
+      let _ftNearest = null, _ftNd = Infinity;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = dist2(this.x, this.y, e.x, e.y);
+        if (d < _ftNd) { _ftNd = d; _ftNearest = e; }
+      }
+      if (_ftNearest) this.facing = Math.atan2(_ftNearest.y - this.y, _ftNearest.x - this.x);
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(this.x, this.y, e.x, e.y) > coneRange + e.r) continue;
+        let da = Math.atan2(e.y - this.y, e.x - this.x) - this.facing;
+        while (da >  Math.PI) da -= Math.PI * 2;
+        while (da < -Math.PI) da += Math.PI * 2;
+        if (Math.abs(da) > halfArc) continue;
+        const flameDmg = 12 * dt / 0.25; // 12 per 0.25s
+        e.hp -= flameDmg;
+        e.hurtFlash = 0.3;
+        if (!e.fireDot || e.fireDot < 4) e.fireDot = 4;
+        if (Math.random() < dt * 10) {
+          state.particles.push({ x: e.x + rand(-5, 5), y: e.y + rand(-5, 5), vx: rand(-40, 40), vy: rand(-80, -20), life: rand(0.2, 0.5), maxLife: 0.5, color: rand(0, 1) > 0.5 ? '#ff6020' : '#ff9040', size: rand(2, 4), realtime: true });
+        }
+      }
+    }
+
+    // Acid gun: auto-aim and fire periodic blobs
+    if (this.acidGunTimer > 0) {
+      let nearest = null, nd = Infinity;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = dist2(this.x, this.y, e.x, e.y);
+        if (d < nd) { nd = d; nearest = e; }
+      }
+      if (nearest) {
+        this.facing = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+        if (this.acidGunFireCd <= 0) {
+          const ang = this.facing + rand(-0.15, 0.15);
+          state.acidShots = state.acidShots || [];
+          state.acidShots.push({
+            x: this.x + Math.cos(this.facing) * (this.r + 4),
+            y: this.y + Math.sin(this.facing) * (this.r + 4),
+            vx: Math.cos(ang) * 240, vy: Math.sin(ang) * 240,
+            life: 2.0, maxLife: 2.0, dead: false,
+            owner: this,
+          });
+          this.acidGunFireCd = 0.35;
+        }
+      }
+    }
+
+    // Movement
+    const effectiveSpeed = this.speed * (this.speedBoostTimer > 0 ? 1.8 : 1);
     if (this.moving) {
       const dx = this.tx - this.x, dy = this.ty - this.y;
       const d = Math.hypot(dx, dy);
       this.facing = Math.atan2(dy, dx);
-      const step = this.speed * dt;
+      const step = effectiveSpeed * dt;
       if (step >= d) { this.x = this.tx; this.y = this.ty; }
       else { this.x += (dx / d) * step; this.y += (dy / d) * step; }
       this.walkCycle += dt * 9;
+
+      // Speed boost contact damage
+      if (this.speedBoostTimer > 0) {
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          if (dist2(this.x, this.y, e.x, e.y) < this.r + e.r + 4) {
+            if (!this._speedDmgCd || this._speedDmgCd <= 0) {
+              e.hp -= 20;
+              e.hurtFlash = 0.5;
+              this._speedDmgCd = 0.3;
+            }
+          }
+        }
+      }
     }
+    if (this._speedDmgCd) this._speedDmgCd = Math.max(0, this._speedDmgCd - dt);
 
     this.atkCd -= dt;
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 5);
@@ -103,32 +391,169 @@ export class Unit {
     this.blinkFlash = Math.max(0, this.blinkFlash - dt * 2.5);
     this.throwArm = Math.max(0, this.throwArm - dt * 4);
 
-    let target = null;
-    if (this.aggroTarget && !this.aggroTarget.dead) {
-      const d = dist2(this.x, this.y, this.aggroTarget.x, this.aggroTarget.y);
-      if (d < this.atkRange + 40) target = this.aggroTarget;
-      else this.aggroTarget = null;
-    }
-    if (!target) {
-      let nd = this.atkRange;
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        const d = dist2(this.x, this.y, e.x, e.y);
-        if (d < nd) { nd = d; target = e; }
-      }
+    // Dick boomerang update
+    if (this.type === 'dick' && this.boomerang !== null) {
+      this._updateBoomerang(dt);
     }
 
-    if (target && dist2(this.x, this.y, target.x, target.y) < this.atkRange && this.atkCd <= 0) {
-      this.attack(target);
+    // Auto-attack (skip while Dick is boomeranging)
+    if (!(this.type === 'dick' && this.boomerang !== null)) {
+      let target = null;
+      if (this.aggroTarget && !this.aggroTarget.dead) {
+        const d = dist2(this.x, this.y, this.aggroTarget.x, this.aggroTarget.y);
+        if (d < this.atkRange + 40) target = this.aggroTarget;
+        else this.aggroTarget = null;
+      }
+      if (!target) {
+        let nd = this.atkRange;
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          const d = dist2(this.x, this.y, e.x, e.y);
+          if (d < nd) { nd = d; target = e; }
+        }
+      }
+      if (target && dist2(this.x, this.y, target.x, target.y) < this.atkRange && this.atkCd <= 0) {
+        this.attack(target);
+      }
     }
 
     this._tickAnim(dt);
   }
 
+  _updateBoomerang(dt) {
+    const b = this.boomerang;
+    const speed = b.phase === 'outbound' ? 260 : 300;
+
+    // Endpoint changes dynamically for return phase
+    const sx = b.clubX ?? b.startX;
+    const sy = b.clubY ?? b.startY;
+    const ex = b.phase === 'outbound' ? b.targetX : this.x;
+    const ey = b.phase === 'outbound' ? b.targetY : this.y;
+
+    const dx = ex - (b.phase === 'outbound' ? b.startX : b.targetX);
+    const dy = ey - (b.phase === 'outbound' ? b.startY : b.targetY);
+    const totalDist = Math.hypot(dx, dy);
+
+    if (totalDist < 1) {
+      this._boomerangPhaseEnd();
+      return;
+    }
+
+    const perpX = -dy / totalDist * 80;
+    const perpY = dx / totalDist * 80;
+    const bsx = b.phase === 'outbound' ? b.startX : b.targetX;
+    const bsy = b.phase === 'outbound' ? b.startY : b.targetY;
+    const bex = b.phase === 'outbound' ? b.targetX : this.x;
+    const bey = b.phase === 'outbound' ? b.targetY : this.y;
+    const ctrlX = (bsx + bex) / 2 + perpX;
+    const ctrlY = (bsy + bey) / 2 + perpY;
+
+    const arcLen = totalDist * 1.4;
+    b.t = Math.min(1, b.t + (speed * dt) / Math.max(arcLen, 1));
+
+    const t = b.t;
+    b.clubX = (1-t)*(1-t)*bsx + 2*(1-t)*t*ctrlX + t*t*bex;
+    b.clubY = (1-t)*(1-t)*bsy + 2*(1-t)*t*ctrlY + t*t*bey;
+
+    // Hit detection
+    const hitSet = b.phase === 'outbound' ? b.hitOut : b.hitRet;
+    const dmg = Math.round((b.phase === 'outbound' ? 50 : 35) * (this.upgradeDmgMult || 1));
+    for (const e of state.enemies) {
+      if (e.dead || hitSet.has(e)) continue;
+      if (dist2(b.clubX, b.clubY, e.x, e.y) < e.r + 18) {
+        hitSet.add(e);
+        e.hp -= dmg;
+        e.hurtFlash = 1;
+        const ang = Math.atan2(e.y - b.clubY, e.x - b.clubX);
+        e.knockX += Math.cos(ang) * 60;
+        e.knockY += Math.sin(ang) * 60;
+        playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+        playSfx('alien.hit.default', { synthetic: 'hit' });
+        pushDamageNumber(e.x, e.y - e.r - 4, dmg, { rgb: [210, 185, 130] });
+        for (let i = 0; i < 6; i++) {
+          state.particles.push({ x: e.x + rand(-3,3), y: e.y + rand(-3,3), vx: rand(-70,70), vy: rand(-90,-10), life: rand(0.2,0.5), maxLife: 0.5, color: e.bloodColor, size: rand(1.2, 2.5), realtime: true });
+        }
+      }
+    }
+
+    if (b.t >= 1) this._boomerangPhaseEnd();
+  }
+
+  _boomerangPhaseEnd() {
+    const b = this.boomerang;
+    if (b.phase === 'outbound') {
+      b.phase = 'return';
+      b.t = 0;
+    } else {
+      this.boomerang = null;
+      this.abilityCd = this.abilityMaxCd;
+    }
+  }
+
+  tickSkillDurability() {
+    for (let i = 0; i < this.upgradeSlots.length; i++) {
+      const slot = this.upgradeSlots[i];
+      if (!slot || slot.kind !== 'active') continue;
+      slot.wavesLeft--;
+      if (slot.wavesLeft <= 0) {
+        const hist = state.selectedUpgradeHistory[this.type];
+        if (hist) {
+          const idx = hist.indexOf(slot.id);
+          if (idx >= 0) hist.splice(idx, 1);
+        }
+        this.upgradeSlots[i] = null;
+      }
+    }
+  }
+
+  pushUpgrade(id, kind, baseDurability) {
+    const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
+    const durMod = diff.hero.activeSkillDurabilityMod ?? 0;
+    const wavesLeft = Math.max(2, 3 + durMod);
+    const def = kind === 'active' ? ABILITY_DEFS[id] : null;
+    const entry = kind === 'active'
+      ? { kind: 'active', id, cd: 0, maxCd: def?.maxCd || 12, wavesLeft }
+      : { kind: 'passive', id };
+
+    const freeIdx = this.upgradeSlots.findIndex(s => s === null);
+    if (freeIdx !== -1) {
+      this.upgradeSlots[freeIdx] = entry;
+    } else {
+      // FIFO: drop oldest slot, free its history entry so it can be offered again
+      const dropped = this.upgradeSlots[0];
+      if (dropped) {
+        const hist = state.selectedUpgradeHistory[this.type];
+        if (hist) {
+          const idx = hist.indexOf(dropped.id);
+          if (idx >= 0) hist.splice(idx, 1);
+        }
+      }
+      this.upgradeSlots[0] = this.upgradeSlots[1];
+      this.upgradeSlots[1] = entry;
+    }
+  }
+
+  activateSkill(slotIdx) {
+    const slot = this.upgradeSlots[slotIdx];
+    if (!slot || slot.kind !== 'active' || slot.cd > 0 || this.dead) return false;
+    const impl = ABILITY_DEFS[slot.id];
+    if (!impl) return false;
+    const result = impl.activate(this);
+    if (result === false) return false;  // ability declined (e.g. no targets)
+    // Plays the `sound` key defined on the ability in config/abilities.js.
+    // This is SOUND POINT 1 for upgrade-slot actives (white_powder_hit,
+    // white_powder_dominance, etc.) — fires once on activation only.
+    // Mid-ability sounds (blink, impact, chain strikes) must be added as
+    // explicit playSfx() calls inside activate() or in the update timers above.
+    if (impl.sound) playSfx(impl.sound);
+    slot.cd = slot.maxCd;
+    return true;
+  }
+
   _animName() {
     if (this.dead)        return 'death';
     if (this.swing > 0.5) return 'attack';
-    if (this.type === 'elliot' && this.blinkFlash > 0.5) return 'blink';
+    if (this.type === 'eliott' && this.blinkFlash > 0.5) return 'blink';
     if (this.type === 'dick'   && this.rageTimer  > 0)   return 'rage';
     if (this.throwArm > 0.5) return 'casting';
     if (this.moving)      return 'walk';
@@ -194,8 +619,8 @@ export class Unit {
     const sparkY = enemy.y - Math.sin(this.facing) * (enemy.r * 0.5);
     state.particles.push({ x: sparkX, y: sparkY, vx: 0, vy: 0, life: 0.16, maxLife: 0.16, color: this.rageTimer > 0 ? 'rgba(255,160,80,1)' : 'rgba(255,220,160,1)', size: this.rageTimer > 0 ? 9 : 6, realtime: true, additive: true });
     pushDamageNumber(enemy.x, enemy.y - enemy.r - 4, dmg, { crit: this.rageTimer > 0, rgb: this.rageTimer > 0 ? [255, 120, 80] : [255, 230, 200] });
-    if (!state.settings.noShake) state.shake    = Math.max(state.shake,    this.rageTimer > 0 ? 5    : 3);
-    if (!state.settings.noShake) state.hitStop  = Math.max(state.hitStop,  this.rageTimer > 0 ? 0.04 : 0.018);
+    if (!state.settings.noShake) state.shake   = Math.max(state.shake,   this.rageTimer > 0 ? 5    : 3);
+    if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
   }
 
   _attackCleave(wDef) {
@@ -248,17 +673,31 @@ export class Unit {
       const ang = this.facing + offset;
       const sx = this.x + Math.cos(ang) * (this.r + 6);
       const sy = this.y + Math.sin(ang) * (this.r + 6);
-      state.projectiles.push(new SprayBullet(sx, sy, ang, dmgPer, wDef));
+      state.projectiles.push(new ShotgunBullet(sx, sy, ang, dmgPer, wDef));
     }
     if (!state.settings.noShake) state.shake = Math.max(state.shake, count > 1 ? 2.5 : 1.2);
   }
 
   moveTo(x, y) {
+    if (this.stonedTimer > 0) return;
+    // During mill/vortex redirect the destination to the orbit center target
+    // so the player can steer the spin with right-click like normal movement.
+    if (this.millTimer > 0) {
+      this._millTargetX = clamp(x, 6, G.W - 6);
+      this._millTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      return;
+    }
+    if (this.vortexTimer > 0) {
+      this._vortexTargetX = clamp(x, 6, G.W - 6);
+      this._vortexTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      return;
+    }
     this.tx = clamp(x, 6, G.W - 6);
     this.ty = clamp(y, 6, G.PLAY_BOTTOM);
     this.aggroTarget = null;
   }
   attackMove(enemy) {
+    if (this.stonedTimer > 0) return;
     this.aggroTarget = enemy;
     this.tx = clamp(enemy.x, 6, G.W - 6);
     this.ty = clamp(enemy.y, 6, G.PLAY_BOTTOM);
@@ -267,158 +706,50 @@ export class Unit {
 
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
-    if (this.type === 'elliot') return this._blink();
-    if (this.type === 'dick')   return this._rage();
-    if (this.type === 'habib')  return this._chainLightning();
-    return false;
+    const def = ABILITY_DEFS[this.abilityId];
+    if (!def?.activate) return false;
+    const result = def.activate(this);
+    // Same as activateSkill — plays `sound` once on activation (SOUND POINT 1).
+    // Used for the three base hero abilities (group_blink, boomerang, backdoor_blockade).
+    if (result !== false && def.sound) playSfx(def.sound);
+    return result ?? true;
   }
 
-  _blink() {
-    const mx = state.mouse.x, my = state.mouse.y;
-    const dx = mx - this.x, dy = my - this.y;
-    const d = Math.hypot(dx, dy);
-    if (d < 6) return false;
-    playSfx('ability_blink');
-    const maxRange = 240;
-    const step = Math.min(d, maxRange);
-    // Departure burst.
-    for (let i = 0; i < 14; i++) {
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: rand(-90, 90), vy: rand(-110, 60),
-        life: rand(0.35, 0.7), maxLife: 0.7,
-        color: '#80c8ff', size: rand(1.5, 3), realtime: true,
-      });
-    }
-    for (let i = 0; i < 10; i++) {
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: rand(-60, 60), vy: rand(-60, 60),
-        life: rand(0.3, 0.55), maxLife: 0.55,
-        color: 'rgba(180, 230, 255, 1)', size: rand(2, 4), realtime: true, additive: true,
-      });
-    }
-    const nx = clamp(this.x + (dx / d) * step, 6, G.W - 6);
-    const ny = clamp(this.y + (dy / d) * step, 6, G.PLAY_BOTTOM);
-    // Streak trail (additive, fades along path).
-    const steps = 16;
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      state.particles.push({
-        x: this.x + (nx - this.x) * t + rand(-1.5, 1.5),
-        y: this.y + (ny - this.y) * t + rand(-1.5, 1.5),
-        vx: 0, vy: 0,
-        life: 0.32, maxLife: 0.32,
-        color: 'rgba(180, 230, 255, 1)', size: 3.5, realtime: true, additive: true,
-      });
-    }
-    this.x = nx; this.y = ny;
-    this.tx = nx; this.ty = ny;
-    this.z = 0;
-    this.vz = 220;
-    this.blinkFlash = 1;
-    for (let i = 0; i < 22; i++) {
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: rand(-130, 130), vy: rand(-130, 80),
-        life: rand(0.35, 0.7), maxLife: 0.7,
-        color: '#80c8ff', size: rand(1.5, 3), realtime: true,
-      });
-    }
-    for (let i = 0; i < 14; i++) {
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: rand(-80, 80), vy: rand(-80, 80),
-        life: rand(0.3, 0.6), maxLife: 0.6,
-        color: 'rgba(200, 240, 255, 1)', size: rand(2, 4), realtime: true, additive: true,
-      });
-    }
-    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.18); state.flashColor = '#a0d8ff'; }
-    this.abilityCd = this.abilityMaxCd;
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
-    return true;
-  }
+  // Apply incoming damage to this hero, respecting reductions.
+  // Returns the actual damage dealt.
+  applyDamage(rawDmg, attacker) {
+    if (this.dead) return 0;
+    if (this.immortalTimer > 0) return 0;
+    if (this._dominanceTargets !== null) return 0;
 
-  _rage() {
-    playSfx('ability_rage');
-    this.rageTimer = 5;
-    this.abilityCd = this.abilityMaxCd;
-    for (let i = 0; i < 28; i++) {
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: rand(-80, 80), vy: rand(-110, -20),
-        life: rand(0.5, 1.1), maxLife: 1.1,
-        color: i % 2 ? '#ff3020' : '#ff8030',
-        size: rand(1.5, 3), realtime: true,
-      });
-    }
-    for (let i = 0; i < 18; i++) {
-      const a = rand(0, Math.PI * 2);
-      const v = rand(60, 130);
-      state.particles.push({
-        x: this.x, y: this.y,
-        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30,
-        life: rand(0.45, 0.9), maxLife: 0.9,
-        color: i % 2 ? 'rgba(255, 90, 40, 1)' : 'rgba(255, 200, 90, 1)',
-        size: rand(2.5, 4.5), realtime: true, additive: true,
-      });
-    }
-    if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.22); state.flashColor = '#ff7040'; }
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
-    return true;
-  }
+    let dmg = rawDmg;
+    if (this.blockadeTimer > 0) dmg *= 0.5;
+    if (this.alchemyArmorTimer > 0) dmg *= 0.6;
+    if (this.densePlating > 0) dmg *= (1 - this.densePlating);
+    dmg = Math.max(0, dmg);
 
-  _chainLightning() {
-    playSfx('ability_lightning');
-    const chains = 4;
-    const maxRange = 200;
-    let cx = this.x, cy = this.y;
-    const hit = new Set();
-    const points = [{ x: cx, y: cy }];
-    for (let i = 0; i < chains; i++) {
-      let nearest = null, nd = maxRange;
-      for (const e of state.enemies) {
-        if (e.dead || hit.has(e)) continue;
-        const d = dist2(cx, cy, e.x, e.y);
-        if (d < nd) { nd = d; nearest = e; }
+    this.hp -= dmg;
+    this.hurtFlash = 1;
+
+    // Retribution armor passives — retaliate against the attacker
+    if (attacker && !attacker.dead) {
+      if (this.backdoorArmorFire) {
+        attacker.hp -= 8;
+        attacker.hurtFlash = 0.5;
+        if (!attacker.fireDot || attacker.fireDot < 2) attacker.fireDot = 2;
       }
-      if (!nearest) break;
-      hit.add(nearest);
-      points.push({ x: nearest.x, y: nearest.y });
-      const dmg = 30 * (this.chainMult || 1);
-      nearest.hp -= dmg;
-      nearest.stunTimer = Math.max(nearest.stunTimer, 1.8);
-      nearest.hurtFlash = 1;
-      nearest.knockX += rand(-30, 30);
-      nearest.knockY += rand(-30, 30);
-      for (let j = 0; j < 10; j++) {
-        state.particles.push({
-          x: nearest.x, y: nearest.y,
-          vx: rand(-100, 100), vy: rand(-120, -20),
-          life: rand(0.3, 0.7), maxLife: 0.7,
-          color: j % 2 ? '#a0e0ff' : '#e0f0ff',
-          size: rand(1.2, 2.5), realtime: true,
-        });
+      if (this.backdoorArmorLightning) {
+        attacker.hp -= 10;
+        attacker.stunTimer = Math.max(attacker.stunTimer, 0.6);
+        attacker.hurtFlash = 0.5;
       }
-      for (let j = 0; j < 8; j++) {
-        state.particles.push({
-          x: nearest.x, y: nearest.y,
-          vx: rand(-90, 90), vy: rand(-90, 30),
-          life: rand(0.25, 0.55), maxLife: 0.55,
-          color: 'rgba(180, 230, 255, 1)', size: rand(2, 3.5), realtime: true, additive: true,
-        });
+      if (this.backdoorArmorSpikes) {
+        attacker.hp -= 12;
+        attacker.hurtFlash = 0.5;
       }
-      pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { rgb: [180, 230, 255] });
-      cx = nearest.x; cy = nearest.y;
     }
-    if (points.length > 1) {
-      state.bolts.push({ points, life: 0.4, maxLife: 0.4 });
-      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.2); state.flashColor = '#a0d8ff'; }
-      if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, 0.04);
-    }
-    this.abilityCd = this.abilityMaxCd;
-    if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
-    return true;
+
+    return dmg;
   }
 
   draw(ctx) {
@@ -446,6 +777,57 @@ export class Unit {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.r + 1.5, 0, Math.PI * 2);
       ctx.stroke();
+    }
+
+    // Backdoor Blockade shimmer
+    if (this.blockadeTimer > 0) {
+      const pulse = 0.5 + Math.sin(state.time * 8) * 0.5;
+      const fade = Math.min(1, this.blockadeTimer / 0.5);
+      ctx.strokeStyle = `rgba(180, 200, 255, ${(0.4 + pulse * 0.4) * fade})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r + 6 + pulse * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      // Metallic cross-hatch on body
+      ctx.strokeStyle = `rgba(200, 220, 255, ${0.25 * fade})`;
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI + state.time * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(this.x + Math.cos(a) * (this.r - 2), this.y + Math.sin(a) * (this.r - 2));
+        ctx.lineTo(this.x + Math.cos(a + Math.PI) * (this.r - 2), this.y + Math.sin(a + Math.PI) * (this.r - 2));
+        ctx.stroke();
+      }
+    }
+
+    // Alchemy armor shimmer (Green Pipe)
+    if (this.alchemyArmorTimer > 0) {
+      const pulse = 0.5 + Math.sin(state.time * 6) * 0.5;
+      ctx.strokeStyle = `rgba(60, 200, 60, ${0.35 + pulse * 0.35})`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r + 5 + pulse * 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Stoned Green Pipe: green stone statue effect
+    if (this.stonedTimer > 0) {
+      ctx.strokeStyle = `rgba(40, 160, 40, 0.9)`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r + 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(40, 160, 40, 0.4)`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r + 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Speed boost sparkles
+    if (this.speedBoostTimer > 0 && Math.random() < 0.25) {
+      const a = rand(0, Math.PI * 2);
+      const r = this.r + rand(2, 6);
+      state.particles.push({ x: this.x + Math.cos(a) * r, y: this.y + Math.sin(a) * r, vx: rand(-30, 30), vy: rand(-50, -10), life: rand(0.1, 0.3), maxLife: 0.3, color: '#8080ff', size: rand(1.5, 2.5), realtime: true });
     }
 
     if (this.selected && this.moving) {
@@ -481,8 +863,8 @@ export class Unit {
       sprite.draw(ctx, this._anim, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
       ctx.filter = 'none';
       ctx.globalAlpha = 1;
-    } else if (this.type === 'elliot') {
-      this._drawElliot(ctx, flashBoost);
+    } else if (this.type === 'eliott') {
+      this._drawEliott(ctx, flashBoost);
     } else if (this.type === 'dick') {
       this._drawDick(ctx, flashBoost);
     } else if (this.type === 'habib') {
@@ -498,14 +880,90 @@ export class Unit {
       ctx.lineWidth = 0.7;
       ctx.beginPath();
       ctx.moveTo(this.x + Math.cos(a) * r, this.y + Math.sin(a) * r);
-      ctx.lineTo(this.x + Math.cos(a) * (r + rand(3, 7)) + rand(-2, 2),
-                 this.y + Math.sin(a) * (r + rand(3, 7)) + rand(-2, 2));
+      ctx.lineTo(this.x + Math.cos(a) * (r + rand(3, 7)) + rand(-2, 2), this.y + Math.sin(a) * (r + rand(3, 7)) + rand(-2, 2));
       ctx.stroke();
     }
 
-    this._drawWeapon(ctx);
+    // Only draw held weapon if not boomeranging
+    if (!(this.type === 'dick' && this.boomerang !== null)) {
+      this._drawWeapon(ctx);
+    }
 
-    if (this.swing > 0.3 && this._wDef.type !== 'thrown') {
+    // Draw flying boomerang
+    if (this.boomerang !== null) {
+      this._drawFlyingBoomerang(ctx);
+    }
+
+    // Flamethrower visual — dense fire particle spray
+    if (this.flamethrowerTimer > 0) {
+      const coneRange = 180, halfArc = Math.PI * 0.25;
+      // Hot nozzle glow
+      ctx.save();
+      const nx = this.x + Math.cos(this.facing) * (this.r + 4);
+      const ny = this.y + Math.sin(this.facing) * (this.r + 4);
+      const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, 20);
+      grd.addColorStop(0,   'rgba(255, 255, 200, 0.95)');
+      grd.addColorStop(0.4, 'rgba(255, 160, 30, 0.5)');
+      grd.addColorStop(1,   'rgba(255, 80, 0, 0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(nx, ny, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      // Dense fire particles
+      const count = 5 + (Math.random() < 0.5 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        const ang  = this.facing + rand(-halfArc * 0.85, halfArc * 0.85);
+        const dist = rand(this.r + 4, 20);
+        const spd  = rand(90, 220);
+        const life = rand(0.18, 0.5);
+        const r    = Math.random();
+        const color = r < 0.12 ? '#ffffff'
+                    : r < 0.30 ? '#ffee80'
+                    : r < 0.55 ? '#ffaa30'
+                    : r < 0.78 ? '#ff5010'
+                    : '#c03010';
+        state.particles.push({
+          x: this.x + Math.cos(ang) * dist,
+          y: this.y + Math.sin(ang) * dist,
+          vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - rand(8, 35),
+          life, maxLife: life,
+          color, size: rand(2.5, 8), realtime: true,
+        });
+      }
+      // Sparse smoke trailing behind the flame
+      if (Math.random() < 0.4) {
+        const ang = this.facing + rand(-halfArc * 0.6, halfArc * 0.6);
+        const d   = rand(55, coneRange * 0.75);
+        state.particles.push({
+          x: this.x + Math.cos(ang) * d, y: this.y + Math.sin(ang) * d,
+          vx: rand(-12, 12), vy: rand(-28, -8),
+          life: rand(0.5, 1.1), maxLife: 1.1,
+          color: `rgba(70, 55, 45, ${rand(0.18, 0.38)})`, size: rand(6, 15), realtime: true,
+        });
+      }
+    }
+
+    // Mill/Vortex spin arc — drawn around the orbiting center
+    if (this.millTimer > 0 || this.vortexTimer > 0) {
+      const isVortex = this.vortexTimer > 0;
+      const t  = isVortex ? this.vortexTimer : this.millTimer;
+      const cx = isVortex ? this.vortexCenterX : this.millCenterX;
+      const cy = isVortex ? this.vortexCenterY : this.millCenterY;
+      const radius = isVortex ? 100 : 80;
+      ctx.strokeStyle = `rgba(255, 180, 60, ${Math.min(1, t * 1.4)})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 220, 80, ${Math.min(0.5, t * 0.7)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    if (this.swing > 0.3 && this._wDef.type !== 'thrown' && !(this.type === 'dick' && this.boomerang !== null)) {
       const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.2 - 1.1 : 0;
       const clubBase = this.facing - 0.4 + swingArc;
       const a = (this.swing - 0.3) * 0.8;
@@ -544,7 +1002,45 @@ export class Unit {
     ctx.restore();
   }
 
-  _drawElliot(ctx, flashBoost) {
+  _drawFlyingBoomerang(ctx) {
+    const b = this.boomerang;
+    if (!b) return;
+    const angle = state.time * 14;
+    ctx.save();
+    ctx.translate(b.clubX, b.clubY);
+    ctx.rotate(angle);
+    // Shaft
+    ctx.strokeStyle = '#5a3510';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
+    ctx.stroke();
+    ctx.strokeStyle = '#9a6530';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
+    ctx.stroke();
+    // Blade at tip
+    ctx.strokeStyle = '#3a2010';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
+    ctx.stroke();
+    ctx.strokeStyle = '#7a4520';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.restore();
+  }
+
+  _drawEliott(ctx, flashBoost) {
     const p = this.palette;
     ctx.fillStyle = p.shorts;
     ctx.beginPath();
@@ -560,7 +1056,7 @@ export class Unit {
     ctx.lineTo(-4, this.r * 0.75);
     ctx.stroke();
 
-    ctx.fillStyle = flashBoost > 0 ? '#ffa090' : p.shirt;
+    ctx.fillStyle = flashBoost > 0 ? '#ffa090' : (this.stonedTimer > 0 ? '#60a060' : p.shirt);
     ctx.beginPath();
     ctx.arc(0, 0, this.r, 0, Math.PI * 2);
     ctx.fill();
@@ -597,7 +1093,7 @@ export class Unit {
     ctx.arc(0, -this.r * 0.25, this.r * 0.35, 0.4, Math.PI - 0.4);
     ctx.stroke();
 
-    ctx.fillStyle = flashBoost > 0 ? '#ffcaba' : p.skin;
+    ctx.fillStyle = flashBoost > 0 ? '#ffcaba' : (this.stonedTimer > 0 ? '#80b080' : p.skin);
     ctx.beginPath();
     ctx.arc(0, -this.r * 0.6, this.r * 0.55, 0, Math.PI * 2);
     ctx.fill();
@@ -818,11 +1314,11 @@ export class Unit {
 
   _drawWeapon(ctx) {
     const wDef = this._wDef;
-    if (wDef.dual)                        this._drawDualClubs(ctx);
-    else if (wDef.type === 'thrown')      this._drawHeldClubs(ctx);
-    else if (wDef.type === 'melee')       this._drawLongClub(ctx);
-    // ranged weapons: primitive club stand-in until weapon sprites land
-    else if (wDef.type === 'ranged')      this._drawHeldClubs(ctx);
+    if (wDef.shortClub)              this._drawShortClub(ctx);
+    else if (wDef.dual)              this._drawDualClubs(ctx);
+    else if (wDef.type === 'thrown') this._drawHeldClubs(ctx);
+    else if (wDef.type === 'melee')  this._drawLongClub(ctx);
+    else if (wDef.type === 'ranged') this._drawHeldClubs(ctx);
   }
 
   _drawSingleClub(ctx, baseAng, len, scale) {
@@ -865,6 +1361,12 @@ export class Unit {
     ctx.lineTo(gripX + Math.cos(baseAng) * 14, gripY + Math.sin(baseAng) * 14);
     ctx.stroke();
     ctx.lineCap = 'butt';
+  }
+
+  _drawShortClub(ctx) {
+    const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.0 - 1.0 : 0;
+    const baseAng = this.facing - 0.3 + swingArc;
+    this._drawSingleClub(ctx, baseAng, 26, 0.8);
   }
 
   _drawDualClubs(ctx) {

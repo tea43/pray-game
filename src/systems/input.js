@@ -15,7 +15,7 @@ function canvasPt(e) {
 }
 
 function getPortraitUnit(x, y) {
-  const slotW = 150, slotH = G.PANEL_H, gap = 12;
+  const slotW = 180, slotH = G.PANEL_H, gap = 12;
   const slots = state.units;
   const totalW = slots.length * slotW + (slots.length - 1) * gap;
   const startX = (G.W - totalW) / 2;
@@ -167,8 +167,15 @@ export function initInput() {
       state.timeSpeed = clamp(state.timeSpeed - 1, 1, 3);
       return;
     }
-    if (k === 's') {
+    if (k === 'v') {
       for (const u of state.selected) u.stop();
+      return;
+    }
+
+    if (k === 's') {
+      for (const u of state.units) {
+        if (u.type === 'dick' && !u.dead) u.activateSkill(1);
+      }
       return;
     }
     if (e.key === ' ') {
@@ -186,10 +193,27 @@ export function initInput() {
       return;
     }
 
-    if (k === 'q' || k === 'w' || k === 'e') {
+    // Basic abilities: 1/2/3 (Eliott/Dick/Habib) — fire regardless of selection
+    if (k === '1' || k === '2' || k === '3') {
       e.preventDefault();
-      for (const u of state.selected) {
-        if (u.abilityKey.toLowerCase() === k && !u.dead) u.cast();
+      for (const u of state.units) {
+        if (u.abilityKey === k && !u.dead) u.cast();
+      }
+    }
+
+    // Active skill hotkeys: Q/W/E (slot 0) and A/D (slot 1); S handled above
+    // Fire regardless of selection — keys are already hero-specific
+    const ACTIVE_KEYS = {
+      'q': { type: 'eliott', slot: 0 },
+      'w': { type: 'dick',   slot: 0 },
+      'e': { type: 'habib',  slot: 0 },
+      'a': { type: 'eliott', slot: 1 },
+      'd': { type: 'habib',  slot: 1 },
+    };
+    if (ACTIVE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
+      const { type, slot } = ACTIVE_KEYS[k];
+      for (const u of state.units) {
+        if (u.type === type && !u.dead) u.activateSkill(slot);
       }
     }
   });
