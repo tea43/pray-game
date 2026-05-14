@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [phaser_rebase, main]
+    branches: [phaser_rebase, main, overlord]
 
 permissions:
   contents: write
