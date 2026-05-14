@@ -95,7 +95,7 @@
       "pitchJitter": 0.06
     },
     "weapon.hockeyClub.attack": {
-      "dir": "weapons/attack/hockey-club",
+      "dir": "weapons/hockey-club",
       "fallback": "weapon.dualClubs.attack",
       "volume": 0.55,
       "pitchJitter": 0.07,

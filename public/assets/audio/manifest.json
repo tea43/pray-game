@@ -68,7 +68,6 @@
     },
     "alien.death.default": {
       "variants": [],
-      "fallback": "synthetic.death",
       "volume": 0.55,
       "pitchJitter": 0.08,
       "cooldown": 0.04
@@ -398,20 +397,9 @@
       "volume": 0.75,
       "pitchJitter": 0.04
     },
-    "loot.weapon.shotgun": {
+    "loot.weapon.spray-gun": {
       "variants": [],
       "fallback": "loot.weapon",
-      "volume": 0.75,
-      "pitchJitter": 0.05
-    },
-    "weapon.shotgun.fire": {
-      "variants": [
-        "./assets/audio/weapons/shotgun/shotgun_1.mp3",
-        "./assets/audio/weapons/shotgun/shotgun_2.mp3",
-        "./assets/audio/weapons/shotgun/shotgun_3.mp3",
-        "./assets/audio/weapons/shotgun/shotgun_4.mp3"
-      ],
-      "fallback": "synthetic.shoot",
       "volume": 0.75,
       "pitchJitter": 0.05
     },
