@@ -20,7 +20,9 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `current/implementation_notes.md`: Deeper technical reference for current modular `src/` behavior and code locations.
 - `current/sprites.md`: Sprite registry — manifest structure, categories, fallback chain, and how to add new art.
 - `current/bugs.md`: Active bug tracker. Statuses: TBD → IPG → VAL → DON. Take the first TBD bug, mark IPG, fix it, mark VAL, commit, remove entry.
+- `current/bugs/performance_improvements.md`: Log of completed performance optimisations (background cache, shadowBlur removal, DPR cap, particle throttle).
 - `current/smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
+- `current/adding_assets.md`: How to add audio, ability icons, sprites, and video assets — file locations, manifest commands, and wiring steps.
 
 ## planning/ — Active Plans
 
@@ -30,6 +32,9 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `planning/asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, enemies, weapons, loot, and comic assets.
 - `planning/future_world_sprites.md`: Eastern European environment sprites — design spec and occlusion system.
 - `planning/reworked_upgrade_plan.md`: Reworked slot-machine upgrade selector — lore-correct upgrade pools (Dick→weapons, Habib→armor, Eliott→alchemy), hidden spin-credit banking mechanic, and `UpgradeTestScene` dev harness.
+- `planning/realistic_abilities_plan.md`: Lore-accurate ability rework — weapon reassignment, 3 new base abilities, passive/active upgrade pools with per-wave durability.
+- `planning/died_conditions.md`: Assessment of the all-survivors-dead screen; what's implemented vs. missing (dim overlay during 2s window).
+- `planning/abilities_structure_rework.md`: Design doc for unifying base abilities and upgrade skills into a single modular ABILITY_DEFS system.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 
 ## executed/ — Completed Specs
@@ -46,7 +51,7 @@ Navigation hub for agents. Read this first, then open only the file that matches
 
 ## lore/
 
-- `lore/PRAY_ the game.md`: User-authored lore source for the P-RAY setting, alien worms, heroes, and story tone.
+- `lore/PRAY_the game.md`: User-authored lore source for the P-RAY setting, alien worms, heroes, and story tone.
 
 ---
 
@@ -58,7 +63,7 @@ Navigation hub for agents. Read this first, then open only the file that matches
 | Bug fix | `current/implementation_notes.md` + targeted code search |
 | Balance change | `current/current_game_state.md`, then relevant code ranges |
 | Add ability, weapon, enemy, or loot | `current/current_game_state.md` + `current/implementation_notes.md` |
-| Asset/content pipeline | `planning/asset_injection_plan.md` + `lore/PRAY_ the game.md` |
+| Asset/content pipeline | `planning/asset_injection_plan.md` + `lore/PRAY_the game.md` |
 | Audio, music, or sound effects | `planning/audio_plan.md` + targeted event code |
 | Roadmap or feature sequencing | `planning/future_development_plan.md` |
 | Immediate build phase status | `planning/plan.md` |

@@ -29,16 +29,27 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 
 ## Abilities
 
-- Select Elliot, press `Q`, confirm blink toward cursor and cooldown.
-- Select Dick, press `W`, confirm rage aura, faster attacks, and cooldown.
-- Select Habib, press `E` near enemies, confirm chain lightning, stun, and cooldown.
+- All hero name labels read "Eliott" (double-t).
+- Habib auto-attacks with melee hockey club; no projectile spawned.
+- Eliott auto-attacks with short hockey club; swing is visually smaller/faster than Dick's.
+- Press `1` (no selection needed), confirm Eliott's Group Blink moves him and nearby allies; hero outside 120 px is unaffected. Cooldown shown.
+- Press `2` (no selection needed) near enemies, confirm Dick's Boomerang travels oval arc targeting highest-HP enemy, hits on both legs, returns; Dick unarmed during flight. Does not fire if no target in range.
+- Press `3` (no selection needed) near allies, confirm Habib's Backdoor Blockade shimmer on heroes within 150 px; those heroes take half damage for 6s; heroes outside radius unaffected.
+
+## Active Skills
+
+- Win an active upgrade (e.g. Green Pipe for Eliott) from the slot machine.
+- Confirm it appears in the HUD active slot with key label and pip row.
+- Activate with the bound hotkey; confirm effect fires and cooldown bar fills.
+- Play 3+ waves; confirm durability pips decrement each wave; confirm slot empties at 0 pips.
+- Confirm the expired upgrade reappears in the slot machine reel after expiry.
 
 ## Combat And Loot
 
 - Confirm base attacks work for all three heroes.
 - Pick up medkit and stimpack.
 - Pick up bomb or banana bomb if available.
-- Pick up spray gun and samurai sword if available.
+- Pick up shotgun and samurai sword if available.
 - Confirm temporary weapon indicator and expiry.
 
 ## Waves And End States
