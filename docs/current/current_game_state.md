@@ -6,7 +6,11 @@ This snapshot is for fast agent onboarding. It describes the current playable be
 
 ## Game Identity
 
-P-RAY: The Game is a Canvas 2D survival tactics prototype. The player controls a squad of three survivors in a post-apocalyptic alien-worm setting built around P-RAY, a rare almost magical grass/substance. Time advances only while at least one survivor is moving, creating a hybrid of real-time action and pause-like tactical positioning.
+P-RAY: The Game is a **Phaser 3** survival tactics game (Canvas 2D bridge renderer). The player controls a squad of three survivors in a post-apocalyptic alien-worm setting built around P-RAY, a rare almost magical grass/substance. Time advances only while at least one survivor is moving, creating a hybrid of real-time action and pause-like tactical positioning.
+
+**Runtime:** `index.html` → `src/phaser/game.js` → `GameScene.js`. Do not edit `src/main.js` — it is deleted.
+
+**World:** 3× screen width, 3× play height (9× total area). Camera tracks hero centroid with smooth lerp, clamped to world bounds. Large Map Phase 1 is complete.
 
 ## Controls
 

@@ -8,6 +8,7 @@ import { resolveAsset } from '../config/assets.js';
 import { Loot } from './Loot.js';
 import { addKillScore } from '../systems/score.js';
 import { playSfx } from '../systems/audio.js';
+import { isWalkable, terrainSpeedMult } from '../utils/terrain.js';
 
 export class Enemy {
   constructor(x, y, kind) {
@@ -116,7 +117,7 @@ export class Enemy {
             const behindAng = tgt.facing + Math.PI;
             const dist = rand(70, 95);
             const tx = clamp(tgt.x + Math.cos(behindAng) * dist, 14, G.W - 14);
-            const ty = clamp(tgt.y + Math.sin(behindAng) * dist, 14, G.PLAY_BOTTOM - 14);
+            const ty = clamp(tgt.y + Math.sin(behindAng) * dist, 14, G.WORLD_H - 14);
             this.blinkTargetX = tx;
             this.blinkTargetY = ty;
             this.blinkTelegraph = 0.001;
@@ -225,15 +226,38 @@ export class Enemy {
     if (target) {
       const dx = target.x - this.x, dy = target.y - this.y;
       const d = Math.hypot(dx, dy);
+
+      // Direct chase by default; flow field only when the direct step is physically blocked
+      let moveDx = dx / d, moveDy = dy / d;
+      const stepSize = this.speed * dt;
+      if (!isWalkable(this.x + moveDx * stepSize, this.y + moveDy * stepSize)) {
+        const ff = state.flowField;
+        if (ff && G.COLS > 0) {
+          const col = Math.max(0, Math.min(G.COLS - 1, Math.floor(this.x / G.TILE)));
+          const row = Math.max(0, Math.min(G.ROWS - 1, Math.floor(this.y / G.TILE)));
+          const fi = (row * G.COLS + col) * 2;
+          const fdx = ff[fi], fdy = ff[fi + 1];
+          if (fdx !== 0 || fdy !== 0) { moveDx = fdx; moveDy = fdy; }
+        }
+      }
+
       // Gradual turn — worms cannot spin instantly
-      const targetFacing = Math.atan2(dy, dx);
+      const targetFacing = Math.atan2(moveDy, moveDx);
       let dFacing = targetFacing - this.facing;
       while (dFacing >  Math.PI) dFacing -= Math.PI * 2;
       while (dFacing < -Math.PI) dFacing += Math.PI * 2;
       this.facing += Math.sign(dFacing) * Math.min(Math.abs(dFacing), this.turnSpeed * dt);
       if (d > this.r + target.r - 2) {
-        this.x += (dx / d) * this.speed * dt;
-        this.y += (dy / d) * this.speed * dt;
+        const terrMult = terrainSpeedMult(this.x, this.y);
+        const ex = this.x + moveDx * this.speed * dt * terrMult;
+        const ey = this.y + moveDy * this.speed * dt * terrMult;
+        if (isWalkable(ex, ey)) {
+          this.x = ex; this.y = ey;
+        } else if (isWalkable(ex, this.y)) {
+          this.x = ex;
+        } else if (isWalkable(this.x, ey)) {
+          this.y = ey;
+        }
         this.walkCycle += dt * 7;
         if (this.kind === 'bigboss' || this.kind === 'miniboss') {
           playSfx('boss.walk.default', { cooldownKey: `boss.walk.${this.kind}` });
@@ -365,30 +389,30 @@ export class Enemy {
       const drops = ['bomb', 'medkit', 'stimpack', 'medkit', 'medkit'];
       for (let i = 0; i < drops.length; i++) {
         const ang = (i / drops.length) * Math.PI * 2;
-        const lx = clamp(this.x + Math.cos(ang) * 28, 12, G.W - 12);
-        const ly = clamp(this.y + Math.sin(ang) * 28, 12, G.PLAY_BOTTOM - 12);
+        const lx = clamp(this.x + Math.cos(ang) * 28, 12, G.WORLD_W - 12);
+        const ly = clamp(this.y + Math.sin(ang) * 28, 12, G.WORLD_H - 12);
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
-      state.loot.push(new Loot(clamp(this.x + 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), 'banana_bomb'));
+      state.loot.push(new Loot(clamp(this.x + 40, 12, G.WORLD_W - 12), clamp(this.y, 12, G.WORLD_H - 12), 'banana_bomb'));
       const bbWeapons = ['shotgun', 'samurai_sword'];
       const bbPick = bbWeapons[Math.floor(Math.random() * bbWeapons.length)];
-      state.loot.push(new Loot(clamp(this.x - 40, 12, G.W - 12), clamp(this.y, 12, G.PLAY_BOTTOM - 12), bbPick));
+      state.loot.push(new Loot(clamp(this.x - 40, 12, G.WORLD_W - 12), clamp(this.y, 12, G.WORLD_H - 12), bbPick));
       return;
     }
     if (this.kind === 'miniboss') {
       const drops = ['medkit', 'stimpack', 'bomb'];
       for (let i = 0; i < drops.length; i++) {
         const ang = (i / drops.length) * Math.PI * 2 + 0.4;
-        const lx = clamp(this.x + Math.cos(ang) * 18, 12, G.W - 12);
-        const ly = clamp(this.y + Math.sin(ang) * 18, 12, G.PLAY_BOTTOM - 12);
+        const lx = clamp(this.x + Math.cos(ang) * 18, 12, G.WORLD_W - 12);
+        const ly = clamp(this.y + Math.sin(ang) * 18, 12, G.WORLD_H - 12);
         state.loot.push(new Loot(lx, ly, drops[i]));
       }
       const mbWeapons = ['shotgun', 'samurai_sword'];
       const mbPick = mbWeapons[Math.floor(Math.random() * mbWeapons.length)];
       const mbAng = Math.PI;
       state.loot.push(new Loot(
-        clamp(this.x + Math.cos(mbAng) * 28, 12, G.W - 12),
-        clamp(this.y + Math.sin(mbAng) * 28, 12, G.PLAY_BOTTOM - 12),
+        clamp(this.x + Math.cos(mbAng) * 28, 12, G.WORLD_W - 12),
+        clamp(this.y + Math.sin(mbAng) * 28, 12, G.WORLD_H - 12),
         mbPick
       ));
       return;
@@ -397,14 +421,14 @@ export class Enemy {
     const def = ENEMY_DEFS[this.kind] || ENEMY_DEFS.ghoul;
     const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
     const dropChance = (def.dropChance || 0) * diff.loot.dropChanceMult;
-    const lx = clamp(this.x + rand(-4, 4), 12, G.W - 12);
-    const ly = clamp(this.y + rand(-4, 4), 12, G.PLAY_BOTTOM - 12);
+    const lx = clamp(this.x + rand(-4, 4), 12, G.WORLD_W - 12);
+    const ly = clamp(this.y + rand(-4, 4), 12, G.WORLD_H - 12);
     if (Math.random() < dropChance) {
       const drops = rollItemDrops(diff);
       drops.forEach((type, i) => {
         state.loot.push(new Loot(
-          clamp(lx + i * 14, 12, G.W - 12),
-          clamp(ly, 12, G.PLAY_BOTTOM - 12),
+          clamp(lx + i * 14, 12, G.WORLD_W - 12),
+          clamp(ly, 12, G.WORLD_H - 12),
           type
         ));
       });
@@ -413,16 +437,16 @@ export class Enemy {
     if (def.specialEligible) {
       if (Math.random() < LOOT_DEFS.bananaBombChance * diff.loot.specialDropMult) {
         state.loot.push(new Loot(
-          clamp(lx + rand(-8, 8), 12, G.W - 12),
-          clamp(ly + rand(-8, 8), 12, G.PLAY_BOTTOM - 12),
+          clamp(lx + rand(-8, 8), 12, G.WORLD_W - 12),
+          clamp(ly + rand(-8, 8), 12, G.WORLD_H - 12),
           'banana_bomb'
         ));
       } else if (Math.random() < LOOT_DEFS.specialWeaponChance * diff.loot.specialDropMult) {
         const weapons = LOOT_DEFS.specialWeapons;
         const pick = weapons[Math.floor(Math.random() * weapons.length)];
         state.loot.push(new Loot(
-          clamp(lx + rand(-8, 8), 12, G.W - 12),
-          clamp(ly + rand(-8, 8), 12, G.PLAY_BOTTOM - 12),
+          clamp(lx + rand(-8, 8), 12, G.WORLD_W - 12),
+          clamp(ly + rand(-8, 8), 12, G.WORLD_H - 12),
           pick
         ));
       }

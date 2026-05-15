@@ -43,36 +43,47 @@ export class InputSystem {
         state.mouse.downX = x;
         state.mouse.downY = y;
         state.selectionBox = null;
-        state.mouse.startedOnUnit = state.units.some(u => !u.dead && dist2(x, y, u.x, u.y) < u.r + 4);
+        // Convert screen → world for unit hit test
+        const wx0 = x + G.camera.x, wy0 = y + G.camera.y;
+        state.mouse.startedOnUnit = state.units.some(u => !u.dead && dist2(wx0, wy0, u.x, u.y) < u.r + 4);
       }
 
       if (ptr.rightButtonDown()) {
-        if (state.selected.length === 0) return;
         if (y > G.PLAY_BOTTOM + 10) return;
+        // Auto-select all living heroes if nothing selected
+        if (state.selected.length === 0) {
+          state.selected = state.units.filter(u => !u.dead);
+          for (const u of state.units) u.selected = state.selected.includes(u);
+          if (state.selected.length === 0) return;
+        }
+
+        // Convert screen → world coords
+        const wx = x + G.camera.x, wy = y + G.camera.y;
 
         let targetEnemy = null;
         for (const en of state.enemies) {
           if (en.dead) continue;
-          if (dist2(x, y, en.x, en.y) < en.r + 6) { targetEnemy = en; break; }
+          if (dist2(wx, wy, en.x, en.y) < en.r + 6) { targetEnemy = en; break; }
         }
 
         if (targetEnemy) {
           for (const u of state.selected) u.attackMove(targetEnemy);
           state.moveMarkers.push({ x: targetEnemy.x, y: targetEnemy.y, life: 0.7, maxLife: 0.7, type: 'attack' });
         } else {
+          const dest = this._clampToLeash(wx, wy);
           const n = state.selected.length;
           if (n === 1) {
-            state.selected[0].moveTo(x, y);
+            state.selected[0].moveTo(dest.x, dest.y);
           } else {
             const spacing = 26;
             const cols = Math.ceil(Math.sqrt(n));
             state.selected.forEach((u, i) => {
               const row = Math.floor(i / cols);
               const col = i % cols;
-              u.moveTo(x + (col - (cols - 1) / 2) * spacing, y + (row - (Math.ceil(n / cols) - 1) / 2) * spacing);
+              u.moveTo(dest.x + (col - (cols - 1) / 2) * spacing, dest.y + (row - (Math.ceil(n / cols) - 1) / 2) * spacing);
             });
           }
-          state.moveMarkers.push({ x, y, life: 0.6, maxLife: 0.6, type: 'move' });
+          state.moveMarkers.push({ x: dest.x, y: dest.y, life: 1.2, maxLife: 1.2, type: 'move' });
         }
       }
     });
@@ -99,8 +110,9 @@ export class InputSystem {
 
       if (state.selectionBox) {
         const box = state.selectionBox;
-        const minX = Math.min(box.x1, box.x2), maxX = Math.max(box.x1, box.x2);
-        const minY = Math.min(box.y1, box.y2), maxY = Math.max(box.y1, box.y2);
+        // Box is screen-space; convert to world for unit comparison
+        const minX = Math.min(box.x1, box.x2) + G.camera.x, maxX = Math.max(box.x1, box.x2) + G.camera.x;
+        const minY = Math.min(box.y1, box.y2) + G.camera.y, maxY = Math.max(box.y1, box.y2) + G.camera.y;
         if (!ptr.event.shiftKey) state.selected = [];
         for (const u of state.units) {
           if (u.dead) continue;
@@ -110,10 +122,12 @@ export class InputSystem {
         }
         state.selectionBox = null;
       } else {
+        // Convert screen → world for unit hit test
+        const wx = x + G.camera.x, wy = y + G.camera.y;
         let clicked = null;
         for (const u of state.units) {
           if (u.dead) continue;
-          if (dist2(x, y, u.x, u.y) < u.r + 5) { clicked = u; break; }
+          if (dist2(wx, wy, u.x, u.y) < u.r + 5) { clicked = u; break; }
         }
         if (clicked) {
           if (ptr.event.shiftKey) {
@@ -204,6 +218,28 @@ export class InputSystem {
         }
       }
     });
+  }
+
+  _clampToLeash(wx, wy) {
+    const living = this.state.units.filter(u => !u.dead);
+    if (living.length < 2) return { x: wx, y: wy };
+    // Use each hero's destination (tx, ty) so concurrent move commands account
+    // for where heroes will end up, not just where they currently are.
+    // Destination must be within one viewport of EVERY other hero's destination.
+    const margin = 60;
+    const maxSpreadX = G.W - margin * 2;
+    const maxSpreadY = G.PLAY_BOTTOM - margin * 2;
+    let loX = -Infinity, hiX = Infinity, loY = -Infinity, hiY = Infinity;
+    for (const u of living) {
+      loX = Math.max(loX, u.tx - maxSpreadX);
+      hiX = Math.min(hiX, u.tx + maxSpreadX);
+      loY = Math.max(loY, u.ty - maxSpreadY);
+      hiY = Math.min(hiY, u.ty + maxSpreadY);
+    }
+    // If heroes are already spread wider than a viewport, pull toward their centroid
+    if (loX > hiX) { const cx = living.reduce((s, u) => s + u.tx, 0) / living.length; loX = hiX = cx; }
+    if (loY > hiY) { const cy = living.reduce((s, u) => s + u.ty, 0) / living.length; loY = hiY = cy; }
+    return { x: clamp(wx, loX, hiX), y: clamp(wy, loY, hiY) };
   }
 
   _getPortraitUnit(x, y) {

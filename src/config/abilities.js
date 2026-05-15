@@ -1,6 +1,7 @@
 import { G } from '../globals.js';
 import { state } from '../state.js';
 import { rand, dist2, clamp } from '../utils/math.js';
+import { isWalkable, nearestWalkable } from '../utils/terrain.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
@@ -38,7 +39,7 @@ export const ABILITY_DEFS = {
     sound: 'ability.blink',
     maxCd: 9,
     activate(unit) {
-      const mx = state.mouse.x, my = state.mouse.y;
+      const mx = state.mouse.x + G.camera.x, my = state.mouse.y + G.camera.y;
       const dx = mx - unit.x, dy = my - unit.y;
       const d = Math.hypot(dx, dy);
       if (d < 6) return false;
@@ -54,8 +55,10 @@ export const ABILITY_DEFS = {
         state.particles.push({ x: unit.x, y: unit.y, vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.3, 0.55), maxLife: 0.55, color: 'rgba(180, 230, 255, 1)', size: rand(2, 4), realtime: true, additive: true });
       }
 
-      const nx = clamp(unit.x + (dx / d) * step, 6, G.W - 6);
-      const ny = clamp(unit.y + (dy / d) * step, 6, G.PLAY_BOTTOM);
+      const rawX = clamp(unit.x + (dx / d) * step, 6, G.WORLD_W - 6);
+      const rawY = clamp(unit.y + (dy / d) * step, 6, G.WORLD_H - 6);
+      const landed = isWalkable(rawX, rawY) ? { x: rawX, y: rawY } : nearestWalkable(rawX, rawY);
+      const nx = landed.x, ny = landed.y;
 
       const steps = 16;
       for (let i = 1; i < steps; i++) {
@@ -92,8 +95,10 @@ export const ABILITY_DEFS = {
         if (dist2(startX, startY, ally.x, ally.y) < ALLY_RADIUS) {
           const ang = rand(0, Math.PI * 2);
           const off = rand(10, 38);
-          const ax = clamp(nx + Math.cos(ang) * off, 6, G.W - 6);
-          const ay = clamp(ny + Math.sin(ang) * off, 6, G.PLAY_BOTTOM);
+          const rawAx = clamp(nx + Math.cos(ang) * off, 6, G.WORLD_W - 6);
+          const rawAy = clamp(ny + Math.sin(ang) * off, 6, G.WORLD_H - 6);
+          const landedA = isWalkable(rawAx, rawAy) ? { x: rawAx, y: rawAy } : nearestWalkable(rawAx, rawAy);
+          const ax = landedA.x, ay = landedA.y;
           ally.x = ax; ally.y = ay; ally.tx = ax; ally.ty = ay;
           ally.blinkFlash = 0.8;
           for (let i = 0; i < 8; i++) {
@@ -262,8 +267,8 @@ export const ABILITY_DEFS = {
         }
         if (!nearest) continue;
         const ang = nearest.facing + Math.PI;
-        const bx = clamp(nearest.x + Math.cos(ang) * 30, 6, G.W - 6);
-        const by = clamp(nearest.y + Math.sin(ang) * 30, 6, G.PLAY_BOTTOM);
+        const bx = clamp(nearest.x + Math.cos(ang) * 30, 6, G.WORLD_W - 6);
+        const by = clamp(nearest.y + Math.sin(ang) * 30, 6, G.WORLD_H);
         const origX = ally.x, origY = ally.y;
         ally.x = bx; ally.y = by; ally.tx = bx; ally.ty = by;
         ally.blinkFlash = 1;
@@ -488,8 +493,8 @@ export const ABILITY_DEFS = {
       // Leap arc: scatter particles along the jump path before teleporting
       const leapSteps = 12;
       const fromX = unit.x, fromY = unit.y;
-      const toX = clamp(target.x + rand(-20, 20), 6, G.W - 6);
-      const toY = clamp(target.y + rand(-20, 20), 6, G.PLAY_BOTTOM);
+      const toX = clamp(target.x + rand(-20, 20), 6, G.WORLD_W - 6);
+      const toY = clamp(target.y + rand(-20, 20), 6, G.WORLD_H);
       const midX = (fromX + toX) / 2, midY = Math.min(fromY, toY) - 40;
       for (let i = 0; i <= leapSteps; i++) {
         const t = i / leapSteps;

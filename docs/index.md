@@ -2,6 +2,21 @@
 
 Navigation hub for agents. Read this first, then open only the file that matches the task.
 
+---
+
+## ⚠️ CRITICAL — Entry Point
+
+**The game runs via Phaser 3.** `index.html` loads `src/phaser/game.js` — NOT `src/main.js`.
+
+- **Active entry point:** `src/phaser/game.js` → `src/phaser/scenes/GameScene.js`
+- **`src/main.js` is deleted** — it was an abandoned vanilla Canvas 2D prototype. Never edit or recreate it.
+- All game logic edits go in `src/phaser/` or in the shared files (`src/config/`, `src/entities/`, `src/state.js`, `src/render/`, `src/systems/` except the deleted vanilla-only files).
+- The Phaser scene uses a **Canvas 2D texture bridge**: `G.ctx` is a `CanvasTexture` 2D context. All existing draw code in `src/render/` writes to `G.ctx` unchanged; `refresh()` uploads to GPU each frame.
+
+See `docs/current/implementation_notes.md` → Architecture section for the full runtime picture.
+
+---
+
 ## Folder Layout
 
 | Folder | Purpose |
@@ -36,17 +51,18 @@ Navigation hub for agents. Read this first, then open only the file that matches
 - `planning/died_conditions.md`: Assessment of the all-survivors-dead screen; what's implemented vs. missing (dim overlay during 2s window).
 - `planning/abilities_structure_rework.md`: Design doc for unifying base abilities and upgrade skills into a single modular ABILITY_DEFS system.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
+- `planning/large_map_plan.md`: 3×3 world (9× screen area) with centroid-locked camera — phased implementation plan (Phases A–J).
 
 ## executed/ — Completed Specs
 
 - `executed/modularization_plan.md`: Completed plan for extracting from one large HTML file to the current modular `src/` codebase.
+- `executed/phaser_port_plan.md`: Phaser 3 port plan — **complete and active runtime**. All phases done.
 - `executed/bwaves_feature.md`: Between-wave upgrade system spec (implemented).
 - `executed/bwaves_feature_dev_plan.md`: Between-wave upgrade system implementation plan (all phases complete).
 - `executed/wasteland_survivors_feature_plan.md`: Historical feature ledger for the v4 single-file prototype.
 
 ## rejected/ — Abandoned Approaches
 
-- `rejected/phaser_port_plan.md`: Phaser 4.1 port plan — abandoned; game stayed on vanilla Canvas 2D + Vite.
 - `rejected/godot/`: Godot port design docs — abandoned before implementation.
 
 ## lore/

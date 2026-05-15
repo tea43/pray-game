@@ -7,13 +7,14 @@ import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
 import { DISPLAY_NAME_DEFS } from '../../config/assets.js';
 import { spawnEnemy, spawnBoss, spawnAt } from '../../systems/spawning.js';
 import { applyLoot } from '../../systems/loot.js';
-import { rand, dist2 } from '../../utils/math.js';
+import { rand, dist2, clamp } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { playMusic, playSfx } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
+import { buildFlowField } from '../../utils/terrain.js';
 import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 
 export class GameScene extends Phaser.Scene {
@@ -71,6 +72,10 @@ export class GameScene extends Phaser.Scene {
     G.W = this.scale.width;
     G.H = this.scale.height;
     G.PLAY_BOTTOM = G.H - G.PANEL_H - 22;
+    G.WORLD_W = G.W * 3;
+    G.WORLD_H = G.PLAY_BOTTOM * 3;
+    G.COLS = Math.ceil(G.WORLD_W / G.TILE);
+    G.ROWS = Math.ceil(G.WORLD_H / G.TILE);
   }
 
   _onResize() {
@@ -117,10 +122,14 @@ export class GameScene extends Phaser.Scene {
     generateTerrain();
     clearBackgroundCache();
 
-    const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
+    const cx = G.WORLD_W / 2, cy = G.WORLD_H / 2;
     state.units.push(new Unit(cx - 44, cy + 8,  'eliott'));
     state.units.push(new Unit(cx,       cy - 10, 'dick'));
     state.units.push(new Unit(cx + 44,  cy + 8,  'habib'));
+
+    // Snap camera to world centre
+    G.camera.x = Math.max(0, cx - G.W / 2);
+    G.camera.y = Math.max(0, cy - G.PLAY_BOTTOM / 2);
 
     if (diff.devWaves?.length > 0) {
       const bossMap = diff.enemy.bosses;
@@ -134,7 +143,7 @@ export class GameScene extends Phaser.Scene {
         const slots = _devSpawnSlots(G.W, G.PLAY_BOTTOM, diff.devSpawn);
         diff.devSpawn.forEach(({ kind, count }) => {
           for (let i = 0; i < count; i++) {
-            const pos = slots.shift() ?? { x: rand(80, G.W - 80), y: rand(80, G.PLAY_BOTTOM - 80) };
+            const pos = slots.shift() ?? { x: rand(80, G.WORLD_W - 80), y: rand(80, G.WORLD_H - 80) };
             spawnAt(pos.x, pos.y, kind);
           }
         });
@@ -152,6 +161,8 @@ export class GameScene extends Phaser.Scene {
     this._realDt = Math.min(0.05, delta / 1000);
     this._updateTimeFlow(this._realDt);
     this._updateWorld(this._realDt);
+    this._enforceGroupCohesion();
+    this._updateCamera(this._realDt);
     this._draw(this._realDt);
     this._checkEndConditions();
   }
@@ -233,6 +244,9 @@ export class GameScene extends Phaser.Scene {
     if (gameDt > 0 && !state.gameOver) {
       state.survivedSeconds += gameDt;
       for (const u of state.units)    u.update(gameDt);
+      // Rebuild flow field from living hero positions so enemies navigate around obstacles
+      const _living = state.units.filter(u => !u.dead);
+      if (_living.length > 0) state.flowField = buildFlowField(_living);
       for (const e of state.enemies)  e.update(gameDt);
       for (const pr of state.projectiles) pr.update(gameDt);
       state.projectiles = state.projectiles.filter(pr => !pr.dead);
@@ -388,9 +402,14 @@ export class GameScene extends Phaser.Scene {
 
     if (state.allWavesCleared && !state.extractionPhase && state.enemies.every(e => e.dead)) {
       state.extractionPhase = true;
+      const living = state.units.filter(u => !u.dead);
+      const hcx = living.length > 0 ? living.reduce((s, u) => s + u.x, 0) / living.length : G.WORLD_W / 2;
+      const hcy = living.length > 0 ? living.reduce((s, u) => s + u.y, 0) / living.length : G.WORLD_H / 2;
+      const htx = clamp(hcx, 80, G.WORLD_W - 80);
+      const hty = clamp(hcy - 80, 80, G.WORLD_H - 80);
       state.helicopter = {
-        x: G.W / 2, y: -80,
-        targetX: G.W / 2, targetY: G.PLAY_BOTTOM * 0.38,
+        x: htx, y: G.camera.y - 80,
+        targetX: htx, targetY: hty,
         flightState: 'flying', boarded: new Set(), radius: 68,
       };
       state.moveMarkers.push({
@@ -475,6 +494,36 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _enforceGroupCohesion() {
+    const living = state.units.filter(u => !u.dead && !u.boarded);
+    if (living.length < 2) return;
+    const maxX = G.W / 2 - 80;
+    const maxY = G.PLAY_BOTTOM / 2 - 80;
+    const cx = living.reduce((s, u) => s + u.x, 0) / living.length;
+    const cy = living.reduce((s, u) => s + u.y, 0) / living.length;
+    for (const u of living) {
+      // If this hero is already outside camera-visible range of the group centroid,
+      // clamp their destination so they walk back into view.
+      u.tx = clamp(u.tx, cx - maxX, cx + maxX);
+      u.ty = clamp(u.ty, cy - maxY, cy + maxY);
+    }
+  }
+
+  _updateCamera(realDt) {
+    const living = state.units.filter(u => !u.dead && !u.boarded);
+    if (!living.length) return;
+    const centX = living.reduce((s, u) => s + u.x, 0) / living.length;
+    const centY = living.reduce((s, u) => s + u.y, 0) / living.length;
+    const targetX = clamp(centX - G.W / 2,           0, G.WORLD_W - G.W);
+    const targetY = clamp(centY - G.PLAY_BOTTOM / 2, 0, G.WORLD_H - G.PLAY_BOTTOM);
+    // Fast lerp when heroes are moving so camera never lags behind;
+    // slow lerp when idle for a smooth settling feel.
+    const anyMoving = living.some(u => u.moving);
+    const lerp = Math.min(1, realDt * (anyMoving ? 18 : 6));
+    G.camera.x += (targetX - G.camera.x) * lerp;
+    G.camera.y += (targetY - G.camera.y) * lerp;
+  }
+
   // ── Draw ─────────────────────────────────────────────────────────────────────
 
   _draw(realDt) {
@@ -485,6 +534,10 @@ export class GameScene extends Phaser.Scene {
     if (state.shake > 0 && !state.settings.noShake) {
       ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
     }
+
+    // ── World-space block (camera offset) ──────────────────────────────────
+    ctx.save();
+    ctx.translate(-G.camera.x, -G.camera.y);
 
     drawBackground();
     this._drawMoveMarkers(ctx);
@@ -527,7 +580,10 @@ export class GameScene extends Phaser.Scene {
     drawParticles();
     drawFloatingTexts();
 
-    // Selection box
+    ctx.restore(); // end camera transform
+    // ── End world-space block ───────────────────────────────────────────────
+
+    // Selection box — screen-space
     if (state.selectionBox) {
       const b = state.selectionBox;
       const x = Math.min(b.x1, b.x2), y = Math.min(b.y1, b.y2);
@@ -565,6 +621,7 @@ export class GameScene extends Phaser.Scene {
 
     drawScreenFlash();
     drawCRTOverlay();
+    this._drawHeliArrow(ctx);
     this._drawWaveAnnouncements(ctx);
     this._drawExtractionBanner(ctx);
     drawAbilityPanel();
@@ -711,6 +768,67 @@ export class GameScene extends Phaser.Scene {
       ctx.fillText('▼ BOARD ▼', 0, -radius + 12);
       ctx.shadowBlur = 0; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
+    ctx.restore();
+  }
+
+  _drawHeliArrow(ctx) {
+    const heli = state.helicopter;
+    if (!heli || heli.flightState === 'gone') return;
+
+    // Convert helicopter world position to screen space
+    const sx = heli.x - G.camera.x;
+    const sy = heli.y - G.camera.y;
+
+    // If helicopter is inside the viewport, no arrow needed
+    const pad = 30;
+    if (sx >= pad && sx <= G.W - pad && sy >= pad && sy <= G.PLAY_BOTTOM - pad) return;
+
+    // Find the point on the screen-edge rectangle that the ray (centre → heli) hits
+    const cx = G.W / 2, cy = G.PLAY_BOTTOM / 2;
+    const dx = sx - cx, dy = sy - cy;
+    const edgePad = 44;
+    const halfW = G.W / 2 - edgePad;
+    const halfH = G.PLAY_BOTTOM / 2 - edgePad;
+
+    let t = Infinity;
+    if (Math.abs(dx) > 0.001) t = Math.min(t, halfW / Math.abs(dx));
+    if (Math.abs(dy) > 0.001) t = Math.min(t, halfH / Math.abs(dy));
+
+    const ax = cx + dx * t;
+    const ay = cy + dy * t;
+    const angle = Math.atan2(dy, dx);
+    const pulse = 0.7 + 0.3 * Math.sin(state.time * 4);
+
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(angle);
+
+    // Chevron arrow pointing toward helicopter
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(-9, -10);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-9, 10);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(100, 255, 80, ${pulse})`;
+    ctx.shadowColor = 'rgba(60, 200, 40, 0.7)';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = `rgba(40, 160, 20, ${pulse * 0.9})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Distance label below arrow
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const metres = Math.round(dist / 3);
+    ctx.rotate(-angle);
+    ctx.font = 'bold 10px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(160, 255, 120, ${pulse})`;
+    ctx.fillText(`${metres}m`, 0, 24);
+    ctx.textAlign = 'left';
+
     ctx.restore();
   }
 
