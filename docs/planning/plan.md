@@ -358,42 +358,51 @@ Commit:
 
 ## Phase 9: World Exploration And Environment
 
-Goal:
+Status: **Phase 9A complete** (large map, camera, world coords, group cohesion). See `docs/planning/large_map_plan.md` for full breakdown and remaining sub-phases.
 
-- Move from a static screen-space arena to a scrollable world with physical obstacles.
+Phase 9A completed (branch `large_map`):
+- 3× world dimensions (`G.WORLD_W`, `G.WORLD_H`).
+- Manual `G.camera` tracking hero centroid with fast/slow lerp.
+- All entity positions in world space; camera transform applied at render time in `GameScene._draw()`.
+- Background renders across full world with viewport culling.
+- Input converts screen → world coords; group cohesion leash prevents heroes separating more than one viewport.
 
-Implementation:
+Remaining sub-phases (see `large_map_plan.md` for specs):
 
-- Camera and world coordinates:
-  - Add a `camera` object with world-space position.
-  - All entity positions stored in world space; camera transform applied at render time.
-  - HUD stays in screen space.
-  - Static arena mode remains available as a dev toggle.
-  - Camera frames all living survivors; centroid of the squad is the anchor point.
-  - When a survivor dies the camera re-centers on the remaining survivors.
-- Non-penetrable environment blocks:
-  - Walls, ruined structures, and debris that block movement for survivors and enemies.
-  - Defined as axis-aligned rectangles in world config.
-  - Line of sight does not pass through walls: enemies behind a wall are hidden until a survivor has line of sight to them. A survivor behind a wall reveals what is on their side only.
-  - Blink (Elliot's ability) does not pass through walls. If the target point is inside or beyond a wall, the blink stops at the nearest clear position before the wall — Elliot cannot get stuck.
-  - Collision resolution pushes units to the nearest clear position; does not teleport them.
-  - Enemies use simple pathfinding (waypoint or steering) to navigate around obstacles toward survivors.
-  - Renders as distinct terrain tiles with dark/solid visual treatment.
-- Terrain chunks:
-  - World is larger than the screen; procedural chunks generated around camera bounds.
-  - Spawn enemies relative to camera bounds, not canvas bounds.
-- Slow terrain zones and hazard pools (optional first pass; can defer to a sub-phase).
+**Phase 9B — Helicopter arrives near heroes + off-screen directional arrow**
+- Helicopter targets hero centroid at extraction time (not fixed world centre).
+- Arrow on screen edge points toward helicopter when it is off-screen.
 
-Manual test:
+**Phase 9C — Obstacles: tile grid, procedural generation, hero/enemy blocking**
+- `state.terrain` Uint8Array populated by seeded noise + cellular automata smoothing.
+- Heroes: `moveTo` destination clamped to nearest walkable tile.
+- Enemies: flow-field navigation — BFS from hero centroid tile each frame; enemies steer along field vectors.
+- `src/utils/terrain.js` — `terrainAt`, `isWalkable`, `nearestWalkable`, `buildFlowField`.
+
+**Phase 9D — Visual terrain rendering**
+- Ground: unchanged.
+- Water: animated sin-wave shimmer per tile, drawn each frame in world transform block.
+- Buildings/mountains: pre-baked dark tiles with top-edge highlight in static background.
+
+**Phase 9E — Custom visual effects and pipelines**
+- Canvas 2D animated effects per tile (building lights, water shimmer enhancements).
+- Phaser post-FX GLSL pipelines on `_renderImg` for global effects (vignette, colour grade).
+- Full per-tile WebGL layer deferred.
+
+Manual test (full Phase 9):
 
 - Camera follows the squad centroid.
-- Survivors cannot walk through wall blocks.
-- Enemies pathfind around or are blocked by walls.
-- Loot and corpses remain in world space while camera moves.
+- Survivors cannot walk through impassable tiles.
+- Enemies navigate around obstacles toward heroes.
+- Helicopter flies to hero position; off-screen arrow visible before it arrives.
+- Terrain types visually distinct.
 
-Commit:
+Commit per sub-phase:
 
-- `Add camera, world coordinates, and impassable environment blocks`
+- `feat: helicopter targets heroes + off-screen arrow`
+- `feat: terrain obstacles, walkability grid, flow-field enemy nav`
+- `feat: water shimmer and building tile rendering`
+- `feat: post-FX pipelines for visual polish`
 
 ## Phase 10: Single-HTML Build
 

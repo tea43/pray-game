@@ -1,8 +1,10 @@
-# Phaser 4.1 Port Plan
+# Phaser 3 Port Plan
 
-> **STATUS: REJECTED.** Port abandoned. Game remains on vanilla Canvas 2D + Vite. Kept for reference.
+> **STATUS: COMPLETE.** The Phaser port is the active runtime. `index.html` loads `src/phaser/game.js`. The old vanilla Canvas 2D entry (`src/main.js`) has been deleted.
+>
+> **⚠️ CRITICAL NOTE FOR AGENTS:** This doc was previously mislabelled "REJECTED" and stored under `docs/rejected/`. That caused an entire session of wasted work editing vanilla-canvas files that were never loaded. Do NOT edit `src/main.js` — it no longer exists. All game code runs through `src/phaser/game.js` → `GameScene.js`.
 
-Port `P-RAY: The Game` from vanilla Canvas 2D + Vite to **Phaser 4.1**.
+Port `P-RAY: The Game` from vanilla Canvas 2D + Vite to **Phaser 3**.
 
 ---
 

@@ -2,6 +2,47 @@
 
 Source: modular `src/` (served via `npm run dev`). The legacy single-file `wasteland_survivors-v4.html` has been removed.
 
+---
+
+## 0. Runtime Architecture (read this first)
+
+**The game runs on Phaser 3.** Do not be misled by old docs or the presence of vanilla-Canvas-style code in `src/render/` and `src/entities/` — those files are still used but via a bridge.
+
+| Layer | File | Role |
+|---|---|---|
+| Entry point | `index.html` → `src/phaser/game.js` | Phaser `Game` instance + scene list |
+| Main scene | `src/phaser/scenes/GameScene.js` | Game loop, camera, draw dispatch |
+| Input | `src/phaser/systems/InputSystem.js` | All mouse + keyboard handling |
+| Canvas bridge | `GameScene._draw()` via `G.ctx` | Phaser `CanvasTexture` wraps a Canvas 2D context; existing render code writes to `G.ctx`; `refresh()` uploads to GPU each frame |
+| Shared logic | `src/entities/`, `src/config/`, `src/state.js`, `src/render/`, `src/systems/` (minus deleted vanilla files) | Zero Phaser dependency — used by both scene and shared code |
+
+**What was deleted (do not recreate):**
+- `src/main.js` — the old vanilla `requestAnimationFrame` loop; never loaded
+- `src/systems/input.js` — vanilla event listeners; only imported by main.js
+- `src/systems/menu.js` — vanilla menu wiring; only imported by main.js
+- `src/render/units.js`, `src/render/enemies.js`, `src/render/loot.js`, `src/utils/canvas.js` — empty Phase 4 stubs
+
+**World / camera:**
+- `G.WORLD_W = G.W * 3`, `G.WORLD_H = G.PLAY_BOTTOM * 3` — world is 9× screen area
+- `G.camera = {x, y}` — top-left of viewport in world space; updated each frame in `GameScene._updateCamera()`
+- Screen → world: `wx = screenX + G.camera.x`, `wy = screenY + G.camera.y`
+- All entity positions are world-space; `_draw()` applies `ctx.translate(-G.camera.x, -G.camera.y)` before drawing entities
+
+---
+
+## Retrospective: How agents got confused (2025-05)
+
+An agent session spent hours editing `src/main.js` and `src/systems/input.js` — neither of which were loaded by the game — because:
+
+1. `docs/rejected/phaser_port_plan.md` was mislabelled **REJECTED** when the port was actually complete and active.
+2. `docs/index.md` had no mention of the real entry point.
+3. `src/main.js` still existed alongside `src/phaser/game.js`, looking like the real entry.
+4. `implementation_notes.md` (this file) referenced `frame()` — a function from the deleted vanilla loop.
+
+**How to avoid repeating this:** The entry-point warning is now the first thing in `docs/index.md`. The phaser port doc is in `executed/`. `src/main.js` is deleted. If you ever see a file named `src/main.js` in this repo, it was incorrectly recreated — delete it.
+
+---
+
 Definition tables live in `src/config/`:
 
 - `src/config/heroes.js` — `HERO_DEFS`

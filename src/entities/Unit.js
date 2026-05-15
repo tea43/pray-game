@@ -10,6 +10,7 @@ import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { ABILITY_DEFS } from '../config/abilities.js';
+import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -149,8 +150,8 @@ export class Unit {
       if (closestAlly) {
         const ang = rand(0, Math.PI * 2);
         const off = closestAlly.r + this.r + 8;
-        this.x = clamp(closestAlly.x + Math.cos(ang) * off, 6, G.W - 6);
-        this.y = clamp(closestAlly.y + Math.sin(ang) * off, 6, G.PLAY_BOTTOM);
+        this.x = clamp(closestAlly.x + Math.cos(ang) * off, 6, G.WORLD_W - 6);
+        this.y = clamp(closestAlly.y + Math.sin(ang) * off, 6, G.WORLD_H);
         this.tx = this.x; this.ty = this.y;
         this.blinkFlash = 1;
         for (let i = 0; i < 12; i++) {
@@ -179,9 +180,9 @@ export class Unit {
       const orbitR = 38;
       const mdx = this._millTargetX - this.millCenterX, mdy = this._millTargetY - this.millCenterY;
       const md = Math.hypot(mdx, mdy);
-      if (md > 2) { const s = Math.min(md, this.speed * dt); this.millCenterX = clamp(this.millCenterX + mdx / md * s, 6, G.W - 6); this.millCenterY = clamp(this.millCenterY + mdy / md * s, 6, G.PLAY_BOTTOM); }
-      this.x = clamp(this.millCenterX + Math.cos(this.millAngle) * orbitR, 6, G.W - 6);
-      this.y = clamp(this.millCenterY + Math.sin(this.millAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      if (md > 2) { const s = Math.min(md, this.speed * dt); this.millCenterX = clamp(this.millCenterX + mdx / md * s, 6, G.WORLD_W - 6); this.millCenterY = clamp(this.millCenterY + mdy / md * s, 6, G.WORLD_H); }
+      this.x = clamp(this.millCenterX + Math.cos(this.millAngle) * orbitR, 6, G.WORLD_W - 6);
+      this.y = clamp(this.millCenterY + Math.sin(this.millAngle) * orbitR, 6, G.WORLD_H);
       this.tx = this.x; this.ty = this.y;
       this.facing = this.millAngle + Math.PI * 0.5;
       for (const e of state.enemies) {
@@ -209,9 +210,9 @@ export class Unit {
       const orbitR = 50;
       const vdx = this._vortexTargetX - this.vortexCenterX, vdy = this._vortexTargetY - this.vortexCenterY;
       const vd = Math.hypot(vdx, vdy);
-      if (vd > 2) { const s = Math.min(vd, this.speed * dt); this.vortexCenterX = clamp(this.vortexCenterX + vdx / vd * s, 6, G.W - 6); this.vortexCenterY = clamp(this.vortexCenterY + vdy / vd * s, 6, G.PLAY_BOTTOM); }
-      this.x = clamp(this.vortexCenterX + Math.cos(this.vortexAngle) * orbitR, 6, G.W - 6);
-      this.y = clamp(this.vortexCenterY + Math.sin(this.vortexAngle) * orbitR, 6, G.PLAY_BOTTOM);
+      if (vd > 2) { const s = Math.min(vd, this.speed * dt); this.vortexCenterX = clamp(this.vortexCenterX + vdx / vd * s, 6, G.WORLD_W - 6); this.vortexCenterY = clamp(this.vortexCenterY + vdy / vd * s, 6, G.WORLD_H); }
+      this.x = clamp(this.vortexCenterX + Math.cos(this.vortexAngle) * orbitR, 6, G.WORLD_W - 6);
+      this.y = clamp(this.vortexCenterY + Math.sin(this.vortexAngle) * orbitR, 6, G.WORLD_H);
       this.tx = this.x; this.ty = this.y;
       this.facing = this.vortexAngle + Math.PI * 0.5;
       for (const e of state.enemies) {
@@ -278,8 +279,8 @@ export class Unit {
         const e = this._dominanceTargets.shift();
         if (e && !e.dead) {
           const ang = e.facing + Math.PI;
-          this.x = clamp(e.x + Math.cos(ang) * 28, 6, G.W - 6);
-          this.y = clamp(e.y + Math.sin(ang) * 28, 6, G.PLAY_BOTTOM);
+          this.x = clamp(e.x + Math.cos(ang) * 28, 6, G.WORLD_W - 6);
+          this.y = clamp(e.y + Math.sin(ang) * 28, 6, G.WORLD_H);
           this.tx = this.x; this.ty = this.y;
           this.blinkFlash = 0.7;
           const dmg = Math.round(this.atkDmg * (this.upgradeDmgMult || 1));
@@ -294,8 +295,8 @@ export class Unit {
         this._dominanceTimer = 0.25;
         if (this._dominanceTargets.length === 0) {
           if (this._dominanceOrigin) {
-            this.x = clamp(this._dominanceOrigin.x, 6, G.W - 6);
-            this.y = clamp(this._dominanceOrigin.y, 6, G.PLAY_BOTTOM);
+            this.x = clamp(this._dominanceOrigin.x, 6, G.WORLD_W - 6);
+            this.y = clamp(this._dominanceOrigin.y, 6, G.WORLD_H);
             this.tx = this.x; this.ty = this.y;
             this._dominanceOrigin = null;
           }
@@ -359,14 +360,33 @@ export class Unit {
     }
 
     // Movement
-    const effectiveSpeed = this.speed * (this.speedBoostTimer > 0 ? 1.8 : 1);
+    // Push-out: if inside a non-walkable tile (blink, knockback, etc.), snap to nearest walkable
+    if (!isWalkable(this.x, this.y)) {
+      const w = nearestWalkable(this.x, this.y);
+      this.x = w.x; this.y = w.y;
+      this.tx = w.x; this.ty = w.y;
+    }
+
+    const effectiveSpeed = this.speed * (this.speedBoostTimer > 0 ? 1.8 : 1) * terrainSpeedMult(this.x, this.y);
     if (this.moving) {
       const dx = this.tx - this.x, dy = this.ty - this.y;
       const d = Math.hypot(dx, dy);
       this.facing = Math.atan2(dy, dx);
       const step = effectiveSpeed * dt;
       if (step >= d) { this.x = this.tx; this.y = this.ty; }
-      else { this.x += (dx / d) * step; this.y += (dy / d) * step; }
+      else {
+        const nx = this.x + (dx / d) * step;
+        const ny = this.y + (dy / d) * step;
+        if (isWalkable(nx, ny)) {
+          this.x = nx; this.y = ny;
+        } else if (isWalkable(nx, this.y)) {
+          this.x = nx;                        // slide along X axis
+        } else if (isWalkable(this.x, ny)) {
+          this.y = ny;                        // slide along Y axis
+        } else {
+          this.tx = this.x; this.ty = this.y; // fully blocked — cancel move
+        }
+      }
       this.walkCycle += dt * 9;
 
       // Speed boost contact damage
@@ -683,24 +703,30 @@ export class Unit {
     // During mill/vortex redirect the destination to the orbit center target
     // so the player can steer the spin with right-click like normal movement.
     if (this.millTimer > 0) {
-      this._millTargetX = clamp(x, 6, G.W - 6);
-      this._millTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      this._millTargetX = clamp(x, 6, G.WORLD_W - 6);
+      this._millTargetY = clamp(y, 6, G.WORLD_H);
       return;
     }
     if (this.vortexTimer > 0) {
-      this._vortexTargetX = clamp(x, 6, G.W - 6);
-      this._vortexTargetY = clamp(y, 6, G.PLAY_BOTTOM);
+      this._vortexTargetX = clamp(x, 6, G.WORLD_W - 6);
+      this._vortexTargetY = clamp(y, 6, G.WORLD_H);
       return;
     }
-    this.tx = clamp(x, 6, G.W - 6);
-    this.ty = clamp(y, 6, G.PLAY_BOTTOM);
+    let tx = clamp(x, 6, G.WORLD_W - 6);
+    let ty = clamp(y, 6, G.WORLD_H - 6);
+    if (!isWalkable(tx, ty)) {
+      const w = nearestWalkable(tx, ty);
+      tx = w.x; ty = w.y;
+    }
+    this.tx = tx;
+    this.ty = ty;
     this.aggroTarget = null;
   }
   attackMove(enemy) {
     if (this.stonedTimer > 0) return;
     this.aggroTarget = enemy;
-    this.tx = clamp(enemy.x, 6, G.W - 6);
-    this.ty = clamp(enemy.y, 6, G.PLAY_BOTTOM);
+    this.tx = clamp(enemy.x, 6, G.WORLD_W - 6);
+    this.ty = clamp(enemy.y, 6, G.WORLD_H);
   }
   stop() { this.tx = this.x; this.ty = this.y; this.aggroTarget = null; }
 
