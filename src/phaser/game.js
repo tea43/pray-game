@@ -7,13 +7,14 @@ import { HUDScene }         from './scenes/HUDScene.js';
 import { PauseScene }       from './scenes/PauseScene.js';
 import { VictoryScene }     from './scenes/VictoryScene.js';
 import { GameOverScene }    from './scenes/GameOverScene.js';
-import { UpgradeScene }     from './scenes/UpgradeScene.js';
-import { UpgradeTestScene } from './scenes/UpgradeTestScene.js';
+import { UpgradeScene }        from './scenes/UpgradeScene.js';
+import { UpgradeTestScene }    from './scenes/UpgradeTestScene.js';
+import { WeaponLevelUpScene }  from './scenes/WeaponLevelUpScene.js';
 
 const config = {
   type: Phaser.WEBGL,
   transparent: true,
-  scene: [BootScene, SplashScene, MenuScene, GameScene, HUDScene, PauseScene, VictoryScene, GameOverScene, UpgradeTestScene, UpgradeScene],
+  scene: [BootScene, SplashScene, MenuScene, GameScene, HUDScene, PauseScene, VictoryScene, GameOverScene, UpgradeTestScene, UpgradeScene, WeaponLevelUpScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,

@@ -6,6 +6,7 @@ import { GameData } from '../systems/upgrades.js';
 import { ABILITY_DEFS } from '../config/abilities.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
+import { drawWeaponSprite } from './weaponSprites.js';
 
 // Key bindings per hero: [basic, active slot 0, active slot 1]
 const HERO_KEYS = {
@@ -23,6 +24,7 @@ const BG      = 2;    // gap between buttons
 const B_LEFT  = 2;    // left margin before first button
 const KEY_H       = 18;   // key-label strip at bottom of each button
 const BUFF_ROW_H  = 16;   // active-buff indicator row between header and buttons
+const WEAPON_ROW_H = 22;  // weapon slot strip: 3 icons + level pips
 
 // Lazy image loader
 const _imgCache = new Map();
@@ -132,9 +134,13 @@ export function drawAbilityPanel() {
     const buffY = y + HEADER_H + 1;
     _drawBuffRow(ctx, u, x, buffY, panelY);
 
+    // ── Weapon slot strip ─────────────────────────────────────────────────────
+    const weaponY = y + HEADER_H + BUFF_ROW_H + 1;
+    _drawWeaponSlots(ctx, u, x, weaponY);
+
     // ── Ability buttons ───────────────────────────────────────────────────────
-    const btnY = y + HEADER_H + BUFF_ROW_H + 2;
-    const BH   = PANEL_H - HEADER_H - BUFF_ROW_H - 4;
+    const btnY = y + HEADER_H + BUFF_ROW_H + WEAPON_ROW_H + 2;
+    const BH   = PANEL_H - HEADER_H - BUFF_ROW_H - WEAPON_ROW_H - 4;
     _drawAbilityButtons(ctx, u, x, btnY, BH, panelY);
   }
 
@@ -156,7 +162,7 @@ function _drawBuffRow(ctx, unit, sx, rowY, panelY) {
 
   const buffs = [];
   if (unit.weaponTimer > 0) {
-    const wDef = WEAPON_DEFS[unit.currentWeapon];
+    const wDef = WEAPON_DEFS[unit.weaponSlots?.[0]?.key];
     const maxT = wDef?.lootDuration || 15;
     buffs.push({ label: wDef?.displayName?.slice(0,4).toUpperCase() || 'WPN', time: unit.weaponTimer, maxTime: maxT, color: '#ffa040',
       name: wDef?.displayName || 'Weapon', desc: _weaponDesc(wDef) });
@@ -256,6 +262,56 @@ function _drawBuffRow(ctx, unit, sx, rowY, panelY) {
     }
 
     bx += PILL_W + PILL_GAP;
+  }
+}
+
+function _drawWeaponSlots(ctx, unit, sx, rowY) {
+  const CELL = 16, GAP = 4, PIPS_H = 6;
+  const totalW = 3 * CELL + 2 * GAP;
+  let bx = sx + (SLOT_W - totalW) / 2;
+
+  for (let i = 0; i < 3; i++) {
+    const slot = unit.weaponSlots?.[i];
+    const cx = bx + i * (CELL + GAP);
+
+    if (!slot) {
+      // Empty slot — dim box with + glyph
+      ctx.fillStyle = 'rgba(30, 20, 10, 0.6)';
+      ctx.fillRect(cx, rowY, CELL, CELL);
+      ctx.strokeStyle = 'rgba(80, 55, 25, 0.5)';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(cx, rowY, CELL, CELL);
+      ctx.fillStyle = 'rgba(80, 60, 30, 0.55)';
+      ctx.font = '10px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', cx + CELL / 2, rowY + CELL - 4);
+      ctx.textAlign = 'left';
+    } else {
+      const wDef = WEAPON_DEFS[slot.key];
+      // Icon background tinted by weapon type
+      const typeColor = wDef?.type === 'ranged' ? 'rgba(255,154,48,0.25)' :
+                        wDef?.type === 'thrown'  ? 'rgba(100,200,255,0.22)' :
+                                                   'rgba(200,180,100,0.22)';
+      ctx.fillStyle = typeColor;
+      ctx.fillRect(cx, rowY, CELL, CELL);
+      ctx.strokeStyle = slot.level >= 5 ? '#ffaa18' : 'rgba(160,130,60,0.7)';
+      ctx.lineWidth = slot.level >= 5 ? 1.5 : 0.8;
+      ctx.strokeRect(cx, rowY, CELL, CELL);
+
+      // Weapon sprite
+      drawWeaponSprite(ctx, slot.key, cx + CELL / 2, rowY + CELL / 2, 0.9, Math.PI / 4);
+
+      // Level pips below icon
+      const pipR = 1.8;
+      const pipGap = 5;
+      const pipStartX = cx + (CELL - (5 * pipGap - 1)) / 2;
+      for (let p = 0; p < 5; p++) {
+        ctx.beginPath();
+        ctx.arc(pipStartX + p * pipGap, rowY + CELL + pipR + 1, pipR, 0, Math.PI * 2);
+        ctx.fillStyle = p < slot.level ? '#d8a040' : 'rgba(80, 60, 25, 0.6)';
+        ctx.fill();
+      }
+    }
   }
 }
 
