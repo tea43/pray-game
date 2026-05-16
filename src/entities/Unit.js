@@ -1,7 +1,7 @@
 import { G } from '../globals.js';
 import { rand, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
-import { HERO_DEFS } from '../config/heroes.js';
+import { HERO_DEFS, DEFAULT_PICKUP_R } from '../config/heroes.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { resolveAsset } from '../config/assets.js';
@@ -102,6 +102,7 @@ export class Unit {
     this.currentWeapon = def.startingWeapon || 'hockey_club';
     this.maxHp = Math.round(def.maxHp * diff.hero.hpMult);
     this.hp = this.maxHp;
+    this.pickupR = def.pickupR ?? DEFAULT_PICKUP_R;
     this.palette = { ...def.palette };
   }
 
