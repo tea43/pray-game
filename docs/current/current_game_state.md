@@ -73,11 +73,35 @@ Priority order (highest first):
 | Dick | Melee heavy unit | 120 | 26 | 40 | 0.34s | `W` Boomerang Throw |
 | Habib | Frontline engineer | 100 | 26 | 40 | 0.34s | `E` Backdoor Blockade |
 
+## Weapon Slots & Level-Up Picker
+
+Each hero owns **3 weapon slots** (`weaponSlots[3]`). Slot 0 starts filled with the hero's starting weapon at level 1; slots 1 and 2 start empty (`null`). Every filled slot fires independently on its own cooldown — heroes with multiple weapons auto-attack with all of them simultaneously, Vampire-Survivors style.
+
+**Weapon levels (1–5):** Each weapon has a `levels[]` array in `WEAPON_DEFS` with per-level stat overrides (`atkDmg`, `atkRate`, `knockback`, `bulletCount`, `piercing`, etc.). Stats are resolved via `resolveWeaponStats(slot)` which merges the base def with the level entry.
+
+**Level-up picker:** When `_levelUp()` fires, `state.pendingLevelUps` is incremented. Before each entity tick, `GameScene` checks `pendingLevelUps > 0 && !state.isLevelUpScreen && !state.isUpgradeScreen` and launches `WeaponLevelUpScene`, pausing the game. The scene presents **3 cards**:
+- **↑ UPGRADE** (blue badge): upgrade an existing weapon slot (level N → N+1), showing stat delta.
+- **+ NEW** (gold badge): grant a hero a new weapon into an empty slot, drawn from their `weaponPool` in `HERO_DEFS`.
+- **♥ HEAL** (green badge): fallback when fewer than 3 weapon offers exist — heals the lowest-HP living hero by 25% of max HP.
+
+Offers are weighted by rarity (Common=1, Rare=2, Epic=3, Legendary=4). Dead heroes are skipped during offer generation. Selection is a **two-step flow**: clicking a card highlights it (gold outer border, rarity stripe fully lit, inner ring); clicking the **CHOOSE UPGRADE** button at the bottom of the modal applies the offer and resumes `GameScene` (120 ms delay). The button is disabled until a card is picked. ESC opens `PauseScene` without closing the picker.
+
+**HUD weapon strip:** Below each hero card in the bottom panel, a row of 3 cells shows the equipped weapons: a coloured background tinted by weapon type (melee = amber, ranged = blue), a 2–4 character abbreviation, and 5 level pips (filled up to current level). Empty slots display a dim box with `+`.
+
+**Hero weapon visuals:** Heroes draw the weapon held in their **highest-index filled slot** (`_displaySlot` getter on `Unit`) — i.e. the most recently equipped weapon. All weapons are now rendered as **16x16 retro pixel art sprites** drawn via Canvas `fillRect` (`src/render/weaponSprites.js`). Melee attacks show bright, sweeping crescent slash trails during the swing animation. Ranged and thrown weapons render the pixel art sprite for the projectile (or boomerang) in flight.
+
+**Hero weapon pools:**
+- Eliott: `short_hockey_club`, `throwing_stone`, `bow`, `crossbow`, `samurai_sword`
+- Dick: `hockey_club`, `long_club`, `dual_clubs`, `thrown_club`, `boomerang`, `samurai_sword`
+- Habib: `hockey_club`, `shotgun`, `crossbow`, `bow`, `samurai_sword`
+
+**State fields:** `state.isLevelUpScreen` (bool, mirrors `isUpgradeScreen`), `state.pendingLevelUps` (int queue). Both reset to `false`/`0` on new-game.
+
 ## Base Weapons
 
-- Eliott: `short_hockey_club`; fast short-range melee with moderate knockback.
-- Dick: `hockey_club`; dual alternating melee swings with high knockback.
-- Habib: `hockey_club`; melee swings (no projectile).
+- Eliott: `short_hockey_club` (slot 0, level 1); fast short-range melee with moderate knockback.
+- Dick: `hockey_club` (slot 0, level 1); dual alternating melee swings with high knockback.
+- Habib: `hockey_club` (slot 0, level 1); melee swings (no projectile).
 
 ## Abilities
 
@@ -97,13 +121,6 @@ Each hero can hold up to 2 active upgrade skills beyond their base ability. Acti
 | 2nd | `A` | `S` | `D` |
 
 Active upgrades have a durability counter (3 waves by default; modified by difficulty). When the counter reaches 0 the slot empties and the upgrade becomes available in future reels again. Durability pips are shown in the HUD. Passive upgrades remain permanent for the run.
-
-## Temporary Weapons
-
-Temporary weapons replace or modify a survivor's normal attack after pickup.
-
-- `shotgun` (displayed as **Shotgun**): 15s duration. Fires 5 bullets in a cone at 480 px/s, each up to 320 px. Attack rate 1.10 s (5× slower than original).
-- `samurai_sword`: 20s duration. Wide 120-degree cleave within 80 px. Damage is multiplied by 2.2.
 
 ## Between-Wave Upgrades (Slot Machine)
 
@@ -134,8 +151,8 @@ At the end of each 22s wave, `UpgradeScene` appears as a slot machine overlay. I
 | `stimpack` | Applies 5s rage-like buff and reduces ability cooldown by 2s. |
 | `bomb` | Area explosion, radius 280. Damage falls off linearly from 150 at centre to 0 at edge (`LOOT_DEFS.bombDamage`). |
 | `banana_bomb` | Larger explosion, radius 420, damage 300 at centre (`LOOT_DEFS.bananaBombDamage`), heavy knockback, 2.5s stun. |
-| `shotgun` | Grants temporary spray gun. |
-| `samurai_sword` | Grants temporary sword cleave. |
+| `shotgun` | **+10 XP** (weapon sprites and SFX still play; no longer equips temporarily). |
+| `samurai_sword` | **+10 XP** (weapon sprites and SFX still play; no longer equips temporarily). |
 
 Regular enemy drop distribution: medkit ~52%, rare_medkit ~8%, stimpack ~35%, bomb ~5%. Loot spawn rates in difficulty configs are low (e.g. brood-hunter: medkit 6%, stimpack 3.5%, bomb 1%).
 
@@ -148,7 +165,7 @@ Drop chance by enemy:
 - Mutant: 100%
 - Miniboss and bigboss: guaranteed custom bundles.
 
-Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bomb, otherwise 20% chance for spray gun or samurai sword.
+Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bomb, otherwise 20% chance for `shotgun` or `samurai_sword` loot (both grant +10 XP on pickup).
 
 ### Player Level & Essence
 

@@ -47,6 +47,8 @@ export const state = {
   spaceHoldDuration: 0,
   survivedSeconds: 0,
   isUpgradeScreen: false,
+  isLevelUpScreen: false,
+  pendingLevelUps: 0,
   pendingUpgrades: { eliott: null, dick: null, habib: null },
   upgradeSpinCredits: 0,
   selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },

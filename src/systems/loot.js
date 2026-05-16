@@ -48,7 +48,7 @@ export function applyLoot(loot, unit) {
   } else if (loot.type === 'bomb') {
     detonateBomb(loot.x, loot.y);
   } else if (WEAPON_DEFS[loot.type]) {
-    _equipWeapon(unit, loot.type, loot.x, loot.y);
+    _weaponPickupBonus(unit, loot.type, loot.x, loot.y);
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
   } else if (loot.type === 'essence') {
@@ -65,17 +65,21 @@ function _levelUp() {
   state.xp -= state.xpToNext;
   state.level += 1;
   state._levelUpFlash = 0.9;
+  state.pendingLevelUps = (state.pendingLevelUps || 0) + 1;
   playSfx('ui.levelup', { synthetic: 'loot' });
 }
 
-function _equipWeapon(unit, weaponKey, lootX, lootY) {
+// Weapon loot on the ground now grants +10 XP bonus instead of equipping.
+// Sprites and SFX still play so it feels like a significant pickup.
+function _weaponPickupBonus(unit, weaponKey, lootX, lootY) {
   const wDef = WEAPON_DEFS[weaponKey];
+  const xpBonus = 10;
   playSfx(`loot.weapon.${weaponKey}`, { synthetic: 'loot' });
-  unit.previousWeapon = unit.previousWeapon ?? unit.currentWeapon;
-  unit.currentWeapon  = weaponKey;
-  unit.weaponTimer    = wDef.lootDuration ?? 15;
 
-  const isRanged = wDef.type === 'ranged';
+  state.xp += xpBonus;
+  while (state.xp >= state.xpToNext) { _levelUp(); }
+
+  const isRanged = wDef?.type === 'ranged';
   const color1   = isRanged ? '#ffa040' : '#e8e060';
   const color2   = isRanged ? '#ffe080' : '#ffffff';
   for (let i = 0; i < 22; i++) {
@@ -84,7 +88,7 @@ function _equipWeapon(unit, weaponKey, lootX, lootY) {
     state.particles.push({ x: lootX, y: lootY, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70, life: rand(0.3, 0.9), maxLife: 0.9, color: i % 2 === 0 ? color1 : color2, size: rand(1.5, 3), realtime: true });
   }
   if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
-  state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'stim', text: wDef.displayName.toUpperCase() + '!' });
+  state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 1.1, maxLife: 1.1, type: 'xp', text: `+${xpBonus} XP` });
 }
 
 export function detonateBomb(x, y) {
