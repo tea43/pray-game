@@ -62,8 +62,8 @@ export const state = {
   settings: (() => {
     try {
       const s = JSON.parse(localStorage.getItem('praySettings') || '{}');
-      return { noShake: !!s.noShake, noLightning: !!s.noLightning };
-    } catch { return { noShake: false, noLightning: false }; }
+      return { noShake: !!s.noShake, noLightning: !!s.noLightning, showPickupRing: false };
+    } catch { return { noShake: false, noLightning: false, showPickupRing: false }; }
   })(),
 };
 

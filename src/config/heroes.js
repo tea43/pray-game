@@ -1,3 +1,5 @@
+export const DEFAULT_PICKUP_R = 60;
+
 export const HERO_DEFS = {
   eliott: {
     name: 'Eliott',
@@ -10,6 +12,7 @@ export const HERO_DEFS = {
     startingWeapon: 'short_hockey_club',
     maxHp: 100,
     fallbackRenderer: 'eliott',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
       shorts: '#8a6840', skin: '#e8b888',
@@ -27,6 +30,7 @@ export const HERO_DEFS = {
     startingWeapon: 'hockey_club',
     maxHp: 120,
     fallbackRenderer: 'dick',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       skin: '#d8a878', skinShade: '#a8784a', skinDark: '#7a5030',
       cap: '#2a1a0a', capTop: '#3a2515', capBtn: '#c53030',
@@ -43,6 +47,7 @@ export const HERO_DEFS = {
     startingWeapon: 'hockey_club',
     maxHp: 100,
     fallbackRenderer: 'habib',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       shirt: '#ece8dc', shirtShade: '#b8b0a0',
       shorts: '#c53030', shortsShade: '#8a1e1e',

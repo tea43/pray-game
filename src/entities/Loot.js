@@ -12,6 +12,10 @@ export class Loot {
     this.vz = 160;
     this.r = type === 'essence' ? 7 : 9;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
+    // Magnetism (essence only): set when the orb enters a hero's pickupR;
+    // GameScene drives the homing motion + arrival check.
+    this.homingTarget = null;
+    this.homingSpeed = 0;
   }
 
   update(dt) {

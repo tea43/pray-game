@@ -52,6 +52,8 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `planning/abilities_structure_rework.md`: Design doc for unifying base abilities and upgrade skills into a single modular ABILITY_DEFS system.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 - `planning/large_map_plan.md`: 3×3 world (9× screen area) with centroid-locked camera — phased implementation plan (Phases A–J).
+- `planning/pr-pickup-range.md`: Per-hero essence pickup radius — adds `pickupR` to `HERO_DEFS`, expands the essence pickup check, optional ground-ring visual.
+- `planning/pr-weapons.md`: 3 weapon slots per hero with per-slot auto-fire; level-up modal (`WeaponLevelUpScene`) offers 3 cards (new weapon or upgrade) reusing the upgrades-system patterns.
 
 ## executed/ — Completed Specs
 

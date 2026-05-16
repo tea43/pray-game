@@ -230,6 +230,22 @@ export function pushDamageNumber(x, y, dmg, opts) {
   pushFloatingText(x, y, Math.round(dmg).toString(), rgb, { crit, life: crit ? 1.0 : 0.7 });
 }
 
+export function drawPickupRings(ctx) {
+  if (!state.settings.showPickupRing) return;
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(120, 220, 140, 0.18)';
+  ctx.fillStyle   = 'rgba(120, 220, 140, 0.05)';
+  for (const u of state.units) {
+    if (u.dead) continue;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y, u.pickupR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 let crtPattern = null;
 
 export function drawCRTOverlay() {

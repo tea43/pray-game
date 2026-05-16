@@ -11,7 +11,7 @@ import { rand, dist2, clamp } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { playMusic, playSfx } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache } from '../../render/background.js';
-import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay } from '../../render/effects.js';
+import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay, drawPickupRings } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
 import { buildFlowField } from '../../utils/terrain.js';
@@ -282,11 +282,73 @@ export class GameScene extends Phaser.Scene {
       }
 
       // Loot pickup
+      //  - Essence: Vampire-Survivors-style magnetism. Enters a hero's pickupR
+      //    → locks onto that hero, accelerates toward them each frame, pops on
+      //    body contact. Re-acquires nearest living hero if the target dies
+      //    mid-flight; orphans if all heroes are dead.
+      //  - All other loot: body contact only (u.r + l.r + 2).
+      const ESSENCE_HOMING_BASE  = 60;    // px/s, speed at moment of capture
+      const ESSENCE_HOMING_ACCEL = 300;   // px/s², gradual acceleration
+      const ESSENCE_HOMING_MAX   = 280;   // px/s, terminal speed
       for (const l of state.loot) {
         if (l.picked) continue;
-        for (const u of state.units) {
-          if (u.dead) continue;
-          if (dist2(u.x, u.y, l.x, l.y) < u.r + l.r + 2) { l.picked = true; applyLoot(l, u); break; }
+
+        if (l.type === 'essence') {
+          // Target acquisition
+          if (!l.homingTarget) {
+            let bestU = null, bestD = Infinity;
+            for (const u of state.units) {
+              if (u.dead) continue;
+              const d = dist2(u.x, u.y, l.x, l.y);
+              if (d < u.pickupR && d < bestD) { bestU = u; bestD = d; }
+            }
+            if (bestU) { l.homingTarget = bestU; l.homingSpeed = ESSENCE_HOMING_BASE; }
+          } else if (l.homingTarget.dead) {
+            // Re-acquire nearest living hero (no radius gate — the orb is already in flight)
+            let bestU = null, bestD = Infinity;
+            for (const u of state.units) {
+              if (u.dead) continue;
+              const d = dist2(u.x, u.y, l.x, l.y);
+              if (d < bestD) { bestU = u; bestD = d; }
+            }
+            l.homingTarget = bestU;
+          }
+
+          // Homing motion + arrival
+          if (l.homingTarget && !l.homingTarget.dead) {
+            const u = l.homingTarget;
+            const dx = u.x - l.x, dy = u.y - l.y;
+            const d = Math.hypot(dx, dy);
+            l.homingSpeed = Math.min(
+              ESSENCE_HOMING_MAX,
+              (l.homingSpeed || ESSENCE_HOMING_BASE) + ESSENCE_HOMING_ACCEL * gameDt
+            );
+            const step = l.homingSpeed * gameDt;
+            const arriveLimit = u.r + l.r + 2;
+            if (d <= step + arriveLimit) {
+              for (let i = 0; i < 8; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const v = rand(40, 110);
+                state.particles.push({
+                  x: l.x, y: l.y,
+                  vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40,
+                  life: rand(0.25, 0.5), maxLife: 0.5,
+                  color: i % 2 ? '#d0ff80' : '#60dd40',
+                  size: rand(1.2, 2.4), additive: true, realtime: true,
+                });
+              }
+              l.picked = true;
+              applyLoot(l, u);
+            } else if (d > 0.001) {
+              l.x += (dx / d) * step;
+              l.y += (dy / d) * step;
+            }
+          }
+        } else {
+          for (const u of state.units) {
+            if (u.dead) continue;
+            if (dist2(u.x, u.y, l.x, l.y) < u.r + l.r + 2) { l.picked = true; applyLoot(l, u); break; }
+          }
         }
       }
       state.loot = state.loot.filter(l => !l.picked);
@@ -543,6 +605,7 @@ export class GameScene extends Phaser.Scene {
     drawBackground();
     this._drawMoveMarkers(ctx);
     this._drawShadows(ctx);
+    drawPickupRings(ctx);
 
     // Sort entities by Y (depth order)
     const drawables = [
