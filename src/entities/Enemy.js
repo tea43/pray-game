@@ -116,7 +116,7 @@ export class Enemy {
           if (tgt) {
             const behindAng = tgt.facing + Math.PI;
             const dist = rand(70, 95);
-            const tx = clamp(tgt.x + Math.cos(behindAng) * dist, 14, G.W - 14);
+            const tx = clamp(tgt.x + Math.cos(behindAng) * dist, 14, G.WORLD_W - 14);
             const ty = clamp(tgt.y + Math.sin(behindAng) * dist, 14, G.WORLD_H - 14);
             this.blinkTargetX = tx;
             this.blinkTargetY = ty;
@@ -227,10 +227,16 @@ export class Enemy {
       const dx = target.x - this.x, dy = target.y - this.y;
       const d = Math.hypot(dx, dy);
 
+      // Enemies spawn at -margin (off the world grid); terrainAt() treats
+      // out-of-bounds tiles as mountain, so isWalkable() would pin them in place.
+      // Allow free movement until they're on the grid — one-way: in-world enemies
+      // still can't step back out.
+      const oob = this.x < 0 || this.x >= G.WORLD_W || this.y < 0 || this.y >= G.WORLD_H;
+
       // Direct chase by default; flow field only when the direct step is physically blocked
       let moveDx = dx / d, moveDy = dy / d;
       const stepSize = this.speed * dt;
-      if (!isWalkable(this.x + moveDx * stepSize, this.y + moveDy * stepSize)) {
+      if (!oob && !isWalkable(this.x + moveDx * stepSize, this.y + moveDy * stepSize)) {
         const ff = state.flowField;
         if (ff && G.COLS > 0) {
           const col = Math.max(0, Math.min(G.COLS - 1, Math.floor(this.x / G.TILE)));
@@ -251,7 +257,7 @@ export class Enemy {
         const terrMult = terrainSpeedMult(this.x, this.y);
         const ex = this.x + moveDx * this.speed * dt * terrMult;
         const ey = this.y + moveDy * this.speed * dt * terrMult;
-        if (isWalkable(ex, ey)) {
+        if (oob || isWalkable(ex, ey)) {
           this.x = ex; this.y = ey;
         } else if (isWalkable(ex, this.y)) {
           this.x = ex;
@@ -397,6 +403,16 @@ export class Enemy {
       const bbWeapons = ['shotgun', 'samurai_sword'];
       const bbPick = bbWeapons[Math.floor(Math.random() * bbWeapons.length)];
       state.loot.push(new Loot(clamp(this.x - 40, 12, G.WORLD_W - 12), clamp(this.y, 12, G.WORLD_H - 12), bbPick));
+      // Essence ring (25 drops, 36 px radius)
+      const bbEssenceCount = LOOT_DEFS.essence.dropCount.bigboss;
+      for (let i = 0; i < bbEssenceCount; i++) {
+        const ang = (i / bbEssenceCount) * Math.PI * 2;
+        state.loot.push(new Loot(
+          clamp(this.x + Math.cos(ang) * 36 + rand(-4, 4), 12, G.WORLD_W - 12),
+          clamp(this.y + Math.sin(ang) * 36 + rand(-4, 4), 12, G.WORLD_H - 12),
+          'essence'
+        ));
+      }
       return;
     }
     if (this.kind === 'miniboss') {
@@ -415,6 +431,16 @@ export class Enemy {
         clamp(this.y + Math.sin(mbAng) * 28, 12, G.WORLD_H - 12),
         mbPick
       ));
+      // Essence ring (8 drops, 22 px radius)
+      const mbEssenceCount = LOOT_DEFS.essence.dropCount.miniboss;
+      for (let i = 0; i < mbEssenceCount; i++) {
+        const ang = (i / mbEssenceCount) * Math.PI * 2;
+        state.loot.push(new Loot(
+          clamp(this.x + Math.cos(ang) * 22, 12, G.WORLD_W - 12),
+          clamp(this.y + Math.sin(ang) * 22, 12, G.WORLD_H - 12),
+          'essence'
+        ));
+      }
       return;
     }
 
@@ -451,6 +477,13 @@ export class Enemy {
         ));
       }
     }
+
+    // Essence drop — always 1, additive to above
+    state.loot.push(new Loot(
+      clamp(this.x + rand(-6, 6), 12, G.WORLD_W - 12),
+      clamp(this.y + rand(-6, 6), 12, G.WORLD_H - 12),
+      'essence'
+    ));
   }
 
   draw(ctx) {

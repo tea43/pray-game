@@ -108,6 +108,7 @@ export class GameScene extends Phaser.Scene {
       isUpgradeScreen: false, _pendingWaveUpgrade: false,
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
+      xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
     });
 
     if (diff.devWaves?.length > 0) {
@@ -684,12 +685,14 @@ export class GameScene extends Phaser.Scene {
     for (const m of state.moveMarkers) {
       if (m.type === 'wave') continue;
       const t = 1 - m.life / m.maxLife;
-      if (m.type === 'heal' || m.type === 'stim') {
+      if (m.type === 'heal' || m.type === 'stim' || m.type === 'xp') {
         const alpha = Math.min(1, m.life / m.maxLife * 1.4);
         const yFloat = m.y - t * 20;
         ctx.font = 'bold 13px "Courier New", monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = m.type === 'heal' ? `rgba(120,230,140,${alpha})` : `rgba(255,130,90,${alpha})`;
+        ctx.fillStyle = m.type === 'heal' ? `rgba(120,230,140,${alpha})`
+                      : m.type === 'xp'   ? `rgba(120,220,255,${alpha})`
+                      :                     `rgba(255,130,90,${alpha})`;
         ctx.fillText(m.text || '', m.x, yFloat);
         ctx.textAlign = 'left';
         continue;

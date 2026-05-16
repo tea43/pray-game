@@ -51,7 +51,21 @@ export function applyLoot(loot, unit) {
     _equipWeapon(unit, loot.type, loot.x, loot.y);
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
+  } else if (loot.type === 'essence') {
+    playSfx('loot.essence', { synthetic: 'loot' });
+    state.xp += LOOT_DEFS.essence.xpPerPickup;
+    state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'xp', text: '+1' });
+    while (state.xp >= state.xpToNext) {
+      _levelUp();
+    }
   }
+}
+
+function _levelUp() {
+  state.xp -= state.xpToNext;
+  state.level += 1;
+  state._levelUpFlash = 0.9;
+  playSfx('ui.levelup', { synthetic: 'loot' });
 }
 
 function _equipWeapon(unit, weaponKey, lootX, lootY) {

@@ -11,4 +11,9 @@ export const LOOT_DEFS = {
   // Explosion damage (falls off linearly to 0 at edge of radius)
   bombDamage:       150,   // max damage at centre (was instant kill)
   bananaBombDamage: 300,
+  essence: {
+    xpPerPickup: 1,
+    xpPerLevel:  50,
+    dropCount: { regular: 1, miniboss: 8, bigboss: 25 },
+  },
 };
