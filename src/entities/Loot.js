@@ -10,7 +10,7 @@ export class Loot {
     this.picked = false;
     this.z = 0;
     this.vz = 160;
-    this.r = 9;
+    this.r = type === 'essence' ? 7 : 9;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
   }
 
@@ -49,9 +49,10 @@ export class Loot {
     const glowColor = this.type === 'medkit'       ? 'rgba(255, 90, 80, 0.22)'
                     : this.type === 'rare_medkit'   ? 'rgba(60, 160, 255, 0.40)'
                     : this.type === 'stimpack'      ? 'rgba(80, 240, 130, 0.22)'
-                    : this.type === 'shotgun'     ? 'rgba(255, 160, 40, 0.35)'
+                    : this.type === 'shotgun'       ? 'rgba(255, 160, 40, 0.35)'
                     : this.type === 'samurai_sword' ? 'rgba(220, 220, 80, 0.35)'
                     : this.type === 'banana_bomb'   ? 'rgba(200, 240, 60, 0.4)'
+                    : this.type === 'essence'       ? 'rgba(100, 220, 80, 0.35)'
                     : 'rgba(255, 170, 60, 0.28)';
     const haloR = (12 + Math.sin(this.bob * 1.5) * 2.5) * easedPop;
     ctx.fillStyle = glowColor;
@@ -214,6 +215,23 @@ export class Loot {
       ctx.beginPath();
       ctx.moveTo(8, 0); ctx.lineTo(11, -1.5); ctx.lineTo(11, 1.5);
       ctx.closePath(); ctx.fill();
+    } else if (this.type === 'essence') {
+      const grad = ctx.createRadialGradient(-1.5, -1.5, 0.5, 0, 0, 6.5);
+      grad.addColorStop(0, '#d0ff80');
+      grad.addColorStop(0.45, '#60dd40');
+      grad.addColorStop(1, '#1a5010');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(40,120,20,0.7)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      // inner sparkle
+      ctx.fillStyle = 'rgba(220,255,180,0.7)';
+      ctx.beginPath();
+      ctx.arc(-1.8, -1.8, 1.6, 0, Math.PI * 2);
+      ctx.fill();
     } else if (this.type === 'banana_bomb') {
       ctx.strokeStyle = '#e8d820';
       ctx.lineWidth = 5;

@@ -55,6 +55,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 
 ## executed/ — Completed Specs
 
+- `executed/pr-level-up.md`: Essence drops, XP accumulation, `state.level`, and top-right HUD bar — complete.
 - `executed/modularization_plan.md`: Completed plan for extracting from one large HTML file to the current modular `src/` codebase.
 - `executed/phaser_port_plan.md`: Phaser 3 port plan — **complete and active runtime**. All phases done.
 - `executed/bwaves_feature.md`: Between-wave upgrade system spec (implemented).

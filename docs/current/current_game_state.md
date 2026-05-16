@@ -150,6 +150,22 @@ Drop chance by enemy:
 
 Hard regular enemies (`mutant`, `blinker`) also roll for specials: 2% banana bomb, otherwise 20% chance for spray gun or samurai sword.
 
+### Player Level & Essence
+
+Every enemy death drops essence orbs (small green-yellow gradient spheres, rendered via `essence_drop.png` sprite or canvas fallback):
+
+| Enemy | Essence drops | Placement |
+|---|---:|---|
+| Regular | 1 | Random ±6 px around corpse |
+| Miniboss | 8 | 22 px ring around corpse |
+| Bigboss | 25 | 36 px ring with ±4 px jitter |
+
+Picking up an essence orb grants **1 XP** to a run-wide pool (`state.xp`). At **50 XP** the pool resets (carryover preserved), `state.level` increments, a gold flash plays on the HUD bar, and a synthetic rising-arpeggio sfx fires. Boss drops that push past multiple thresholds in one frame are handled by a `while` loop — the player can level up twice at once.
+
+**HUD (top-right):** `LV N` label and a 180×8 px amber progress bar anchored to `(W − 14, 14)`. Bar brightens to gold for 0.9 s on level-up (`state._levelUpFlash`), then decays in realtime. Level and XP reset to `level: 1, xp: 0` on new-game; no cross-run persistence.
+
+Config: `LOOT_DEFS.essence` in `src/config/loot.js` (xpPerPickup, xpPerLevel, dropCount per enemy tier). State fields: `state.xp`, `state.level`, `state.xpToNext`, `state._levelUpFlash`.
+
 ## Enemies
 
 All enemies are rendered as segmented worms/crawlers using 2.5D shaded canvas primitives. Each type has a distinct silhouette and color scheme; no sprites yet.
