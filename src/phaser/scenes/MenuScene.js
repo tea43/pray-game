@@ -180,14 +180,14 @@ export class MenuScene extends Phaser.Scene {
     const btnStartY = panelY + 170;
     this._renderButtonList(panelX, btnStartY, panelW, buttons);
     this._txt(panelX, btnStartY + buttons.length * LAYOUT.btn.gap + 14,
-      'prototype build · phase 5', { fontSize: '9px', color: TC.faint });
+      'prototype build · phase 5', { fontSize: '11px', color: TC.faint });
 
     const hs = getHighScoreData();
     if (hs.score > 0) {
       const H = this.scale.height;
       this._txt(panelX, H - 36,
         `BEST RUN  ·  ${hs.kills} KILLS  ·  ${hs.score} PTS`,
-        { fontSize: '9px', color: TC.faint });
+        { fontSize: '11px', color: TC.faint });
     }
 
     const devY = btnStartY + buttons.length * LAYOUT.btn.gap + 38;
@@ -390,8 +390,8 @@ export class MenuScene extends Phaser.Scene {
       .lineStyle(1, Phaser.Display.Color.HexStringToColor(border).color, 1)
       .strokeRect(x, y, w, LAYOUT.diffRow.height);
 
-    this._txt(x + 14, y + 8,  (DIFFICULTY_DEFS[id]?.label || id).toUpperCase(), { fontSize: '11px', color: labelClr, fontStyle: 'bold' });
-    this._txt(x + 14, y + 28, DIFF_HINTS[id] ?? '',                              { fontSize: '9px',  color: hintClr });
+    this._txt(x + 14, y + 8,  (DIFFICULTY_DEFS[id]?.label || id).toUpperCase(), { fontSize: '13px', color: labelClr, fontStyle: 'bold', fontFamily: 'Georgia, serif' });
+    this._txt(x + 14, y + 28, DIFF_HINTS[id] ?? '',                              { fontSize: '11px', color: hintClr, fontFamily: 'Georgia, serif' });
 
     this.add.zone(x, y, w, LAYOUT.diffRow.height).setOrigin(0, 0).setInteractive()
       .on('pointerdown', () => { this._selectedDiff = id; this._showDifficulty(); });

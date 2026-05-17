@@ -39,8 +39,8 @@ export class GameOverScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     playMusic('menu');
 
-    // Semi-transparent overlay — keeps the frozen game frame visible underneath
-    this.add.graphics().fillStyle(0x080202, 0.82).fillRect(0, 0, W, H);
+    // Faint overlay — intentionally light so the dead heroes remain visible
+    this.add.graphics().fillStyle(0x080202, 0.28).fillRect(0, 0, W, H);
 
     // Dark band on the left that fades in as the panel slides over
     const leftBand = this.add.graphics().setAlpha(0);
@@ -68,21 +68,27 @@ export class GameOverScene extends Phaser.Scene {
     let cy = H / 2 - 120;
 
     // Title — two lines so it fits the narrow left band after sliding
-    addT(cy, 'ALL SURVIVORS', {
-      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c83020', letterSpacing: 5,
+    addT(cy, 'ENDOSERPENTS', {
+      fontFamily: 'Georgia, serif', fontSize: '22px', color: '#c83020', letterSpacing: 4,
     });
-    cy += 32;
-    addT(cy, 'DEAD', {
-      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c83020', letterSpacing: 8,
+    cy += 30;
+    addT(cy, 'REACHED YOU', {
+      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#a82818', letterSpacing: 3,
     });
-    cy += 44;
+    cy += 18;
+    addT(cy, 'WHERE YOU DID NOT EXPECT', {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#7a2010', letterSpacing: 2,
+    });
+    cy += 36;
+
+    const S = { stroke: '#000000', strokeThickness: 3 };
 
     // Flavour message — narrow word-wrap to stay in column
     addT(cy, msg, {
-      fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#8a6a4a',
-      letterSpacing: 1, wordWrap: { width: 240 },
+      ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#a88a60',
+      wordWrap: { width: 240 },
     });
-    cy += 50;
+    cy += 56;
 
     // Fallen heroes — one per line
     if (s?.units) {
@@ -90,9 +96,9 @@ export class GameOverScene extends Phaser.Scene {
       dead.forEach(u => {
         const name = u.type.charAt(0).toUpperCase() + u.type.slice(1);
         addT(cy, `†  ${name}`, {
-          fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#c04030', letterSpacing: 3,
+          ...S, fontFamily: 'Georgia, serif', fontSize: '14px', color: '#d05040', letterSpacing: 2,
         });
-        cy += 20;
+        cy += 22;
       });
       if (dead.length) cy += 6;
     }
@@ -100,13 +106,13 @@ export class GameOverScene extends Phaser.Scene {
     // Stats — split across two lines
     if (s) {
       addT(cy, `KILLS: ${s.kills}`, {
-        fontFamily: "'Courier New', monospace", fontSize: '12px', color: '#d9c7a0', letterSpacing: 2,
+        ...S, fontFamily: 'Georgia, serif', fontSize: '14px', color: '#e0d0a0', letterSpacing: 1,
       });
-      cy += 20;
+      cy += 22;
       addT(cy, `SURVIVED: ${Math.floor(s.survivedSeconds)}s  ·  WAVE: ${s.wave}`, {
-        fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#b0a080', letterSpacing: 1,
+        ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c0b080', letterSpacing: 0,
       });
-      cy += 24;
+      cy += 26;
     }
 
     // Score with optional penalty
@@ -114,15 +120,15 @@ export class GameOverScene extends Phaser.Scene {
       if (s.heroesDied > 0) {
         const div = Math.pow(2, s.heroesDied);
         addT(cy, `PENALTY ÷${div}`, {
-          fontFamily: "'Courier New', monospace", fontSize: '10px', color: '#8a5040', letterSpacing: 1,
+          ...S, fontFamily: 'Georgia, serif', fontSize: '12px', color: '#a06050', letterSpacing: 1,
         });
-        cy += 18;
+        cy += 20;
       }
       addT(cy, `SCORE: ${s.score}`, {
-        fontFamily: "'Courier New', monospace", fontSize: '13px',
-        color: s.heroesDied > 0 ? '#8a5040' : '#d9c7a0', letterSpacing: 2,
+        ...S, fontFamily: 'Georgia, serif', fontSize: '15px',
+        color: s.heroesDied > 0 ? '#a06050' : '#e0d0a0', letterSpacing: 1,
       });
-      cy += 30;
+      cy += 32;
     }
 
     // Buttons — narrower to stay within column

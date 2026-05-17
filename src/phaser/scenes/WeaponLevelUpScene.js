@@ -52,12 +52,14 @@ export class WeaponLevelUpScene extends Phaser.Scene {
     fg.beginPath().moveTo(FX + 1, FY + HDR_H).lineTo(FX + FW - 1, FY + HDR_H).strokePath();
 
     this._txt(W / 2, FY + 10, `LEVEL UP  —  LV ${state.level}`, {
-      fontSize: '18px', fontFamily: 'Georgia, serif',
-      color: '#d9c7a0', letterSpacing: 5,
+      fontSize: '20px', fontFamily: 'Georgia, serif',
+      color: '#f0e4c0', letterSpacing: 5,
+      stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5, 0);
-    this._txt(W / 2, FY + 29, 'Choose one upgrade', {
-      fontSize: '10px', fontFamily: "'Courier New', monospace",
-      color: '#7a6850', letterSpacing: 2,
+    this._txt(W / 2, FY + 30, 'Choose one upgrade', {
+      fontSize: '13px', fontFamily: 'Georgia, serif',
+      color: '#a89470', letterSpacing: 1,
+      stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0);
 
     // Generate and draw the 3 offer cards (with a reserved button row at the bottom)
@@ -209,17 +211,19 @@ export class WeaponLevelUpScene extends Phaser.Scene {
     // Hero name chip
     const unit = state.units?.find(u => u.type === offer.heroId);
     const heroLabel = unit ? unit.name.toUpperCase() : offer.heroId.toUpperCase();
-    cc.add(this._txt(cx + 8, cy + 6, heroLabel, {
-      fontSize: '9px', fontFamily: "'Courier New', monospace",
-      fontStyle: 'bold', color: '#a89470', letterSpacing: 2,
+    cc.add(this._txt(cx + 8, cy + 7, heroLabel, {
+      fontSize: '12px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: '#c8b080', letterSpacing: 1,
+      stroke: '#000000', strokeThickness: 2,
     }));
 
     // Card type badge
     const badgeStr = offer.kind === 'upgrade' ? '↑ UPGRADE' : offer.kind === 'new' ? '+ NEW' : '♥ HEAL';
-    const badgeColor = offer.kind === 'upgrade' ? '#4080ff' : offer.kind === 'new' ? '#d8a040' : '#50c880';
-    cc.add(this._txt(cx + cw - 8, cy + 6, badgeStr, {
-      fontSize: '9px', fontFamily: "'Courier New', monospace",
+    const badgeColor = offer.kind === 'upgrade' ? '#6090ff' : offer.kind === 'new' ? '#e8b848' : '#60d890';
+    cc.add(this._txt(cx + cw - 8, cy + 7, badgeStr, {
+      fontSize: '12px', fontFamily: 'Georgia, serif',
       fontStyle: 'bold', color: badgeColor,
+      stroke: '#000000', strokeThickness: 2,
     }).setOrigin(1, 0));
 
     // Weapon icon
@@ -256,8 +260,9 @@ export class WeaponLevelUpScene extends Phaser.Scene {
       titleStr = 'HEAL +25%';
     }
     cc.add(this._txt(cx + cw / 2, iconY + iconSz + 6, titleStr, {
-      fontSize: '11px', fontFamily: "'Courier New', monospace",
-      fontStyle: 'bold', color: '#e8d8b0', wordWrap: { width: cw - 16 }, align: 'center',
+      fontSize: '14px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: '#f0e4c0', wordWrap: { width: cw - 16 }, align: 'center',
+      stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0));
 
     // Sub-label (level or stat delta)
@@ -269,9 +274,10 @@ export class WeaponLevelUpScene extends Phaser.Scene {
       subStr = offer.rarity;
     }
     if (subStr) {
-      cc.add(this._txt(cx + cw / 2, iconY + iconSz + 22, subStr, {
-        fontSize: '9px', fontFamily: "'Courier New', monospace",
-        color: '#7a6850', wordWrap: { width: cw - 16 }, align: 'center',
+      cc.add(this._txt(cx + cw / 2, iconY + iconSz + 24, subStr, {
+        fontSize: '11px', fontFamily: 'Georgia, serif',
+        color: '#a89468', wordWrap: { width: cw - 16 }, align: 'center',
+        stroke: '#000000', strokeThickness: 2,
       }).setOrigin(0.5, 0));
     }
 
@@ -307,8 +313,8 @@ export class WeaponLevelUpScene extends Phaser.Scene {
     this._btnGfx = g;
 
     const label = this._txt(BX + BW / 2, BY + BH / 2, 'CHOOSE UPGRADE', {
-      fontSize: '13px', fontFamily: "'Courier New', monospace",
-      fontStyle: 'bold', color: '#3a2818', letterSpacing: 3,
+      fontSize: '15px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: '#3a2010', letterSpacing: 2,
     }).setOrigin(0.5, 0.5);
     this._btnLabel = label;
 

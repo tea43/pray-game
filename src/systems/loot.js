@@ -52,7 +52,7 @@ export function applyLoot(loot, unit) {
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
   } else if (loot.type === 'essence') {
-    playSfx('loot.essence', { synthetic: 'loot' });
+    playSfx('loot.essence', { synthetic: 'loot', volume: 0.3 });
     state.xp += LOOT_DEFS.essence.xpPerPickup;
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'xp', text: '+1' });
     while (state.xp >= state.xpToNext) {

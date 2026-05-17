@@ -3,7 +3,7 @@ import { loadAssets } from '../../config/assets.js';
 
 const SPRITE_MANIFEST = {
   loot: {
-    essence: 'assets/tbd/icons/essence_drop.png',
+    essence: 'assets/icons/items/essence_drop_2.png',
   },
 };
 

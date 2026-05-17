@@ -211,7 +211,60 @@ export const WEAPON_SPRITES = {
   ]
 };
 
+// ── Real sprite definitions ───────────────────────────────────────────────────
+// drawW / drawH are the in-game render dimensions (world-space pixels) when
+// scale = 1.  The images fire from left → right, so rotation = 0 aligns with
+// facing angle 0 (rightward) — same convention as the pixel-art sprites.
+//
+// Bow is portrait (limbs top/bottom, depth left/right) so drawW < drawH.
+const WEAPON_IMAGE_DEFS = {
+  shotgun:  { src: './assets/sprites/weapons/shotgun_1.png',  drawW: 30, drawH: 10 },
+  crossbow: { src: './assets/sprites/weapons/crossbow_1.png', drawW: 28, drawH:  9 },
+  bow:      { src: './assets/sprites/weapons/bow_1.png',      drawW: 10, drawH: 30 },
+};
+
+const _weaponImages = {};
+
+// Scale factor for the working bitmap — 4× the max in-game render size gives
+// plenty of resolution even on HiDPI displays without keeping the full master.
+const BITMAP_SCALE = 4;
+
+// Call once from GameScene.create() — safe to call multiple times (idempotent).
+export function preloadWeaponImages() {
+  for (const [key, def] of Object.entries(WEAPON_IMAGE_DEFS)) {
+    if (_weaponImages[key]) continue;
+
+    const entry = { img: null, drawW: def.drawW, drawH: def.drawH };
+    _weaponImages[key] = entry;
+
+    const raw = new Image();
+    raw.onload = () => {
+      // Downscale to a working bitmap; the full master is then GC-eligible.
+      createImageBitmap(raw, {
+        resizeWidth:   Math.round(def.drawW * BITMAP_SCALE),
+        resizeHeight:  Math.round(def.drawH * BITMAP_SCALE),
+        resizeQuality: 'high',
+      }).then(bmp => { entry.img = bmp; });
+    };
+    raw.src = def.src;
+  }
+}
+
 export function drawWeaponSprite(ctx, key, x, y, scale = 1, rotation = 0) {
+  // ── Real sprite path ───────────────────────────────────────────────────────
+  const entry = _weaponImages[key];
+  if (entry && entry.img) {  // img is null until createImageBitmap resolves
+    const w = entry.drawW * scale;
+    const h = entry.drawH * scale;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.drawImage(entry.img, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return;
+  }
+
+  // ── Pixel-art fallback ─────────────────────────────────────────────────────
   const sprite = WEAPON_SPRITES[key];
   if (!sprite) return;
 
@@ -219,8 +272,6 @@ export function drawWeaponSprite(ctx, key, x, y, scale = 1, rotation = 0) {
   ctx.translate(x, y);
   ctx.rotate(rotation);
   ctx.scale(scale, scale);
-
-  // Center the 16x16 sprite
   ctx.translate(-8, -8);
 
   for (let r = 0; r < 16; r++) {
@@ -240,20 +291,33 @@ export function drawWeaponSprite(ctx, key, x, y, scale = 1, rotation = 0) {
 export function generateWeaponTextures(scene) {
   for (const [key, sprite] of Object.entries(WEAPON_SPRITES)) {
     if (scene.textures.exists('weapon_' + key)) continue;
+
     const canvas = document.createElement('canvas');
     canvas.width = 16;
     canvas.height = 16;
     const ctx = canvas.getContext('2d');
-    for (let r = 0; r < 16; r++) {
-      const row = sprite[r];
-      for (let c = 0; c < 16; c++) {
-        const char = row[c];
-        if (char !== ' ') {
-          ctx.fillStyle = PALETTE[char];
-          ctx.fillRect(c, r, 1, 1);
+
+    // Use real image thumbnail when loaded, pixel art otherwise.
+    const entry = _weaponImages[key];
+    if (entry && entry.img) {
+      // Fit into 16×16 preserving aspect ratio, centred.
+      const aspect = entry.drawW / entry.drawH;
+      const tw = aspect >= 1 ? 16 : Math.round(16 * aspect);
+      const th = aspect >= 1 ? Math.round(16 / aspect) : 16;
+      ctx.drawImage(entry.img, (16 - tw) / 2, (16 - th) / 2, tw, th);
+    } else {
+      for (let r = 0; r < 16; r++) {
+        const row = sprite[r];
+        for (let c = 0; c < 16; c++) {
+          const char = row[c];
+          if (char !== ' ') {
+            ctx.fillStyle = PALETTE[char];
+            ctx.fillRect(c, r, 1, 1);
+          }
         }
       }
     }
+
     scene.textures.addImage('weapon_' + key, canvas);
   }
 }

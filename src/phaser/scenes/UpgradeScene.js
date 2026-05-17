@@ -3,11 +3,13 @@ import { state } from '../../state.js';
 import { GameData } from '../../systems/upgrades.js';
 import { playSfx } from '../../systems/audio.js';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
+import { ABILITY_DEFS } from '../../config/abilities.js';
 
 const DPR  = window.devicePixelRatio || 1;
-const CARD_H   = 76;
+const CARD_H   = 150;
 const CARD_GAP = 8;
 const STRIDE   = CARD_H + CARD_GAP;  // one full step of the reel
+const ICON_SZ  = 80;   // ability icon display size in card
 
 const RARITY = {
   Common:    { tint: 0x888888, alpha: 0.10 },
@@ -16,7 +18,6 @@ const RARITY = {
   Legendary: { tint: 0xffaa18, alpha: 0.22 },
 };
 
-const HERO_ICON = { eliott: 'upg-alchemy', dick: 'upg-weapon', habib: 'upg-armor' };
 
 const HEROES = [
   { id: 'eliott', label: 'ELIOTT' },
@@ -31,6 +32,14 @@ export class UpgradeScene extends Phaser.Scene {
   // Capture init data fresh each launch so stale data never bleeds between runs
   init(data) { this._initData = data || {}; }
 
+  preload() {
+    Object.entries(ABILITY_DEFS).forEach(([id, def]) => {
+      const key = `ability_icon_${id}`;
+      if (def.icon && !this.textures.exists(key)) {
+        this.load.svg(key, def.icon, { width: ICON_SZ * 2, height: ICON_SZ * 2 });
+      }
+    });
+  }
 
   // ── Scene entry ────────────────────────────────────────────────────────────
   create() {
@@ -53,7 +62,7 @@ export class UpgradeScene extends Phaser.Scene {
 
     // ── Frame geometry ────────────────────────────────────────────────────────
     const FW = Math.min(W * 0.82, 720);
-    const FH = Math.min(H * 0.70, 490);
+    const FH = Math.min(H * 0.88, 620);
     const FX = Math.round((W - FW) / 2);
     const FY = Math.round((H - FH) / 2);
     const PAD     = 16;
@@ -138,6 +147,8 @@ export class UpgradeScene extends Phaser.Scene {
     this._spinning = false;
     this._selected = null;
     this._ready    = false;
+    this._tooltipContainer = null;
+    this._FX = FX; this._FY = FY; this._FW = FW; this._FH = FH;
 
     HEROES.forEach((h, i) => this._buildReel(h, i));
 
@@ -254,23 +265,18 @@ export class UpgradeScene extends Phaser.Scene {
 
   _makeCardObj(upg, cx, cy, cardW, dim) {
     const rar = RARITY[upg?.rarity] || RARITY.Common;
-    const ICON_SZ = 18;
 
     const cc  = this.add.container(cx, cy);
     const bg  = this.add.graphics();
 
     const drawBg = (hovered, selected) => {
       bg.clear();
-      // rarity tinted background
       bg.fillStyle(rar.tint, selected ? rar.alpha * 2.4 : hovered ? rar.alpha * 1.7 : rar.alpha);
       bg.fillRect(-cardW / 2, 0, cardW, CARD_H);
-      // dark body
       bg.fillStyle(0x110d09, selected ? 0.70 : 0.91);
       bg.fillRect(-cardW / 2 + 3, 0, cardW - 3, CARD_H);
-      // left rarity stripe
       bg.fillStyle(rar.tint, selected ? 1 : 0.60);
       bg.fillRect(-cardW / 2, 0, 3, CARD_H);
-      // border
       bg.lineStyle(1, selected ? 0xa0d040 : hovered ? rar.tint : 0x251d14);
       bg.strokeRect(-cardW / 2, 0, cardW, CARD_H);
     };
@@ -278,15 +284,14 @@ export class UpgradeScene extends Phaser.Scene {
     drawBg(false, false);
     cc.add(bg);
 
-    // Icon
-    const iconKey = HERO_ICON[upg?._heroId] || upg?._iconKey;
-    const iconX = -cardW / 2 + 7 + ICON_SZ / 2;
-    const iconY = CARD_H / 2;
-    if (iconKey && this.textures.exists(iconKey)) {
+    // Ability-specific icon centred in the top portion of the card
+    const iconKey = `ability_icon_${upg?.id}`;
+    const iconX = 0;
+    const iconY = ICON_SZ / 2 + 8;
+    if (this.textures.exists(iconKey)) {
       const img = this.add.image(iconX, iconY, iconKey)
         .setDisplaySize(ICON_SZ, ICON_SZ)
-        .setTint(rar.tint)
-        .setAlpha(0.65);
+        .setAlpha(0.90);
       cc.add(img);
     } else {
       const ph = this.add.graphics();
@@ -295,17 +300,22 @@ export class UpgradeScene extends Phaser.Scene {
       cc.add(ph);
     }
 
-    const textX  = -cardW / 2 + 7 + ICON_SZ + 5;
-    const textW  = cardW - 7 - ICON_SZ - 14;
+    // Rarity badge (top-right corner)
+    const rarLabel = upg?.rarity || 'Common';
+    cc.add(this._txt(cardW / 2 - 4, 4, rarLabel.toUpperCase(), {
+      fontSize: '10px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: `#${rar.tint.toString(16).padStart(6, '0')}`,
+      stroke: '#080502', strokeThickness: 2,
+    }).setOrigin(1, 0));
 
-    cc.add(this._txt(textX, 6, upg?.name || '', {
-      fontSize: '10px', fontFamily: "'Courier New', monospace",
-      fontStyle: 'bold', color: '#e8d8b0', wordWrap: { width: textW },
-    }));
-    cc.add(this._txt(-cardW / 2 + 7, 30, upg?.description || '', {
-      fontSize: '9px', fontFamily: "'Courier New', monospace",
-      color: '#9a8060', wordWrap: { width: cardW - 14 },
-    }));
+    // Upgrade name below icon — large readable font
+    const nameY = ICON_SZ + 14;
+    cc.add(this._txt(0, nameY, upg?.name || '', {
+      fontSize: '24px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: '#f0e4c0',
+      wordWrap: { width: cardW - 12 }, align: 'center',
+      stroke: '#1a0f06', strokeThickness: 3,
+    }).setOrigin(0.5, 0));
 
     cc.setAlpha(dim ? 0.25 : 1);
 
@@ -315,16 +325,12 @@ export class UpgradeScene extends Phaser.Scene {
   // ── Update card content in-place ───────────────────────────────────────────
 
   _updateCardContent(cardObj, upg) {
-    // Destroy old container children and rebuild in-place
-    const { cc, bg } = cardObj;
-    const cx  = cc.x;
-    const cy  = cc.y;
+    const { cc } = cardObj;
     const dim = cc.alpha < 0.5;
     const cardW = this._cardW;
 
-    cc.removeAll(true); // destroy all children
+    cc.removeAll(true);
 
-    // Recreate bg graphics
     const rar = RARITY[upg?.rarity] || RARITY.Common;
     const newBg = this.add.graphics();
     const drawBg = (hovered, selected) => {
@@ -341,15 +347,13 @@ export class UpgradeScene extends Phaser.Scene {
     drawBg(false, false);
     cc.add(newBg);
 
-    const ICON_SZ = 18;
-    const iconX   = 0  ;
-    const iconY   = CARD_H * 4 / 5;
-    const iconKey = HERO_ICON[upg?._heroId];
-    if (iconKey && this.textures.exists(iconKey)) {
+    const iconKey = `ability_icon_${upg?.id}`;
+    const iconX = 0;
+    const iconY = ICON_SZ / 2 + 8;
+    if (this.textures.exists(iconKey)) {
       const img = this.add.image(iconX, iconY, iconKey)
         .setDisplaySize(ICON_SZ, ICON_SZ)
-        .setTint(rar.tint)
-        .setAlpha(0.65);
+        .setAlpha(0.90);
       cc.add(img);
     } else {
       const ph = this.add.graphics();
@@ -358,18 +362,20 @@ export class UpgradeScene extends Phaser.Scene {
       cc.add(ph);
     }
 
-    const textX = -cardW / 2 + 7 + ICON_SZ + 5;
-    const textW = cardW - 7 - ICON_SZ - 14;
-    cc.add(this._txt(textX, 6, upg?.name || '', {
-      fontSize: '10px', fontFamily: "'Courier New', monospace",
-      fontStyle: 'bold', color: '#e8d8b0', wordWrap: { width: textW },
-    }));
-    cc.add(this._txt(-cardW / 2 + 7, 30, upg?.description || '', {
-      fontSize: '9px', fontFamily: "'Courier New', monospace",
-      color: '#9a8060', wordWrap: { width: cardW - 14 },
-    }));
+    const rarLabel = upg?.rarity || 'Common';
+    cc.add(this._txt(cardW / 2 - 4, 4, rarLabel.toUpperCase(), {
+      fontSize: '8px', fontFamily: "'Courier New', monospace",
+      fontStyle: 'bold', color: `#${rar.tint.toString(16).padStart(6, '0')}`,
+    }).setOrigin(1, 0));
 
-    // Update cardObj references
+    const nameY = ICON_SZ + 14;
+    cc.add(this._txt(0, nameY, upg?.name || '', {
+      fontSize: '22px', fontFamily: "'Courier New', monospace",
+      fontStyle: 'bold', color: '#e8d8b0',
+      wordWrap: { width: cardW - 12 }, align: 'center',
+    }).setOrigin(0.5, 0));
+
+    cc.setAlpha(dim ? 0.25 : 1);
     cardObj.bg = newBg;
     cardObj.drawBg = drawBg;
     cardObj.upg = upg;
@@ -474,7 +480,6 @@ export class UpgradeScene extends Phaser.Scene {
     reel._centreDrawBg = drawBg;
     reel._centreUpg    = upg;
 
-    // Remove any previous interactive state
     bg.removeInteractive();
     bg.removeAllListeners();
 
@@ -485,14 +490,76 @@ export class UpgradeScene extends Phaser.Scene {
 
     bg.on('pointerover', () => {
       if (this._selected?.heroId !== reel.heroId) drawBg(true, false);
+      this._showTooltip(reel.centre.cc.x, reel.centre.cc.y, upg);
     });
     bg.on('pointerout', () => {
       if (this._selected?.heroId !== reel.heroId) drawBg(false, false);
+      this._hideTooltip();
     });
     bg.on('pointerdown', () => {
+      this._hideTooltip();
       playSfx('upgrade_card_select');
       this._selectCard(reel);
     });
+  }
+
+  _showTooltip(cardX, cardY, upg) {
+    this._hideTooltip();
+    if (!upg?.description) return;
+
+    const TW = 220, PAD = 10;
+    const { width: W, height: H } = this.scale;
+
+    const desc = upg.description;
+    const rar  = RARITY[upg?.rarity] || RARITY.Common;
+    const rarColor = `#${rar.tint.toString(16).padStart(6, '0')}`;
+
+    const cnt = this.add.container(0, 0);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x06040200 >> 8, 0.97);
+    bg.fillStyle(0x060402, 0.97);
+    bg.fillRect(0, 0, TW, 1);  // sized after text
+    bg.lineStyle(1, rar.tint, 0.7);
+    cnt.add(bg);
+
+    const rarTxt = this._txt(PAD, PAD, (upg.rarity || 'Common').toUpperCase(), {
+      fontSize: '11px', fontFamily: 'Georgia, serif',
+      fontStyle: 'bold', color: rarColor,
+    });
+    const descTxt = this._txt(PAD, PAD + 18, desc, {
+      fontSize: '13px', fontFamily: 'Georgia, serif',
+      color: '#c8b890', wordWrap: { width: TW - PAD * 2 },
+    });
+    cnt.add([rarTxt, descTxt]);
+
+    // Position above or below card
+    const TH = descTxt.y + descTxt.height + PAD;
+
+    // Redraw bg with actual height
+    bg.clear();
+    bg.fillStyle(0x060402, 0.97);
+    bg.fillRect(0, 0, TW, TH);
+    bg.lineStyle(1, rar.tint, 0.7);
+    bg.strokeRect(0, 0, TW, TH);
+
+    // Place tooltip above the card centre, clamped to screen
+    let tx = cardX - TW / 2;
+    let ty = cardY - TH - 8;
+    tx = Math.max(4, Math.min(W - TW - 4, tx));
+    ty = Math.max(4, ty);
+
+    cnt.setPosition(tx, ty);
+    cnt.setDepth(100);
+
+    this._tooltipContainer = cnt;
+  }
+
+  _hideTooltip() {
+    if (this._tooltipContainer) {
+      this._tooltipContainer.destroy(true);
+      this._tooltipContainer = null;
+    }
   }
 
   _selectCard(reel) {
@@ -533,6 +600,7 @@ export class UpgradeScene extends Phaser.Scene {
   }
 
   _clearSelection() {
+    this._hideTooltip();
     this._selected = null;
     this._ready    = false;
     state.pendingUpgrades = { eliott: null, dick: null, habib: null };
