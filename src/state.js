@@ -47,19 +47,25 @@ export const state = {
   spaceHoldDuration: 0,
   survivedSeconds: 0,
   isUpgradeScreen: false,
+  isLevelUpScreen: false,
+  pendingLevelUps: 0,
   pendingUpgrades: { eliott: null, dick: null, habib: null },
   upgradeSpinCredits: 0,
   selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
   score: 0,
   heroesDied: 0,
+  xp: 0,
+  level: 1,
+  xpToNext: 50,
+  _levelUpFlash: 0,
   smokeZones: [],
   difficulty: 'brood-hunter',
   menuPhase: 'main',
   settings: (() => {
     try {
       const s = JSON.parse(localStorage.getItem('praySettings') || '{}');
-      return { noShake: !!s.noShake, noLightning: !!s.noLightning };
-    } catch { return { noShake: false, noLightning: false }; }
+      return { noShake: !!s.noShake, noLightning: !!s.noLightning, showPickupRing: false };
+    } catch { return { noShake: false, noLightning: false, showPickupRing: false }; }
   })(),
 };
 

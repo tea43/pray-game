@@ -3,6 +3,7 @@ import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
+import { drawWeaponSprite, WEAPON_SPRITES } from '../render/weaponSprites.js';
 
 export class Projectile {
   constructor(x, y, target, dmg, facing, owner = null, wDef = {}) {
@@ -23,8 +24,9 @@ export class Projectile {
     this.dead = false;
     this.returning = false;
     this.hasHit = false;
+    this.key = wDef.key;
     this.rot = facing;
-    this.spin = 18;
+    this.spin = (wDef.type === 'ranged') ? 0 : 18;
     this.facing = facing;
     this.r = 5;
     this.life = 0;
@@ -168,37 +170,54 @@ export class Projectile {
     ctx.translate(this.x, this.y - this.z);
     ctx.rotate(this.rot);
 
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(0, 6, 6, 1.6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    if (this.key === 'bow' || this.key === 'crossbow') {
+      ctx.strokeStyle = '#5a3510';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(8, 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#cfd6dc';
+      ctx.beginPath();
+      ctx.moveTo(4, -3);
+      ctx.lineTo(9, 0);
+      ctx.lineTo(4, 3);
+      ctx.stroke();
+    } else if (this.key && WEAPON_SPRITES[this.key]) {
+      drawWeaponSprite(ctx, this.key, 0, 0, 1.4, Math.PI / 4);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, 6, 6, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.strokeStyle = '#3a2510';
-    ctx.lineWidth = 2.4;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-7, 0);
-    ctx.lineTo(5, 0);
-    ctx.stroke();
-    ctx.strokeStyle = '#6b4a20';
-    ctx.lineWidth = 0.9;
-    ctx.beginPath();
-    ctx.moveTo(-7, 0);
-    ctx.lineTo(5, 0);
-    ctx.stroke();
-    ctx.strokeStyle = '#1a0f06';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-7, 0);
-    ctx.lineTo(-3, 0);
-    ctx.stroke();
-    ctx.strokeStyle = '#2a1a08';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(5, 0);
-    ctx.lineTo(8, 4);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
+      ctx.strokeStyle = '#3a2510';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-7, 0);
+      ctx.lineTo(5, 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#6b4a20';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(-7, 0);
+      ctx.lineTo(5, 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#1a0f06';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-7, 0);
+      ctx.lineTo(-3, 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#2a1a08';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(5, 0);
+      ctx.lineTo(8, 4);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
     ctx.restore();
   }
 }

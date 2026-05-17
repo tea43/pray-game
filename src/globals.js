@@ -5,7 +5,7 @@ export const G = {
   ctx: null,
   W: 0,
   H: 0,
-  PANEL_H: 126,
+  PANEL_H: 144,
   PLAY_BOTTOM: 0,
   // Large map
   WORLD_W: 0,

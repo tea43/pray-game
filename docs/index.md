@@ -23,6 +23,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 |---|---|
 | `current/` | Snapshot of what the game does and how it works right now |
 | `planning/` | Active plans, upcoming phases, open design questions |
+| `planned/` | Early brainstorms and candidate designs not yet accepted as active plans |
 | `executed/` | Completed feature specs and fulfilled plans (read-only reference) |
 | `rejected/` | Abandoned approaches — kept for archaeology only |
 | `lore/` | World lore, character backgrounds, story tone |
@@ -52,9 +53,16 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `planning/abilities_structure_rework.md`: Design doc for unifying base abilities and upgrade skills into a single modular ABILITY_DEFS system.
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 - `planning/large_map_plan.md`: 3×3 world (9× screen area) with centroid-locked camera — phased implementation plan (Phases A–J).
+- `planning/pr-pickup-range.md`: Per-hero essence pickup radius — adds `pickupR` to `HERO_DEFS`, expands the essence pickup check, optional ground-ring visual.
+
+## planned/ — Brainstorms
+
+- `planned/ability_progression_brainstorm.md`: Session notes on sustainable ability progression, several system options, and draft per-hero upgrade ladders.
 
 ## executed/ — Completed Specs
 
+- `executed/pr-level-up.md`: Essence drops, XP accumulation, `state.level`, and top-right HUD bar — complete.
+- `executed/pr-weapons.md`: 3 weapon slots per hero with per-slot auto-fire; level-up modal (`WeaponLevelUpScene`) offers 3 cards (new weapon or upgrade) — complete.
 - `executed/modularization_plan.md`: Completed plan for extracting from one large HTML file to the current modular `src/` codebase.
 - `executed/phaser_port_plan.md`: Phaser 3 port plan — **complete and active runtime**. All phases done.
 - `executed/bwaves_feature.md`: Between-wave upgrade system spec (implemented).

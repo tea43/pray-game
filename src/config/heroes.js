@@ -1,3 +1,5 @@
+export const DEFAULT_PICKUP_R = 60;
+
 export const HERO_DEFS = {
   eliott: {
     name: 'Eliott',
@@ -8,8 +10,10 @@ export const HERO_DEFS = {
     abilityMaxCd: 9,
     abilityColor: '#80c8ff',
     startingWeapon: 'short_hockey_club',
+    weaponPool: ['short_hockey_club', 'throwing_stone', 'bow', 'crossbow', 'samurai_sword'],
     maxHp: 100,
     fallbackRenderer: 'eliott',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       shirt: '#d94a78', acc1: '#f5d04a', acc2: '#40c8c0', acc3: '#f8f0d0',
       shorts: '#8a6840', skin: '#e8b888',
@@ -25,8 +29,10 @@ export const HERO_DEFS = {
     abilityMaxCd: 10,
     abilityColor: '#ff6040',
     startingWeapon: 'hockey_club',
+    weaponPool: ['hockey_club', 'long_club', 'dual_clubs', 'thrown_club', 'boomerang', 'samurai_sword'],
     maxHp: 120,
     fallbackRenderer: 'dick',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       skin: '#d8a878', skinShade: '#a8784a', skinDark: '#7a5030',
       cap: '#2a1a0a', capTop: '#3a2515', capBtn: '#c53030',
@@ -41,8 +47,10 @@ export const HERO_DEFS = {
     abilityMaxCd: 14,
     abilityColor: '#c8a0ff',
     startingWeapon: 'hockey_club',
+    weaponPool: ['hockey_club', 'shotgun', 'crossbow', 'bow', 'samurai_sword'],
     maxHp: 100,
     fallbackRenderer: 'habib',
+    pickupR: DEFAULT_PICKUP_R,
     palette: {
       shirt: '#ece8dc', shirtShade: '#b8b0a0',
       shorts: '#c53030', shortsShade: '#8a1e1e',

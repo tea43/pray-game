@@ -1,8 +1,8 @@
 import { G } from '../globals.js';
 import { rand, dist2, clamp } from '../utils/math.js';
 import { state } from '../state.js';
-import { HERO_DEFS } from '../config/heroes.js';
-import { WEAPON_DEFS } from '../config/weapons.js';
+import { HERO_DEFS, DEFAULT_PICKUP_R } from '../config/heroes.js';
+import { WEAPON_DEFS, resolveWeaponStats } from '../config/weapons.js';
 import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { resolveAsset } from '../config/assets.js';
 import { Projectile } from './Projectile.js';
@@ -11,6 +11,7 @@ import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { ABILITY_DEFS } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
+import { drawWeaponSprite } from '../render/weaponSprites.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -21,7 +22,6 @@ export class Unit {
     this.r = 11;
     this.speed = 78;
     this.hp = 100; this.maxHp = 100;
-    this.atkCd = 0;
     this.selected = false;
     this.swing = 0;
     this.facing = 0;
@@ -36,8 +36,8 @@ export class Unit {
     this.blinkFlash = 0;
     this.dualSide = false;
     this.throwArm = 0;
-    this.currentWeapon = null;
-    this.previousWeapon = null;
+    this.weaponSlots = null;   // initialised after def lookup below
+    this._previousSlot0 = null;
     this.weaponTimer = 0;
     this._anim = { name: 'idle', frame: 0, timer: 0 };
 
@@ -99,13 +99,27 @@ export class Unit {
     this.abilityDescription = def.abilityDescription || '';
     this.abilityMaxCd = def.abilityMaxCd * diff.hero.abilityCdMult;
     this.abilityColor = def.abilityColor;
-    this.currentWeapon = def.startingWeapon || 'hockey_club';
+    this.weaponSlots = [
+      { key: def.startingWeapon || 'hockey_club', level: 1, atkCd: 0 },
+      null,
+      null,
+    ];
     this.maxHp = Math.round(def.maxHp * diff.hero.hpMult);
     this.hp = this.maxHp;
+    this.pickupR = def.pickupR ?? DEFAULT_PICKUP_R;
     this.palette = { ...def.palette };
   }
 
-  get _wDef() { return WEAPON_DEFS[this.currentWeapon] ?? {}; }
+  get _wDef() { return WEAPON_DEFS[this.weaponSlots[0]?.key] ?? {}; }
+
+  // Highest-index filled slot — the "most recently equipped" weapon used for visuals.
+  get _displaySlot() {
+    for (let i = this.weaponSlots.length - 1; i >= 0; i--) {
+      if (this.weaponSlots[i]) return this.weaponSlots[i];
+    }
+    return null;
+  }
+  get _displayWDef() { return WEAPON_DEFS[this._displaySlot?.key] ?? {}; }
   get atkDmg() {
     const base = this._wDef.atkDmg ?? 24;
     const rageMult = this.rageTimer > 0 ? 2 : 1;
@@ -246,8 +260,10 @@ export class Unit {
     if (this.weaponTimer > 0) {
       this.weaponTimer -= dt;
       if (this.weaponTimer <= 0) {
-        this.currentWeapon = this.previousWeapon || this.currentWeapon;
-        this.previousWeapon = null;
+        if (this._previousSlot0) {
+          this.weaponSlots[0] = { ...this._previousSlot0, atkCd: 0 };
+          this._previousSlot0 = null;
+        }
         this.weaponTimer = 0;
       }
     }
@@ -405,7 +421,6 @@ export class Unit {
     }
     if (this._speedDmgCd) this._speedDmgCd = Math.max(0, this._speedDmgCd - dt);
 
-    this.atkCd -= dt;
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 5);
     this.swing = Math.max(0, this.swing - dt * 6);
     this.blinkFlash = Math.max(0, this.blinkFlash - dt * 2.5);
@@ -416,24 +431,20 @@ export class Unit {
       this._updateBoomerang(dt);
     }
 
-    // Auto-attack (skip while Dick is boomeranging)
+    // Auto-attack: iterate all filled weapon slots independently (skip while Dick is boomeranging)
     if (!(this.type === 'dick' && this.boomerang !== null)) {
-      let target = null;
-      if (this.aggroTarget && !this.aggroTarget.dead) {
-        const d = dist2(this.x, this.y, this.aggroTarget.x, this.aggroTarget.y);
-        if (d < this.atkRange + 40) target = this.aggroTarget;
-        else this.aggroTarget = null;
-      }
-      if (!target) {
-        let nd = this.atkRange;
-        for (const e of state.enemies) {
-          if (e.dead) continue;
-          const d = dist2(this.x, this.y, e.x, e.y);
-          if (d < nd) { nd = d; target = e; }
-        }
-      }
-      if (target && dist2(this.x, this.y, target.x, target.y) < this.atkRange && this.atkCd <= 0) {
-        this.attack(target);
+      for (let i = 0; i < this.weaponSlots.length; i++) {
+        const slot = this.weaponSlots[i];
+        if (!slot) continue;
+        slot.atkCd -= dt;
+        if (slot.atkCd > 0) continue;
+
+        const stats = resolveWeaponStats(slot);
+        const target = this._findTarget(stats.atkRange);
+        if (!target) continue;
+
+        this.attack(target, stats);
+        slot.atkCd = this._slotAtkRate(stats);
       }
     }
 
@@ -602,29 +613,30 @@ export class Unit {
     }
   }
 
-  attack(enemy) {
-    const wDef = this._wDef;
-    this.atkCd = this.atkRate;
+  // stats: resolved weapon stats object from resolveWeaponStats(slot).
+  // Caller (per-slot loop) sets slot.atkCd after this returns.
+  attack(enemy, stats) {
+    if (!stats) stats = resolveWeaponStats(this.weaponSlots[0] || { key: 'hockey_club', level: 1 });
     this.facing = Math.atan2(enemy.y - this.y, enemy.x - this.x);
     this.swing = 1;
 
-    if (wDef.type === 'ranged') {
-      this._attackRanged(wDef, enemy);
-    } else if (wDef.type === 'thrown') {
-      this._attackThrown(wDef, enemy);
-    } else if (wDef.cleave) {
-      this._attackCleave(wDef);
+    if (stats.type === 'ranged') {
+      this._attackRanged(stats, enemy);
+    } else if (stats.type === 'thrown') {
+      this._attackThrown(stats, enemy);
+    } else if (stats.cleave) {
+      this._attackCleave(stats);
     } else {
-      this._attackMelee(wDef, enemy);
+      this._attackMelee(stats, enemy);
     }
   }
 
-  _attackMelee(wDef, enemy) {
-    if (wDef.dual) this.dualSide = !this.dualSide;
+  _attackMelee(stats, enemy) {
+    if (stats.dual) this.dualSide = !this.dualSide;
     if (this.z === 0) this.vz = 120;
-    const dmg = this.atkDmg;
-    const kb = (wDef.knockback ?? 80) * (this.rageTimer > 0 ? 1.75 : 1);
-    playSfx(wDef.sfxAttack || 'weapon.attack.default', { fallback: wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
+    const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
+    const kb = (stats.knockback ?? 80) * (this.rageTimer > 0 ? 1.75 : 1);
+    playSfx(stats.sfxAttack || 'weapon.attack.default', { fallback: stats.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
     playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
     enemy.knockX += Math.cos(this.facing) * kb;
@@ -643,19 +655,19 @@ export class Unit {
     if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, this.rageTimer > 0 ? 0.04 : 0.018);
   }
 
-  _attackCleave(wDef) {
-    playSfx(wDef.sfxAttack || 'weapon.samurai.attack', { synthetic: 'hit' });
-    const halfArc = Math.PI * ((wDef.cleaveArc ?? 60) / 180);
-    const kb = wDef.knockback ?? 120;
+  _attackCleave(stats) {
+    playSfx(stats.sfxAttack || 'weapon.samurai.attack', { synthetic: 'hit' });
+    const halfArc = Math.PI * ((stats.cleaveArc ?? 60) / 180);
+    const kb = stats.knockback ?? 120;
     let hit = 0;
     for (const e of state.enemies) {
       if (e.dead) continue;
-      if (dist2(this.x, this.y, e.x, e.y) > this.atkRange + e.r) continue;
+      if (dist2(this.x, this.y, e.x, e.y) > stats.atkRange + e.r) continue;
       let da = Math.atan2(e.y - this.y, e.x - this.x) - this.facing;
       while (da >  Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
       if (Math.abs(da) > halfArc) continue;
-      const dmg = this.atkDmg;
+      const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
       e.hp -= dmg;
       e.knockX += Math.cos(this.facing) * kb;
       e.knockY += Math.sin(this.facing) * kb;
@@ -674,28 +686,67 @@ export class Unit {
     if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
   }
 
-  _attackThrown(wDef, enemy) {
+  _attackThrown(stats, enemy) {
     this.throwArm = 1;
     const sx = this.x + Math.cos(this.facing) * (this.r + 6);
     const sy = this.y + Math.sin(this.facing) * (this.r + 6);
-    state.projectiles.push(new Projectile(sx, sy, enemy, this.atkDmg, this.facing, this, wDef));
+    const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
+    state.projectiles.push(new Projectile(sx, sy, enemy, dmg, this.facing, this, stats));
     if (!state.settings.noShake) state.shake = Math.max(state.shake, 1.5);
   }
 
-  _attackRanged(wDef, enemy) {
+  _attackRanged(stats, enemy) {
     this.throwArm = 1;
-    playSfx(wDef.sfxFire || 'weapon.throw.default', { synthetic: wDef.sfxFallback || 'shoot' });
-    const count  = wDef.bulletCount ?? 1;
-    const spread = wDef.spread ?? 0;
-    const dmgPer = count > 1 ? this.atkDmg * 0.5 : this.atkDmg;
+    playSfx(stats.sfxFire || 'weapon.throw.default', { synthetic: stats.sfxFallback || 'shoot' });
+    const count  = stats.bulletCount ?? 1;
+    const spread = stats.spread ?? 0;
+    const baseDmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
+    const dmgPer = count > 1 ? baseDmg * 0.5 : baseDmg;
     for (let i = 0; i < count; i++) {
       const offset = count > 1 ? (i / (count - 1) - 0.5) * spread * 2 : 0;
       const ang = this.facing + offset;
       const sx = this.x + Math.cos(ang) * (this.r + 6);
       const sy = this.y + Math.sin(ang) * (this.r + 6);
-      state.projectiles.push(new ShotgunBullet(sx, sy, ang, dmgPer, wDef));
+      state.projectiles.push(new ShotgunBullet(sx, sy, ang, dmgPer, stats));
     }
     if (!state.settings.noShake) state.shake = Math.max(state.shake, count > 1 ? 2.5 : 1.2);
+  }
+
+  _findTarget(range) {
+    if (this.aggroTarget && !this.aggroTarget.dead) {
+      const d = dist2(this.x, this.y, this.aggroTarget.x, this.aggroTarget.y);
+      if (d < range + 40) return this.aggroTarget;
+      this.aggroTarget = null;
+    }
+    let target = null, nd = range;
+    for (const e of state.enemies) {
+      if (e.dead) continue;
+      const d = dist2(this.x, this.y, e.x, e.y);
+      if (d < nd) { nd = d; target = e; }
+    }
+    return target;
+  }
+
+  _slotAtkRate(stats) {
+    const base = stats.atkRate ?? 0.5;
+    const rageMult = this.rageTimer > 0 ? 0.4 : 1;
+    const alchMult = this.rageTimer > 0 ? (1 / Math.max(1, this.alchemyRageMult)) : 1;
+    const storiesMult = this.storiesRateBoost > 0 ? (1 / 1.3) : 1;
+    return base * rageMult * alchMult * storiesMult * (this.upgradeRateMult || 1);
+  }
+
+  grantWeapon(key) {
+    const freeIdx = this.weaponSlots.findIndex(s => s === null);
+    if (freeIdx === -1) return false;
+    this.weaponSlots[freeIdx] = { key, level: 1, atkCd: 0 };
+    return true;
+  }
+
+  upgradeWeapon(slotIdx) {
+    const slot = this.weaponSlots[slotIdx];
+    if (!slot) return false;
+    slot.level = Math.min(5, slot.level + 1);
+    return true;
   }
 
   moveTo(x, y) {
@@ -989,7 +1040,7 @@ export class Unit {
       ctx.stroke();
     }
 
-    if (this.swing > 0.3 && this._wDef.type !== 'thrown' && !(this.type === 'dick' && this.boomerang !== null)) {
+    if (this.swing > 0.3 && this._displayWDef.type === 'melee' && !(this.type === 'dick' && this.boomerang !== null)) {
       const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.2 - 1.1 : 0;
       const clubBase = this.facing - 0.4 + swingArc;
       const a = (this.swing - 0.3) * 0.8;
@@ -1339,109 +1390,88 @@ export class Unit {
   }
 
   _drawWeapon(ctx) {
-    const wDef = this._wDef;
-    if (wDef.shortClub)              this._drawShortClub(ctx);
-    else if (wDef.dual)              this._drawDualClubs(ctx);
-    else if (wDef.type === 'thrown') this._drawHeldClubs(ctx);
-    else if (wDef.type === 'melee')  this._drawLongClub(ctx);
-    else if (wDef.type === 'ranged') this._drawHeldClubs(ctx);
-  }
+    const slot = this._displaySlot;
+    if (!slot) return;
+    const key = slot.key;
+    const wDef = WEAPON_DEFS[key] ?? {};
 
-  _drawSingleClub(ctx, baseAng, len, scale) {
-    scale = scale || 1;
-    const gripX = this.x + Math.cos(baseAng - 0.3) * (this.r * 0.7);
-    const gripY = this.y + Math.sin(baseAng - 0.3) * (this.r * 0.7);
-    const tipX = gripX + Math.cos(baseAng) * len;
-    const tipY = gripY + Math.sin(baseAng) * len;
+    // For Dual Clubs, determine if it's the alternate swing
+    const isDual = wDef.dual;
+    const sideSign = (isDual && this.dualSide) ? 1 : -1;
 
-    ctx.strokeStyle = '#3a2510'; ctx.lineWidth = 2.8 * scale; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(gripX, gripY); ctx.lineTo(tipX, tipY); ctx.stroke();
-    ctx.strokeStyle = '#6b4a20'; ctx.lineWidth = 1 * scale;
-    ctx.beginPath(); ctx.moveTo(gripX, gripY); ctx.lineTo(tipX, tipY); ctx.stroke();
-    ctx.strokeStyle = '#1a0f06'; ctx.lineWidth = 3.5 * scale;
-    const gx2 = gripX + Math.cos(baseAng) * 5, gy2 = gripY + Math.sin(baseAng) * 5;
-    ctx.beginPath(); ctx.moveTo(gripX, gripY); ctx.lineTo(gx2, gy2); ctx.stroke();
-
-    const bladeAng = baseAng + 1.1;
-    const bx = tipX + Math.cos(bladeAng) * 7 * scale;
-    const by = tipY + Math.sin(bladeAng) * 7 * scale;
-    ctx.strokeStyle = '#2a1a08'; ctx.lineWidth = 3.5 * scale;
-    ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(bx, by); ctx.stroke();
-    ctx.strokeStyle = '#8a6b3a'; ctx.lineWidth = 1 * scale;
-    ctx.beginPath();
-    ctx.moveTo(tipX + Math.cos(bladeAng) * 3, tipY + Math.sin(bladeAng) * 3);
-    ctx.lineTo(tipX + Math.cos(bladeAng) * 5, tipY + Math.sin(bladeAng) * 5);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
-  }
-
-  _drawLongClub(ctx) {
-    const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.4 - 1.2 : 0;
-    const baseAng = this.facing - 0.4 + swingArc;
-    this._drawSingleClub(ctx, baseAng, 40, 1.05);
-    const gripX = this.x + Math.cos(baseAng - 0.3) * (this.r * 0.7);
-    const gripY = this.y + Math.sin(baseAng - 0.3) * (this.r * 0.7);
-    ctx.strokeStyle = '#5a2520'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(gripX + Math.cos(baseAng) * 9, gripY + Math.sin(baseAng) * 9);
-    ctx.lineTo(gripX + Math.cos(baseAng) * 14, gripY + Math.sin(baseAng) * 14);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
-  }
-
-  _drawShortClub(ctx) {
-    const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.0 - 1.0 : 0;
-    const baseAng = this.facing - 0.3 + swingArc;
-    this._drawSingleClub(ctx, baseAng, 26, 0.8);
-  }
-
-  _drawDualClubs(ctx) {
-    const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.2 - 1.1 : 0;
-    const sideSign = this.dualSide ? 1 : -1;
-    const activeAng = this.facing - 0.4 * sideSign + swingArc * sideSign;
-    const idleAng = this.facing - 0.4 * (-sideSign);
-    const idleResting = idleAng + 0.5 * (-sideSign);
-    this._drawSingleClub(ctx, idleResting, 22, 0.85);
-    this._drawSingleClub(ctx, activeAng, 22, 1);
-  }
-
-  _drawHeldClubs(ctx) {
-    const throwBoost = this.throwArm;
-    const backAng = this.facing - 0.7;
-    const backX = this.x + Math.cos(backAng) * (this.r * 0.6);
-    const backY = this.y + Math.sin(backAng) * (this.r * 0.6);
-    const backTipX = backX + Math.cos(backAng - 0.5) * 9;
-    const backTipY = backY + Math.sin(backAng - 0.5) * 9;
-    ctx.strokeStyle = '#3a2510'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(backX, backY); ctx.lineTo(backTipX, backTipY); ctx.stroke();
-    ctx.strokeStyle = '#1a0f06'; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(backX, backY);
-    ctx.lineTo(backX + Math.cos(backAng - 0.5) * 3, backY + Math.sin(backAng - 0.5) * 3);
-    ctx.stroke();
-
-    const forwardAng = this.facing + (throwBoost > 0 ? 0 : 0.5);
-    const reach = this.r * 0.6 + throwBoost * 6;
-    const frontX = this.x + Math.cos(forwardAng) * reach;
-    const frontY = this.y + Math.sin(forwardAng) * reach;
-    if (throwBoost < 0.7) {
-      const frontTipX = frontX + Math.cos(forwardAng - 0.3) * 9;
-      const frontTipY = frontY + Math.sin(forwardAng - 0.3) * 9;
-      ctx.strokeStyle = '#3a2510'; ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.moveTo(frontX, frontY); ctx.lineTo(frontTipX, frontTipY); ctx.stroke();
-      ctx.strokeStyle = '#1a0f06'; ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(frontX, frontY);
-      ctx.lineTo(frontX + Math.cos(forwardAng - 0.3) * 3, frontY + Math.sin(forwardAng - 0.3) * 3);
-      ctx.stroke();
-    } else {
-      ctx.strokeStyle = `rgba(200, 200, 220, ${(throwBoost - 0.7) * 1.5})`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(frontX, frontY);
-      ctx.lineTo(frontX + Math.cos(forwardAng) * 8, frontY + Math.sin(forwardAng) * 8);
-      ctx.stroke();
+    let swingArc = 0;
+    if (this.swing > 0 && wDef.type === 'melee') {
+      swingArc = Math.sin((1 - this.swing) * Math.PI) * (wDef.swingArc || 2.4) - (wDef.swingOffset || 1.2);
     }
-    ctx.lineCap = 'butt';
+    
+    const throwBoost = this.throwArm;
+    let baseAng = this.facing - 0.35 + (swingArc * (isDual ? sideSign : 1));
+    let scale = 1.4;
+    let reach = this.r * 0.7;
+
+    if (wDef.type === 'thrown' || wDef.type === 'ranged') {
+      baseAng = this.facing + (throwBoost > 0 ? 0 : 0.4);
+      reach = this.r * 0.65 + throwBoost * 6;
+      if (key === 'bow' || key === 'crossbow' || key === 'shotgun') {
+        baseAng = this.facing;
+      }
+    }
+
+    const wx = this.x + Math.cos(baseAng) * reach;
+    const wy = this.y + Math.sin(baseAng) * reach;
+
+    // Optional Trail for Melee
+    if (this.swing > 0.3 && wDef.type === 'melee') {
+      const trailArc = (this.swing - 0.3) * 0.8;
+      const tStart = baseAng - swingArc * 0.5;
+      const tEnd = baseAng;
+      ctx.strokeStyle = `rgba(255, 240, 200, ${trailArc})`;
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      // Draw a crescent
+      ctx.arc(this.x, this.y, reach + 16, Math.min(tStart, tEnd), Math.max(tStart, tEnd));
+      ctx.stroke();
+      
+      ctx.strokeStyle = `rgba(255, 255, 255, ${trailArc * 1.5})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, reach + 16, Math.min(tStart, tEnd), Math.max(tStart, tEnd));
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+
+    // Dynamic rotation per weapon
+    let spriteRot = baseAng + Math.PI / 4; // Sprites are mostly drawn diagonally top-right
+    if (key === 'samurai_sword') {
+      scale = 1.8;
+    } else if (key === 'throwing_stone') {
+      scale = 1.0;
+    } else if (key === 'shotgun' || key === 'bow' || key === 'crossbow') {
+      spriteRot = baseAng;
+    }
+
+    // Don't draw the boomerang if it is flying
+    if (key === 'boomerang' && this.boomerang !== null && throwBoost >= 0.7) {
+       return; 
+    }
+
+    // Actually draw the sprite
+    drawWeaponSprite(ctx, key, wx, wy, scale, spriteRot);
+
+    // If dual clubs, draw the idle club too
+    if (isDual) {
+      const idleAng = this.facing - 0.4 * (-sideSign) + 0.5 * (-sideSign);
+      const ix = this.x + Math.cos(idleAng) * (this.r * 0.7);
+      const iy = this.y + Math.sin(idleAng) * (this.r * 0.7);
+      drawWeaponSprite(ctx, key, ix, iy, scale, idleAng + Math.PI / 4);
+    }
+  }
+
+  _drawFlyingBoomerang(ctx) {
+    const b = this.boomerang;
+    if (!b) return;
+    const angle = state.time * 18;
+    drawWeaponSprite(ctx, 'boomerang', b.clubX, b.clubY, 1.4, angle);
   }
 }

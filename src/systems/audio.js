@@ -357,6 +357,20 @@ export function playMusic(id) {
     audio.dataset.volume = String(volume);
     audio.volume = audioState.muted ? 0 : musicVolume * volume;
     musicEl = audio;
+    // Safety net: if the HTML audio element stops unexpectedly (browser loop bug,
+    // audio context suspension, etc.) try to restart the same track.
+    audio.addEventListener('ended', () => {
+      if (currentMusic === requestedId && musicEl === audio) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      }
+    });
+    audio.addEventListener('error', () => {
+      if (currentMusic === requestedId && musicEl === audio) {
+        musicEl = null;
+        playBufferedMusic(requestedId, url, entry);
+      }
+    });
     audio.play().catch(() => {
       if (initialized) {
         musicEl = null;

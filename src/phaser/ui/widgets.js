@@ -33,10 +33,12 @@ const DPR = () => window.devicePixelRatio || 1;
 
 export function txt(scene, x, y, str, style = {}) {
   return scene.add.text(Math.round(x), Math.round(y), str, {
-    fontFamily: "'Courier New', monospace",
-    fontSize:   '12px',
-    color:      TC.primary,
-    resolution: DPR(),
+    fontFamily:      'Georgia, serif',
+    fontSize:        '13px',
+    color:           TC.primary,
+    resolution:      DPR(),
+    stroke:          '#000000',
+    strokeThickness: 2,
     ...style,
   });
 }
@@ -51,7 +53,7 @@ export function btn(scene, x, y, w, h, label, cb, disabled = false) {
   };
   redraw(false);
 
-  txt(scene, x + w / 2, y + h / 2, label, { fontSize: '13px', color: TC.primary })
+  txt(scene, x + w / 2, y + h / 2, label, { fontSize: '15px', color: TC.primary })
     .setOrigin(0.5, 0.5)
     .setAlpha(disabled ? 0.3 : 1);
 
@@ -83,8 +85,8 @@ export function slider(scene, x, y, w, label, getValue, onChange, opts = {}) {
     if (valTxt) valTxt.setText(Math.round(v * 100) + '%');
   };
 
-  txt(scene, x, y - 16, label, { fontSize: '9px', color: TC.muted, letterSpacing: 2 });
-  valTxt = txt(scene, x + w + 10, cy - 6, '', { fontSize: '10px', color: TC.primary });
+  txt(scene, x, y - 16, label, { fontSize: '11px', color: TC.muted, letterSpacing: 2 });
+  valTxt = txt(scene, x + w + 10, cy - 6, '', { fontSize: '11px', color: TC.primary });
   redraw(getValue());
 
   const apply = ptr => {
@@ -115,10 +117,10 @@ export function toggle(scene, x, y, label, getState, onToggle, opts = {}) {
   };
 
   txt(scene, x, y + Math.round(btnH / 2) - 6, label,
-    { fontSize: '10px', color: TC.muted, letterSpacing: 2 });
+    { fontSize: '12px', color: TC.muted, letterSpacing: 2 });
 
   const stateTxt = txt(scene, x + offsetX + btnW / 2, y + btnH / 2, '',
-    { fontSize: '10px', color: TC.primary }).setOrigin(0.5, 0.5);
+    { fontSize: '12px', color: TC.primary }).setOrigin(0.5, 0.5);
 
   const refresh = () => {
     redraw();
