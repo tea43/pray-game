@@ -229,6 +229,14 @@ Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves
 - **HOW TO PLAY button**: small button at bottom-right during gameplay. Clicking it toggles a controls reference panel. Clicking anywhere else closes it.
 - Controls panel is hidden by default; wired in `main.js` after `initMenu()`.
 
+### Text Readability System
+
+All Phaser scene text uses **Georgia serif** as the primary typeface (replaced Courier New project-wide for legibility). Standard sizes: 13px body, 15px buttons, 20px section headers, 42px main title. All text has `stroke: '#000000', strokeThickness: 2–3` for contrast against varied backgrounds.
+
+- **`src/phaser/ui/widgets.js`**: shared `txt()` default is now Georgia 13px with strokeThickness 2. Button labels 15px, slider labels 11px, toggle labels 12px.
+- **Canvas 2D HUD** (`src/render/hud.js`): uses a `_txt(ctx, text, x, y, color, font)` double-draw helper (offset dark copy + color copy) instead of shadowBlur (banned for performance). Hero names 13px Georgia bold, HP/cooldown labels 10–12px Georgia, buff pills 9px Georgia.
+- **`shadowBlur` is banned project-wide** — expensive software blur. Drop-shadow always uses the double-draw technique.
+
 ## World And Rendering
 
 - Static screen-space arena, no camera and no world-coordinate layer yet.

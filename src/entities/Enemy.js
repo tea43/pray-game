@@ -55,7 +55,14 @@ export class Enemy {
   }
 
   update(dt) {
-    if (this.dead) { this.deathTimer += dt; return; }
+    if (this.dead) {
+      this.deathTimer += dt;
+      if (this._lootDropTimer > 0) {
+        this._lootDropTimer -= dt;
+        if (this._lootDropTimer <= 0) this._spawnLootDrops();
+      }
+      return;
+    }
 
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 5);
     this.stunTimer = Math.max(0, this.stunTimer - dt);
@@ -336,7 +343,7 @@ export class Enemy {
     this._spawnBloodBurst();
     this._spawnBossGlowBurst();   // no-op for regular enemies
     this._triggerScreenEffects();
-    this._spawnLootDrops();
+    this._lootDropTimer = 1;
   }
 
   // Blood splatter particles — same for all enemy types, scaled by radius.

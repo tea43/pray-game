@@ -19,23 +19,22 @@ export class HUDScene extends Phaser.Scene {
     const xpBarH = 8;
     const xpRightX = W - 14;
 
+    const S = { resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 3 };
+
     // ── XP / Level (top-right) ────────────────────────────────────────────────
     this._lvText = this.add.text(xpRightX, topY, 'LV 1', {
-      fontFamily: "'Courier New', monospace",
-      resolution: window.devicePixelRatio,
-      fontSize: '11px',
-      color: '#d8a040',
+      ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8b848',
     }).setOrigin(1, 0);
 
     this._xpBar = this.add.graphics();
-    this._xpBarBounds = { x: xpRightX - xpBarW, y: topY + 16, w: xpBarW, h: xpBarH };
+    this._xpBarBounds = { x: xpRightX - xpBarW, y: topY + 17, w: xpBarW, h: xpBarH };
 
-    // ── Wave / kill / time labels — move kill/score below the XP bar ─────────
+    // ── Wave / kill / time labels ─────────────────────────────────────────────
     const labelY = topY + 36;
-    this._waveText  = this.add.text(W / 2, topY, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#d9c7a0', letterSpacing: 3 }).setOrigin(0.5, 0);
-    this._killText  = this.add.text(xpRightX, labelY, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#a89470' }).setOrigin(1, 0);
-    this._timeText  = this.add.text(14, topY, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '11px', color: '#a89470' }).setOrigin(0, 0);
-    this._pauseText = this.add.text(W / 2, topY + 18, '', { fontFamily: "'Courier New', monospace", resolution: window.devicePixelRatio, fontSize: '10px', color: '#8bc34a', letterSpacing: 4 }).setOrigin(0.5, 0);
+    this._waveText  = this.add.text(W / 2, topY, '', { ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e4c0', letterSpacing: 2 }).setOrigin(0.5, 0);
+    this._killText  = this.add.text(xpRightX, labelY, '', { ...S, fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c8b080' }).setOrigin(1, 0);
+    this._timeText  = this.add.text(14, topY, '', { ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8b080' }).setOrigin(0, 0);
+    this._pauseText = this.add.text(W / 2, topY + 19, '', { ...S, fontFamily: 'Georgia, serif', fontSize: '12px', color: '#a0d050', letterSpacing: 2 }).setOrigin(0.5, 0);
   }
 
   update(time, delta) {

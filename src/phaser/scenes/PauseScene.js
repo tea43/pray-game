@@ -135,8 +135,8 @@ export class PauseScene extends Phaser.Scene {
     this._mainMenuObjs.push(g);
 
     const label = this.add.text(cx + btnW / 2, y + BTN_H / 2, 'MAIN MENU', {
-      fontFamily: "'Courier New', monospace", fontSize: '13px', color: TC.primary,
-      resolution: window.devicePixelRatio,
+      fontFamily: 'Georgia, serif', fontSize: '15px', color: TC.primary,
+      resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0.5);
     this._mainMenuObjs.push(label);
 
@@ -161,8 +161,8 @@ export class PauseScene extends Phaser.Scene {
 
     // Prompt text
     const label = this.add.text(cx + btnW / 2, y - 2, 'RETURN TO MAIN MENU?', {
-      fontFamily: "'Courier New', monospace", fontSize: '11px', color: '#d0c090',
-      resolution: window.devicePixelRatio,
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#d0c090',
+      resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0);
     confirmObjs.push(label);
 
@@ -175,8 +175,8 @@ export class PauseScene extends Phaser.Scene {
     yesG.lineStyle(1, 0x8a6b3a, 1).strokeRect(cx, btnY, halfW, BTN_H - 14);
     confirmObjs.push(yesG);
     const yesLbl = this.add.text(cx + halfW / 2, btnY + (BTN_H - 14) / 2, 'YES', {
-      fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0',
-      resolution: window.devicePixelRatio,
+      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#d9c7a0',
+      resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0.5);
     confirmObjs.push(yesLbl);
     const yesZone = this.add.zone(cx, btnY, halfW, BTN_H - 14).setOrigin(0, 0).setInteractive();
@@ -198,8 +198,8 @@ export class PauseScene extends Phaser.Scene {
     cancelG.lineStyle(1, 0x8a6b3a, 1).strokeRect(cancelX, btnY, halfW, BTN_H - 14);
     confirmObjs.push(cancelG);
     const cancelLbl = this.add.text(cancelX + halfW / 2, btnY + (BTN_H - 14) / 2, 'CANCEL', {
-      fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0',
-      resolution: window.devicePixelRatio,
+      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#d9c7a0',
+      resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5, 0.5);
     confirmObjs.push(cancelLbl);
     const cancelZone = this.add.zone(cancelX, btnY, halfW, BTN_H - 14).setOrigin(0, 0).setInteractive();

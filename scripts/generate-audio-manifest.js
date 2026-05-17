@@ -11,6 +11,7 @@ function readJson(file) {
 }
 
 function listAudioFiles(dir, supportedExtensions, safePattern, warnings) {
+  if (!dir) return [];
   const absDir = path.join(audioRoot, dir);
   if (!fs.existsSync(absDir)) return [];
 

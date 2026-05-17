@@ -16,6 +16,7 @@ import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
 import { buildFlowField } from '../../utils/terrain.js';
 import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
+import { preloadWeaponImages } from '../../render/weaponSprites.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     window.__prayInGame = true;
+    preloadWeaponImages();
     this._syncG();
 
     // ── Canvas 2D texture bridge ───────────────────────────────────────────────
@@ -174,7 +176,8 @@ export class GameScene extends Phaser.Scene {
     const heliDeparting = state.helicopter?.flightState === 'departing';
     const anyAbilityActive = state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
-      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0
+      u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0 ||
+      u.stonedTimer > 0
     ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     const targetFlow = state.gameOver        ? 0

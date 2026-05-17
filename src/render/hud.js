@@ -41,6 +41,16 @@ function _img(src) {
 
 let _tooltip = null;
 
+// Draw text with a 1-px dark drop-shadow for legibility on any background.
+// Avoids shadowBlur (expensive on Canvas 2D).
+function _txt(ctx, text, x, y, color, font) {
+  if (font) ctx.font = font;
+  ctx.fillStyle = 'rgba(0,0,0,0.88)';
+  ctx.fillText(text, x + 1, y + 1);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+}
+
 export function drawAbilityPanel() {
   const { ctx, W, H, PANEL_H } = G;
   const slots  = state.units;
@@ -92,15 +102,12 @@ export function drawAbilityPanel() {
     u.selected = savedSel;
     ctx.restore();
 
-    ctx.fillStyle = u.dead ? '#8a4a3a' : '#e8d8b0';
-    ctx.font = 'bold 11px "Courier New", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(u.name.toUpperCase(), x + 27, y + 12);
+    _txt(ctx, u.name.toUpperCase(), x + 27, y + 13,
+         u.dead ? '#c06050' : '#f0e4c0', 'bold 13px Georgia, serif');
 
     if (u.dead) {
-      ctx.fillStyle = '#a83a2a';
-      ctx.font = 'bold 11px "Courier New", monospace';
-      ctx.fillText('DEAD', x + 27, y + HEADER_H + 8);
+      _txt(ctx, 'DEAD', x + 27, y + HEADER_H + 9, '#e04030', 'bold 12px Georgia, serif');
       // Crosshatch over buff row + button area to make it visually non-interactive
       const btnY = y + HEADER_H + 2;
       const BH   = PANEL_H - HEADER_H - 4;
@@ -117,10 +124,9 @@ export function drawAbilityPanel() {
       continue;
     }
 
-    ctx.font = '9px "Courier New", monospace';
-    ctx.fillStyle = '#8a6b3a';
     ctx.textAlign = 'right';
-    ctx.fillText(`${Math.ceil(u.hp)}/${u.maxHp}`, x + SLOT_W - 4, y + 12);
+    _txt(ctx, `${Math.ceil(u.hp)}/${u.maxHp}`, x + SLOT_W - 5, y + 13,
+         '#c0a060', '10px Georgia, serif');
     ctx.textAlign = 'left';
 
     const barL = x + 27, barW = SLOT_W - 27 - 4;
@@ -136,7 +142,7 @@ export function drawAbilityPanel() {
 
     // ── Weapon slot strip ─────────────────────────────────────────────────────
     const weaponY = y + HEADER_H + BUFF_ROW_H + 1;
-    _drawWeaponSlots(ctx, u, x, weaponY);
+    _drawWeaponSlots(ctx, u, x, weaponY, panelY);
 
     // ── Ability buttons ───────────────────────────────────────────────────────
     const btnY = y + HEADER_H + BUFF_ROW_H + WEAPON_ROW_H + 2;
@@ -235,17 +241,13 @@ function _drawBuffRow(ctx, unit, sx, rowY, panelY) {
     ctx.lineWidth = 0.8;
     ctx.strokeRect(bx, rowY + 1, PILL_W, PILL_H);
     // Label
-    ctx.fillStyle = buff.color;
-    ctx.font = 'bold 7px "Courier New", monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(buff.label, bx + 3, cy);
+    _txt(ctx, buff.label, bx + 3, cy, buff.color, 'bold 9px Georgia, serif');
     // Time value
     const timeStr = buff.isHeal ? Math.ceil(buff.time) + 'hp' : Math.ceil(buff.time) + 's';
-    ctx.fillStyle = '#d0c080';
-    ctx.font = '7px "Courier New", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(timeStr, bx + PILL_W - 2, cy);
+    _txt(ctx, timeStr, bx + PILL_W - 2, cy, '#e0d090', '9px Georgia, serif');
     ctx.textBaseline = 'alphabetic';
 
     // Hover → tooltip
@@ -265,17 +267,34 @@ function _drawBuffRow(ctx, unit, sx, rowY, panelY) {
   }
 }
 
-function _drawWeaponSlots(ctx, unit, sx, rowY) {
-  const CELL = 16, GAP = 4, PIPS_H = 6;
+function _weaponSlotDesc(wDef, slot) {
+  if (!wDef) return 'No weapon data.';
+  const stats = wDef.levels?.[slot.level - 1] || {};
+  const dmg   = stats.atkDmg   ?? wDef.atkDmg   ?? '?';
+  const rate  = stats.atkRate  ?? wDef.atkRate   ?? '?';
+  const range = stats.atkRange ?? wDef.atkRange  ?? '?';
+  const t = wDef.type;
+  if (t === 'ranged') {
+    const bc = stats.bulletCount ?? wDef.bulletCount ?? 1;
+    return `Ranged — ${bc > 1 ? bc + ' shots, ' : ''}${range}px range, ${dmg} dmg/shot, ${rate}s cooldown`;
+  }
+  if (t === 'thrown') return `Thrown — ${range}px range, ${dmg} dmg${wDef.returns ? ', returns' : ''}, ${rate}s cooldown`;
+  if (wDef.cleave) return `Cleave — ±${wDef.cleaveArc}° arc, ${range}px range, ${dmg} dmg, ${rate}s cooldown`;
+  if (wDef.dual)   return `Dual melee — ${range}px range, ${dmg} dmg, ${rate}s cooldown`;
+  return `Melee — ${range}px range, ${dmg} dmg, ${rate}s cooldown`;
+}
+
+function _drawWeaponSlots(ctx, unit, sx, rowY, panelY) {
+  const CELL = 16, GAP = 4;
   const totalW = 3 * CELL + 2 * GAP;
   let bx = sx + (SLOT_W - totalW) / 2;
+  const mx = state.mouse?.x ?? -1, my = state.mouse?.y ?? -1;
 
   for (let i = 0; i < 3; i++) {
     const slot = unit.weaponSlots?.[i];
     const cx = bx + i * (CELL + GAP);
 
     if (!slot) {
-      // Empty slot — dim box with + glyph
       ctx.fillStyle = 'rgba(30, 20, 10, 0.6)';
       ctx.fillRect(cx, rowY, CELL, CELL);
       ctx.strokeStyle = 'rgba(80, 55, 25, 0.5)';
@@ -288,20 +307,21 @@ function _drawWeaponSlots(ctx, unit, sx, rowY) {
       ctx.textAlign = 'left';
     } else {
       const wDef = WEAPON_DEFS[slot.key];
-      // Icon background tinted by weapon type
       const typeColor = wDef?.type === 'ranged' ? 'rgba(255,154,48,0.25)' :
                         wDef?.type === 'thrown'  ? 'rgba(100,200,255,0.22)' :
                                                    'rgba(200,180,100,0.22)';
-      ctx.fillStyle = typeColor;
+      // Highlight slot on hover
+      const hovered = mx >= cx && mx <= cx + CELL && my >= rowY && my <= rowY + CELL + 6;
+      ctx.fillStyle = hovered ? (wDef?.type === 'ranged' ? 'rgba(255,154,48,0.45)' :
+                                  wDef?.type === 'thrown'  ? 'rgba(100,200,255,0.40)' :
+                                                             'rgba(200,180,100,0.40)') : typeColor;
       ctx.fillRect(cx, rowY, CELL, CELL);
-      ctx.strokeStyle = slot.level >= 5 ? '#ffaa18' : 'rgba(160,130,60,0.7)';
-      ctx.lineWidth = slot.level >= 5 ? 1.5 : 0.8;
+      ctx.strokeStyle = hovered ? '#ffcc60' : slot.level >= 5 ? '#ffaa18' : 'rgba(160,130,60,0.7)';
+      ctx.lineWidth = hovered ? 1.5 : slot.level >= 5 ? 1.5 : 0.8;
       ctx.strokeRect(cx, rowY, CELL, CELL);
 
-      // Weapon sprite
       drawWeaponSprite(ctx, slot.key, cx + CELL / 2, rowY + CELL / 2, 0.9, Math.PI / 4);
 
-      // Level pips below icon
       const pipR = 1.8;
       const pipGap = 5;
       const pipStartX = cx + (CELL - (5 * pipGap - 1)) / 2;
@@ -310,6 +330,19 @@ function _drawWeaponSlots(ctx, unit, sx, rowY) {
         ctx.arc(pipStartX + p * pipGap, rowY + CELL + pipR + 1, pipR, 0, Math.PI * 2);
         ctx.fillStyle = p < slot.level ? '#d8a040' : 'rgba(80, 60, 25, 0.6)';
         ctx.fill();
+      }
+
+      // Populate tooltip on hover
+      if (hovered && wDef) {
+        const levelStr = `Lv ${slot.level}/5`;
+        _tooltip = {
+          x: cx, y: rowY, bh: CELL + 6,
+          name: `${wDef.displayName || slot.key} — ${levelStr}`,
+          description: _weaponSlotDesc(wDef, slot),
+          cd: 0, maxCd: 1, wavesLeft: null,
+          isEmpty: false, isPassive: false,
+          panelY,
+        };
       }
     }
   }
@@ -413,11 +446,11 @@ function _drawBtn(ctx, btn) {
     ctx.globalAlpha = cd > 0 ? 0.20 : 0.45;
     ctx.fillRect(x + PAD, y + PAD, BW - PAD * 2, icnH - PAD * 2);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = cd > 0 ? '#5a4020' : '#e0d0b0';
-    ctx.font = `bold ${Math.round(BW * 0.50)}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText((abilityId || '?').charAt(0).toUpperCase(), icx, icy);
+    _txt(ctx, (abilityId || '?').charAt(0).toUpperCase(), icx, icy,
+         cd > 0 ? '#7a6030' : '#f0e0c0',
+         `bold ${Math.round(BW * 0.55)}px Georgia, serif`);
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -457,11 +490,9 @@ function _drawBtn(ctx, btn) {
     ctx.fill();
     ctx.restore();
     // Seconds text
-    ctx.fillStyle = '#d0c080';
-    ctx.font = 'bold 10px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(Math.ceil(cd) + 's', icx, icy + 1);
+    _txt(ctx, Math.ceil(cd) + 's', icx, icy + 1, '#f0e060', 'bold 12px Georgia, serif');
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -491,20 +522,19 @@ function _drawKeyStrip(ctx, bx, by, bh, key, ready) {
   ctx.moveTo(bx, sy); ctx.lineTo(bx + BW, sy);
   ctx.stroke();
   // Key label
-  ctx.fillStyle = ready ? '#e8c060' : '#6a4828';
-  ctx.font = 'bold 11px "Courier New", monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(key, bx + BW / 2, sy + KEY_H / 2);
+  _txt(ctx, key, bx + BW / 2, sy + KEY_H / 2,
+       ready ? '#ffe080' : '#7a5535', 'bold 13px Georgia, serif');
   ctx.textBaseline = 'alphabetic';
 }
 
 
 function _drawTooltip(ctx, data, W, panelY) {
   const { x, y, name, description, cd, maxCd, wavesLeft, isPassive, isBuff, buffTimeStr, buffColor } = data;
-  const PAD = 8, TW = 210, LH = 14;
+  const PAD = 9, TW = 230, LH = 16;
 
-  ctx.font = '9px "Courier New", monospace';
+  ctx.font = '12px Georgia, serif';
   const descLines = description ? _wrapText(ctx, description, TW - PAD * 2) : [];
   const statusLine = isBuff     ? (buffTimeStr || '')
                    : isPassive  ? 'PASSIVE — always active'
@@ -515,8 +545,8 @@ function _drawTooltip(ctx, data, W, panelY) {
                     : cd > 0    ? '#c5a572'
                     : '#80c040';
   const allLines = [
-    { text: name, bold: true, color: '#e8d8b0' },
-    ...descLines.map(t => ({ text: t, bold: false, color: '#9a8060' })),
+    { text: name, bold: true, color: '#f4ecd4' },
+    ...descLines.map(t => ({ text: t, bold: false, color: '#c0a870' })),
     { text: statusLine, bold: !isBuff && (isPassive || cd <= 0), color: statusColor },
   ];
   if (!isBuff && !isPassive && wavesLeft !== null) {
@@ -530,23 +560,23 @@ function _drawTooltip(ctx, data, W, panelY) {
   tx = Math.max(4, Math.min(W - TW - 4, tx));
   ty = Math.max(4, ty);
 
-  ctx.fillStyle = 'rgba(6, 4, 2, 0.96)';
+  ctx.fillStyle = 'rgba(4, 2, 1, 0.97)';
   ctx.fillRect(tx, ty, TW, TH);
-  ctx.strokeStyle = '#5a4020';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#6a4820';
+  ctx.lineWidth = 1.5;
   ctx.strokeRect(tx, ty, TW, TH);
 
-  let ly = ty + PAD + 9;
+  let ly = ty + PAD + 12;
   for (const line of allLines) {
-    ctx.font = (line.bold ? 'bold ' : '') + '9px "Courier New", monospace';
-    ctx.fillStyle = line.color;
+    ctx.font = (line.bold ? 'bold 13px' : '12px') + ' Georgia, serif';
     ctx.textAlign = 'left';
-    ctx.fillText(line.text, tx + PAD, ly);
+    _txt(ctx, line.text, tx + PAD, ly, line.color);
     ly += LH;
   }
 }
 
-function _wrapText(ctx, text, maxW) {
+function _wrapText(ctx, text, maxW, font) {
+  if (font) ctx.font = font;
   const words = text.split(' ');
   const lines = [];
   let line = '';

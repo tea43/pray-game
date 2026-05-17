@@ -108,6 +108,24 @@
       "pitchJitter": 0.08,
       "cooldown": 0.03
     },
+    "weapon.shotgun.fire": {
+      "dir": "weapons/shotgun",
+      "fallback": "weapon.throw.default",
+      "volume": 0.85,
+      "pitchJitter": 0.04,
+      "cooldown": 0.05
+    },
+    "weapon.bow.fire": {
+      "dir": "weapons/bow",
+      "fallback": "weapon.throw.default",
+      "volume": 0.65,
+      "pitchJitter": 0.07
+    },
+    "weapon.crossbow.fire": {
+      "fallback": "weapon.bow.fire",
+      "volume": 0.70,
+      "pitchJitter": 0.06
+    },
     "weapon.throw.default": {
       "dir": "weapons/throw/default",
       "fallback": "synthetic.shoot",
@@ -290,6 +308,13 @@
       "volume": 0.85,
       "pitchJitter": 0.04
     },
+    "loot.essence": {
+      "dir": "loot/essence",
+      "fallback": "synthetic.loot",
+      "volume": 0.45,
+      "pitchJitter": 0.08,
+      "cooldown": 0.05
+    },
     "loot.medkit": {
       "dir": "loot/medkit",
       "fallback": "synthetic.loot",
@@ -308,17 +333,55 @@
       "volume": 0.75,
       "pitchJitter": 0.04
     },
-    "loot.weapon.spray-gun": {
-      "dir": "weapons/pickup/spray-gun",
+    "loot.weapon.shotgun": {
+      "dir": "weapons/shotgun",
       "fallback": "loot.weapon",
-      "volume": 0.75,
+      "volume": 0.70,
       "pitchJitter": 0.05
     },
-    "loot.weapon.samurai-sword": {
-      "dir": "weapons/pickup/samurai-sword",
+    "loot.weapon.bow": {
+      "dir": "weapons/bow",
       "fallback": "loot.weapon",
-      "volume": 0.75,
-      "pitchJitter": 0.04
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
+    "loot.weapon.crossbow": {
+      "fallback": "loot.weapon.bow",
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
+    "loot.weapon.samurai_sword": {
+      "dir": "weapons/samurai-sword",
+      "fallback": "loot.weapon",
+      "volume": 0.70,
+      "pitchJitter": 0.05
+    },
+    "loot.weapon.long_club": {
+      "dir": "weapons/long-club",
+      "fallback": "loot.weapon",
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
+    "loot.weapon.hockey_club": {
+      "dir": "weapons/hockey-club",
+      "fallback": "loot.weapon",
+      "volume": 0.65,
+      "pitchJitter": 0.06
+    },
+    "loot.weapon.short_hockey_club": {
+      "fallback": "loot.weapon.hockey_club",
+      "volume": 0.65,
+      "pitchJitter": 0.07
+    },
+    "loot.weapon.dual_clubs": {
+      "fallback": "loot.weapon.hockey_club",
+      "volume": 0.65,
+      "pitchJitter": 0.07
+    },
+    "loot.weapon.thrown_club": {
+      "fallback": "loot.weapon.long_club",
+      "volume": 0.65,
+      "pitchJitter": 0.07
     },
     "explosion.bomb": {
       "dir": "loot/explosions/bomb",
