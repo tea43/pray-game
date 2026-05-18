@@ -332,6 +332,12 @@
       "volume": 0.95,
       "pitchJitter": 0.02
     },
+    "combo.explosion": {
+      "dir": "characters/abilities/explosion",
+      "fallback": "ability.smashing_time",
+      "volume": 1.0,
+      "pitchJitter": 0.02
+    },
     "loot.essence": {
       "dir": "loot/essence",
       "fallback": "synthetic.loot",
