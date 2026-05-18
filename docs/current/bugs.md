@@ -19,5 +19,5 @@
 
 
 ## List of current bugs
-
+- in case if the user exits the game diring the weapon selection stage, the selection stage does not dissapear and tthe game continues in the main menu once the weapon is selected
 
