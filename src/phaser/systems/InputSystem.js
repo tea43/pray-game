@@ -1,6 +1,6 @@
 import { G } from '../../globals.js';
 import { clamp, dist2 } from '../../utils/math.js';
-import { tryStartComboHold, cancelComboHold } from '../../systems/groupAbilities.js';
+import { tryFireComboForSelection } from '../../systems/groupAbilities.js';
 
 const Keys = null; // resolved lazily from Phaser.Input.Keyboard.KeyCodes
 
@@ -17,11 +17,6 @@ export class InputSystem {
     // Disable right-click context menu on Phaser canvas
     scene.input.mouse?.disableContextMenu();
 
-    // Clear held ability keys when window loses focus (prevents stuck keys)
-    window.addEventListener('blur', () => {
-      state.heldAbilityKeys.clear();
-      state.comboHold = null;
-    }, { passive: true });
 
     // ── Mouse ────────────────────────────────────────────────────────────────
 
@@ -192,29 +187,18 @@ export class InputSystem {
         return;
       }
 
-      // Basic abilities: 1/2/3 (Eliott/Dick/Habib)
-      // Hold-then-fire combo logic:
-      //   - Single key pressed → fire normal ability immediately (no delay).
-      //   - Second key pressed while first is held + combo conditions met
-      //     → suppress both normals, start 1s hold charging.
-      //   - Releasing a held key before 1s → cancel hold, fire that key's normal ability.
+      // Basic abilities: 1/2/3 (Eliott/Dick/Habib) — always fire immediately
       if (k === '1' || k === '2' || k === '3') {
         e.preventDefault();
-        if (e.repeat) return; // ignore browser key-repeat events
-
-        state.heldAbilityKeys.add(k);
-
-        if (!state.groupAbility && !state.comboHold) {
-          // Only try combo hold when 2+ keys are held (single key always fires normally)
-          if (state.heldAbilityKeys.size >= 2 && tryStartComboHold(state.heldAbilityKeys)) {
-            // Combo hold started — all participating abilities suppressed
-          } else {
-            // No combo started — fire the newly pressed key's normal ability
-            for (const u of state.units) {
-              if (u.abilityKey === k && !u.dead) u.cast();
-            }
-          }
+        for (const u of state.units) {
+          if (u.abilityKey === k && !u.dead) u.cast();
         }
+      }
+
+      // Group ability — F fires the combo for the currently selected heroes
+      if (k === 'f' && !state.groupAbility) {
+        e.preventDefault();
+        tryFireComboForSelection(state.selected);
       }
 
       // Active skill slot 0: Q/W/E; slot 1: A/D (S handled above)
@@ -240,12 +224,6 @@ export class InputSystem {
           if (state.spaceHoldDuration < 1.0) state.manualPause = !state.manualPause;
           state.spaceHeld = false; state.spaceHoldDuration = 0;
         }
-      }
-      // Release held ability keys
-      if (e.key === '1' || e.key === '2' || e.key === '3') {
-        state.heldAbilityKeys.delete(e.key);
-        // If a combo hold was in progress, cancel it and fire the released key's ability
-        if (state.comboHold) cancelComboHold(e.key);
       }
     });
   }
