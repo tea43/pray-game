@@ -15,7 +15,7 @@ const COMBOS = {
     heroes: ['eliott', 'dick'],
     keys: ['1', '2'],
     label: 'CHOCHO TRAIN',
-    minDist: 0,
+    minDist: 100,
     maxDist: 500,
     colors: { primary: '#4080ff', secondary: '#ff6040' },
   },
@@ -25,7 +25,7 @@ const COMBOS = {
     heroes: ['dick', 'habib'],
     keys: ['2', '3'],
     label: 'HIGH FIVE MY BRO',
-    minDist: 0,
+    minDist: 100,
     maxDist: 500,
     colors: { primary: '#ffe060', secondary: '#80d0ff' },
   },
@@ -35,7 +35,7 @@ const COMBOS = {
     heroes: ['eliott', 'habib'],
     keys: ['1', '3'],
     label: 'VIETNAM MEMORIES',
-    minDist: 0,
+    minDist: 100,
     maxDist: 500,
     colors: { primary: '#60ff80', secondary: '#ff8030' },
   },
@@ -45,8 +45,8 @@ const COMBOS = {
     heroes: ['eliott', 'dick', 'habib'],
     keys: ['1', '2', '3'],
     label: 'YOU SHOULD STAY IN THE GROUND',
-    minDist: 0,
-    maxDist: 500,
+    minDist: 100,
+    maxDist: 500, 
     colors: { primary: '#ffe060', secondary: '#a060ff' },
   },
 };
@@ -187,7 +187,7 @@ function _startChochoTrain(participants, def) {
   _makeImmortal(participants);
   _freezeParticipants(participants);
   _flashScreen('#4080ff', 0.15);
-  playSfx('ability.blink');
+  playSfx('combo.chocho_train');
 }
 
 function _updateChochoTrain(ga, gameDt, realDt) {
@@ -290,7 +290,7 @@ function _startHighFive(participants, def) {
   _makeImmortal(participants);
   _freezeParticipants(participants);
   _flashScreen('#ffe060', 0.15);
-  playSfx('ability.lightning');
+  playSfx('combo.high_five');
 }
 
 function _updateHighFive(ga, gameDt, realDt) {
@@ -397,7 +397,7 @@ function _startVietnam(participants, def) {
   _makeImmortal(participants);
   _freezeParticipants(participants);
   _flashScreen('#60ff80', 0.15);
-  playSfx('ability.flamethrower');
+  playSfx('combo.vietnam_memories');
 }
 
 function _updateVietnam(ga, gameDt, realDt) {
@@ -530,7 +530,7 @@ function _startTriangle(participants, def) {
   _makeImmortal(participants, 2.5);
   _freezeParticipants(participants);
   _flashScreen('#ffe060', 0.2);
-  playSfx('ability.lightning');
+  playSfx('combo.stay_in_ground');
 
   // Immediately stun enemies inside triangle
   for (const e of state.enemies) {
