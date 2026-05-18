@@ -15,8 +15,8 @@ const COMBOS = {
     heroes: ['eliott', 'dick'],
     keys: ['1', '2'],
     label: 'CHOCHO TRAIN',
-    minDist: 100,
-    maxDist: 250,
+    minDist: 0,
+    maxDist: 500,
     colors: { primary: '#4080ff', secondary: '#ff6040' },
   },
   // Dick (key 2) + Habib (key 3)
@@ -25,8 +25,8 @@ const COMBOS = {
     heroes: ['dick', 'habib'],
     keys: ['2', '3'],
     label: 'HIGH FIVE MY BRO',
-    minDist: 100,
-    maxDist: 250,
+    minDist: 0,
+    maxDist: 500,
     colors: { primary: '#ffe060', secondary: '#80d0ff' },
   },
   // Eliott (key 1) + Habib (key 3)
@@ -35,8 +35,8 @@ const COMBOS = {
     heroes: ['eliott', 'habib'],
     keys: ['1', '3'],
     label: 'VIETNAM MEMORIES',
-    minDist: 100,
-    maxDist: 250,
+    minDist: 0,
+    maxDist: 500,
     colors: { primary: '#60ff80', secondary: '#ff8030' },
   },
   // All three
@@ -45,8 +45,8 @@ const COMBOS = {
     heroes: ['eliott', 'dick', 'habib'],
     keys: ['1', '2', '3'],
     label: 'YOU SHOULD STAY IN THE GROUND',
-    minDist: 80,
-    maxDist: 300,
+    minDist: 0,
+    maxDist: 500,
     colors: { primary: '#ffe060', secondary: '#a060ff' },
   },
 };
