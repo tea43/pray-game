@@ -136,6 +136,21 @@ export function drawAbilityPanel() {
     ctx.fillStyle = hpPct > 0.5 ? '#7aa853' : hpPct > 0.25 ? '#c5a247' : '#a83a2a';
     ctx.fillRect(barL, y + 16, barW * hpPct, 5);
 
+    // ── Superboost charge bar ─────────────────────────────────────────────────
+    const charge = u.superboostCharge || 0;
+    const chargeReady = charge >= 1;
+    const chargePulse = chargeReady ? 0.7 + 0.3 * Math.sin(state.time * 6) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(barL, y + 22, barW, 3);
+    if (charge > 0) {
+      ctx.fillStyle = chargeReady ? `rgba(255, 210, 50, ${chargePulse})` : 'rgba(100, 170, 255, 0.85)';
+      ctx.fillRect(barL, y + 22, barW * charge, 3);
+    }
+    if (chargeReady) {
+      ctx.fillStyle = `rgba(255, 220, 60, ${chargePulse * 0.5})`;
+      ctx.fillRect(barL, y + 22, barW, 3);
+    }
+
     // ── Active buff indicators ────────────────────────────────────────────────
     const buffY = y + HEADER_H + 1;
     _drawBuffRow(ctx, u, x, buffY, panelY);

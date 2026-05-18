@@ -293,8 +293,9 @@ export class MenuScene extends Phaser.Scene {
     const SUB_H = 28, SUB_GAP = 32, INDENT = 12;
     const subW = w - INDENT;
     const items = [
-      { label: 'LEVEL TESTING', sub: 'level', hint: 'start game · dev-mode difficulty' },
-      { label: 'SLOT MACHINE',  sub: 'slot',  hint: 'test upgrade reels in isolation'  },
+      { label: 'LEVEL TESTING',   sub: 'level',   hint: 'start game · dev-mode difficulty'      },
+      { label: 'SLOT MACHINE',    sub: 'slot',     hint: 'test upgrade reels in isolation'       },
+      { label: 'ABILITY TESTING', sub: 'ability',  hint: 'group abilities · enemies spawn close' },
     ];
 
     items.forEach(({ label, sub, hint }, i) => {
@@ -326,8 +327,9 @@ export class MenuScene extends Phaser.Scene {
 
     // Content area for whichever sub is open
     const contentY = y + TOG_H + 6 + items.length * SUB_GAP + 6;
-    if (this._devSub === 'level') this._renderDevLevel(x + INDENT, contentY, subW);
-    if (this._devSub === 'slot')  this._renderDevSlot(x + INDENT, contentY, subW);
+    if (this._devSub === 'level')   this._renderDevLevel(x + INDENT, contentY, subW);
+    if (this._devSub === 'slot')    this._renderDevSlot(x + INDENT, contentY, subW);
+    if (this._devSub === 'ability') this._renderDevAbility(x + INDENT, contentY, subW);
   }
 
   _launchDevSub(sub) {
@@ -338,6 +340,24 @@ export class MenuScene extends Phaser.Scene {
     }
     this._devSub = sub;
     this._showTitle();
+  }
+
+  _renderDevAbility(x, y, w) {
+    const H = 28;
+    const bg = this.add.graphics();
+    const drawBg = (hov) => {
+      bg.clear();
+      bg.fillStyle(hov ? 0x1e1a10 : 0x141008, 1).fillRect(x, y, w, H);
+      bg.lineStyle(1, hov ? 0xc5a572 : 0x4a3818).strokeRect(x, y, w, H);
+    };
+    drawBg(false);
+    this._txt(x + 10, y + 8, 'START GAME (ability-test mode)', {
+      fontSize: '10px', fontFamily: "'Courier New', monospace", color: '#d4b880',
+    });
+    this.add.zone(x, y, w, H).setOrigin(0, 0).setInteractive()
+      .on('pointerover', () => drawBg(true))
+      .on('pointerout',  () => drawBg(false))
+      .on('pointerdown', () => this.scene.start('GameScene', { difficulty: 'ability-test' }));
   }
 
   _renderDevLevel(x, y, w) {

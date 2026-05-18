@@ -32,6 +32,7 @@ export class Unit {
 
     this.type = type;
     this.abilityCd = 0;
+    this.superboostCharge = 0;  // 0..1; charges on each base ability cast; 1 = ready for group combo
     this.rageTimer = 0;
     this.blinkFlash = 0;
     this.dualSide = false;
@@ -786,9 +787,13 @@ export class Unit {
     const def = ABILITY_DEFS[this.abilityId];
     if (!def?.activate) return false;
     const result = def.activate(this);
-    // Same as activateSkill — plays `sound` once on activation (SOUND POINT 1).
-    // Used for the three base hero abilities (group_blink, boomerang, backdoor_blockade).
     if (result !== false && def.sound) playSfx(def.sound);
+    if (result !== false) {
+      // Each successful base ability cast grants 20% superboost charge (5 uses = ready)
+      this.superboostCharge = Math.min(1, this.superboostCharge + 0.2);
+      // In ability-test mode: keep charge full
+      if (state.devAbilityTest) this.superboostCharge = 1;
+    }
     return result ?? true;
   }
 

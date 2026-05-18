@@ -1,5 +1,6 @@
 import { G } from '../../globals.js';
 import { clamp, dist2 } from '../../utils/math.js';
+import { tryTriggerCombo } from '../../systems/groupAbilities.js';
 
 const Keys = null; // resolved lazily from Phaser.Input.Keyboard.KeyCodes
 
@@ -15,6 +16,9 @@ export class InputSystem {
 
     // Disable right-click context menu on Phaser canvas
     scene.input.mouse?.disableContextMenu();
+
+    // Clear held ability keys when window loses focus (prevents stuck keys)
+    window.addEventListener('blur', () => state.heldAbilityKeys.clear(), { passive: true });
 
     // ── Mouse ────────────────────────────────────────────────────────────────
 
@@ -186,10 +190,14 @@ export class InputSystem {
       }
 
       // Basic abilities: 1/2/3 (Eliott/Dick/Habib)
+      // Track held keys for combo detection; try combo before normal ability.
       if (k === '1' || k === '2' || k === '3') {
         e.preventDefault();
-        for (const u of state.units) {
-          if (u.abilityKey === k && !u.dead) u.cast();
+        state.heldAbilityKeys.add(k);
+        if (!state.groupAbility && !tryTriggerCombo(state.heldAbilityKeys, k)) {
+          for (const u of state.units) {
+            if (u.abilityKey === k && !u.dead) u.cast();
+          }
         }
       }
 
@@ -216,6 +224,10 @@ export class InputSystem {
           if (state.spaceHoldDuration < 1.0) state.manualPause = !state.manualPause;
           state.spaceHeld = false; state.spaceHoldDuration = 0;
         }
+      }
+      // Release held ability keys
+      if (e.key === '1' || e.key === '2' || e.key === '3') {
+        state.heldAbilityKeys.delete(e.key);
       }
     });
   }

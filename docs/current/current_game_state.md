@@ -19,9 +19,13 @@ P-RAY: The Game is a **Phaser 3** survival tactics game (Canvas 2D bridge render
 - Shift-click: add/remove a survivor from selection.
 - Click portrait: select from the bottom ability panel.
 - Right click: move selected survivors, or attack-move if clicking an enemy.
-- `1`: Eliott ability (Group Blink).
-- `2`: Dick ability (Boomerang Throw).
-- `3`: Habib ability (Backdoor Blockade).
+- `1`: Eliott ability (Group Blink). Also charges Eliott's superboost meter (+20% per use).
+- `2`: Dick ability (Boomerang Throw). Also charges Dick's superboost meter.
+- `3`: Habib ability (Backdoor Blockade). Also charges Habib's superboost meter.
+- Hold `1`+`2` simultaneously (both heroes charged + 100–250 px apart): **Chocho Train** group combo.
+- Hold `2`+`3` simultaneously (both heroes charged + 100–250 px apart): **High Five My Bro** group combo.
+- Hold `1`+`3` simultaneously (both heroes charged + 100–250 px apart): **Vietnam Memories** group combo.
+- Hold `1`+`2`+`3` simultaneously (all charged + 80–300 px apart): **You Should Stay In The Ground** trio combo.
 - `Q`: Eliott's 1st active skill (if equipped).
 - `W`: Dick's 1st active skill (if equipped).
 - `E`: Habib's 1st active skill (if equipped).
@@ -110,6 +114,25 @@ Offers are weighted by rarity (Common=1, Rare=2, Epic=3, Legendary=4). Dead hero
 - Habib, Backdoor Blockade: all heroes within 150 px of Habib at activation receive 50% damage reduction for 6s (buff travels with each hero). Cooldown: 14s.
 
 All abilities (base + upgrade skills) are defined in `src/config/abilities.js` (`ABILITY_DEFS`): each entry holds `icon`, `color`, `sound`, `maxCd`, and an optional `activate(unit)` function. Passive-only entries omit `activate`. `src/systems/activeSkills.js` has been removed.
+
+## Group (Superboost) Abilities
+
+Each successful base ability use (keys 1/2/3) grants **+20% superboost charge** to that hero. At 100% the hero is "ready." When the right combination of heroes are ready AND their keys are held simultaneously AND pairwise distance rules are satisfied, a **friendship-power** combo executes.
+
+**Charge bar:** rendered as a thin bar below each hero's HP bar in the bottom panel. Blue while charging, gold+pulsing when full.
+
+**Combos (all require 100% charge on participating heroes):**
+
+| Name | Keys | Distance | Effect |
+|---|---|---|---|
+| **Chocho Train** | 1+2 | 100–250 px | Dick rushes to Eliott; heavy damage along path; burst at arrival |
+| **High Five My Bro** | 2+3 | 100–250 px | Dick and Habib converge to midpoint; large electrical nova |
+| **Vietnam Memories** | 1+3 | 100–250 px | Eliott pulls Habib; fire lane ignites the path; burn damage |
+| **You Should Stay In The Ground** | 1+2+3 | 80–300 px (pairwise) | Triangle prison; enemies stunned+pulled to center; Dick slams center; all blink in |
+
+All participating heroes are **immortal** during execution. Combos include cinematic slow-motion and screen-flash. System lives in `src/systems/groupAbilities.js`.
+
+**Testing:** `ability-test` difficulty (dev tools → ABILITY TESTING) starts game with superboost always full, enemies spawning 220–350 px from hero centroid at fast rate.
 
 ## Active Upgrade Slots
 
@@ -221,6 +244,7 @@ Five options on the difficulty screen:
 | `crack-knight` | The Crack Knight | Harder enemies, scarcer loot |
 | `rear-admiral` | Rear Admiral | Brutal, multiple bosses per wave |
 | `dev-mode` | Dev Mode | Starts directly at wave 21; all enemy types + both bosses from the first spawn tick; single wave then extraction |
+| `ability-test` | Ability Test | Superboost charge always full; enemies spawn 220–350 px from hero centroid; fast spawn rate; accessible via dev tools → ABILITY TESTING |
 
 Dev mode sets `devWaves: [21]` in `difficulty.js`. `newGame()` detects `devWaves` and initialises `state.wave` to the first entry (21), recalculates spawn interval for that wave, and immediately spawns the configured bosses (1 miniboss + 1 bigboss). All regular enemy types are available because the spawn table gates by wave number. After the 22 s wave timer the game clears to allWavesCleared and the extraction phase begins.
 
