@@ -53,55 +53,33 @@ const COMBOS = {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
-const HOLD_SECS = 1.0; // seconds both keys must be held to fire the combo
+// Called from InputSystem on F key press.
+// Finds the combo that matches the selected heroes, validates conditions, and fires it.
+// Returns true if a combo was launched, false if conditions were not met.
+export function tryFireComboForSelection(selected) {
+  if (state.groupAbility) return false;
 
-// Called from InputSystem when a new ability key is added to heldAbilityKeys.
-// Returns true if a combo hold was started (caller must suppress normal ability for ALL
-// held keys; if only one key is held the check will return false and normal ability fires).
-export function tryStartComboHold(heldKeys) {
-  if (state.groupAbility || state.comboHold) return false;
+  const alive = (selected || []).filter(u => !u.dead);
+  if (alive.length < 2) return false;
 
-  const sorted = [...heldKeys].sort().join('+');
-  const def = COMBOS[sorted];
-  if (!def) return false;
+  const selectedTypes = alive.map(u => u.type).sort().join(',');
 
-  const participants = def.heroes.map(type => state.units.find(u => u.type === type && !u.dead));
-  if (participants.some(u => !u)) return false;
-  if (!participants.every(u => u.superboostCharge >= 1)) return false;
-  if (!_checkDistance(def, participants)) return false;
+  for (const def of Object.values(COMBOS)) {
+    if ([...def.heroes].sort().join(',') !== selectedTypes) continue;
 
-  state.comboHold = { def, participants, progress: 0 };
-  return true;
-}
+    const participants = def.heroes.map(type => alive.find(u => u.type === type));
+    if (participants.some(u => !u)) continue;
+    if (!participants.every(u => u.superboostCharge >= 1)) return false;
+    if (!_checkDistance(def, participants)) return false;
 
-// Called from InputSystem when a combo-hold key is released before the combo fires.
-// Fires the released key's normal ability (if off cooldown).
-export function cancelComboHold(releasedKey) {
-  if (!state.comboHold) return;
-  state.comboHold = null;
-  // Fire normal ability for the released key
-  for (const u of state.units) {
-    if (u.abilityKey === releasedKey && !u.dead) u.cast();
+    _startCombo(def.id, participants, def);
+    return true;
   }
+  return false;
 }
 
 // Main update — called each frame from GameScene with gameDt (scaled) and realDt.
 export function updateGroupAbility(gameDt, realDt) {
-  // ── Combo hold progress ──────────────────────────────────────────────────
-  if (state.comboHold && !state.groupAbility) {
-    const hold = state.comboHold;
-    // Re-validate distance each frame — heroes may have drifted out of range
-    if (!_checkDistance(hold.def, hold.participants)) {
-      state.comboHold = null;
-    } else {
-      hold.progress = Math.min(1, hold.progress + realDt / HOLD_SECS);
-      if (hold.progress >= 1) {
-        state.comboHold = null;
-        _startCombo(hold.def.id, hold.participants, hold.def);
-      }
-    }
-  }
-
   const ga = state.groupAbility;
   if (!ga) return;
 
@@ -117,15 +95,14 @@ export function updateGroupAbility(gameDt, realDt) {
 
 // Renderer — called from GameScene._draw() while camera transform is active (world space).
 export function renderGroupAbility(ctx) {
-  // Combo hold charging indicator
-  if (state.comboHold) {
-    _renderComboHold(ctx, state.comboHold);
+  // "Ready" indicator: when selected heroes have a valid combo available, show a
+  // pulsing link between them so the player knows F will fire.
+  if (!state.groupAbility) {
+    _renderReadyIndicator(ctx);
     return;
   }
 
   const ga = state.groupAbility;
-  if (!ga) return;
-
   ctx.save();
   switch (ga.id) {
     case 'chochoTrain':     _renderChochoTrain(ctx, ga); break;
@@ -136,17 +113,30 @@ export function renderGroupAbility(ctx) {
   ctx.restore();
 }
 
-function _renderComboHold(ctx, hold) {
-  const { def, participants, progress } = hold;
-  const col = def.colors.primary;
+function _renderReadyIndicator(ctx) {
+  const alive = (state.selected || []).filter(u => !u.dead);
+  if (alive.length < 2) return;
 
+  const selectedTypes = alive.map(u => u.type).sort().join(',');
+  let matchDef = null;
+  for (const def of Object.values(COMBOS)) {
+    if ([...def.heroes].sort().join(',') === selectedTypes) { matchDef = def; break; }
+  }
+  if (!matchDef) return;
+
+  // Check all conditions quietly — only render if fully ready
+  const participants = matchDef.heroes.map(type => alive.find(u => u.type === type));
+  if (participants.some(u => !u)) return;
+  if (!participants.every(u => u.superboostCharge >= 1)) return;
+  if (!_checkDistance(matchDef, participants)) return;
+
+  // Draw a soft pulsing link to signal "press F"
+  const pulse = 0.55 + 0.45 * Math.sin(state.time * 5);
   ctx.save();
-
-  // Draw a dashed connection between all participants, thickening as progress grows
-  ctx.setLineDash([8, 6]);
-  ctx.lineWidth = 1.5 + progress * 2;
-  ctx.globalAlpha = 0.4 + progress * 0.4;
-  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.35 * pulse;
+  ctx.strokeStyle = matchDef.colors.primary;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 7]);
   ctx.beginPath();
   ctx.moveTo(participants[0].x, participants[0].y);
   for (let i = 1; i < participants.length; i++) ctx.lineTo(participants[i].x, participants[i].y);
@@ -154,24 +144,21 @@ function _renderComboHold(ctx, hold) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Progress arc around each participant's head
+  // Small pulse ring on each hero
   for (const u of participants) {
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.5 * pulse;
+    ctx.strokeStyle = matchDef.colors.primary;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(u.x, u.y, u.r + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 3;
+    ctx.arc(u.x, u.y, u.r + 4 + pulse * 3, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  // Label + countdown above midpoint
+  // "F" label above midpoint
   const mx = participants.reduce((s, u) => s + u.x, 0) / participants.length;
-  const my = Math.min(...participants.map(u => u.y)) - 28;
-  ctx.globalAlpha = 1;
-  _renderLabel(ctx, def.label, mx, my, col);
-  const secsLeft = (HOLD_SECS * (1 - progress)).toFixed(1);
-  _renderLabel(ctx, secsLeft + 's', mx, my + 14, '#ffffff');
-
+  const my = Math.min(...participants.map(u => u.y)) - 22;
+  ctx.globalAlpha = 0.7 * pulse;
+  _renderLabel(ctx, '[F] ' + matchDef.label, mx, my, matchDef.colors.primary);
   ctx.restore();
 }
 

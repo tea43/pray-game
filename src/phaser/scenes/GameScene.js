@@ -112,8 +112,7 @@ export class GameScene extends Phaser.Scene {
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
-      groupAbility: null, comboHold: null, cinematicSlowdown: 0,
-      heldAbilityKeys: new Set(),
+      groupAbility: null, cinematicSlowdown: 0,
       devAbilityTest: !!diff.devAbilityTest,
     });
 
@@ -178,7 +177,7 @@ export class GameScene extends Phaser.Scene {
     if (state.spaceHeld) state.spaceHoldDuration += realDt;
     const anyMoving     = state.units.some(u => !u.dead && !u.boarded && u.moving);
     const heliDeparting = state.helicopter?.flightState === 'departing';
-    const anyAbilityActive = !!state.groupAbility || !!state.comboHold || state.units.some(u => !u.dead && (
+    const anyAbilityActive = !!state.groupAbility || state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
       u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0 ||
       u.stonedTimer > 0

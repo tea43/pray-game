@@ -22,10 +22,7 @@ P-RAY: The Game is a **Phaser 3** survival tactics game (Canvas 2D bridge render
 - `1`: Eliott ability (Group Blink). Also charges Eliott's superboost meter (+20% per use).
 - `2`: Dick ability (Boomerang Throw). Also charges Dick's superboost meter.
 - `3`: Habib ability (Backdoor Blockade). Also charges Habib's superboost meter.
-- Hold `1`+`2` simultaneously (both heroes charged + 100–250 px apart): **Chocho Train** group combo.
-- Hold `2`+`3` simultaneously (both heroes charged + 100–250 px apart): **High Five My Bro** group combo.
-- Hold `1`+`3` simultaneously (both heroes charged + 100–250 px apart): **Vietnam Memories** group combo.
-- Hold `1`+`2`+`3` simultaneously (all charged + 80–300 px apart): **You Should Stay In The Ground** trio combo.
+- `F`: Fire group combo for the currently **selected** heroes. The matching combo fires if all selected participants have full superboost charge and are within the required distance. When conditions are met, a pulsing dashed link and "[F] COMBO NAME" indicator appear between the heroes.
 - `Q`: Eliott's 1st active skill (if equipped).
 - `W`: Dick's 1st active skill (if equipped).
 - `E`: Habib's 1st active skill (if equipped).
@@ -117,18 +114,18 @@ All abilities (base + upgrade skills) are defined in `src/config/abilities.js` (
 
 ## Group (Superboost) Abilities
 
-Each successful base ability use (keys 1/2/3) grants **+20% superboost charge** to that hero. At 100% the hero is "ready." When the right combination of heroes are ready AND their keys are held simultaneously AND pairwise distance rules are satisfied, a **friendship-power** combo executes.
+Each successful base ability use (keys 1/2/3) grants **+20% superboost charge** to that hero. At 100% the hero is "ready." Select the heroes you want and press **F** — the system matches the selection to a combo, checks that all participants are charged and within range, and fires the **friendship-power** combo.
 
 **Charge bar:** rendered as a thin bar below each hero's HP bar in the bottom panel. Blue while charging, gold+pulsing when full.
 
 **Combos (all require 100% charge on participating heroes):**
 
-| Name | Keys | Distance | Effect |
+| Name | Heroes | Distance | Effect |
 |---|---|---|---|
-| **Chocho Train** | 1+2 | 100–250 px | Dick rushes to Eliott; heavy damage along path; burst at arrival |
-| **High Five My Bro** | 2+3 | 100–250 px | Dick and Habib converge to midpoint; large electrical nova |
-| **Vietnam Memories** | 1+3 | 100–250 px | Eliott pulls Habib; fire lane ignites the path; burn damage |
-| **You Should Stay In The Ground** | 1+2+3 | 80–300 px (pairwise) | Triangle prison; enemies stunned+pulled to center; Dick slams center; all blink in |
+| **Chocho Train** | Eliott+Dick | 100–250 px | Dick rushes to Eliott; heavy damage along path; burst at arrival |
+| **High Five My Bro** | Dick+Habib | 100–250 px | Dick and Habib converge to midpoint; large electrical nova |
+| **Vietnam Memories** | Eliott+Habib | 100–250 px | Eliott pulls Habib; fire lane ignites the path; burn damage |
+| **You Should Stay In The Ground** | All three | 80–300 px (pairwise) | Triangle prison; enemies stunned+pulled to center; Dick slams center; all blink in |
 
 All participating heroes are **immortal** during execution. Combos include cinematic slow-motion and screen-flash. System lives in `src/systems/groupAbilities.js`.
 
