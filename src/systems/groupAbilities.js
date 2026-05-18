@@ -3,10 +3,12 @@ import { rand, dist2, clamp } from '../utils/math.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from './audio.js';
 
+// Extra radius beyond the farthest triangle vertex that the nuke shockwave damages.
+const NUKE_EXTRA_RADIUS = 300;
+
 // ── Combo definitions ────────────────────────────────────────────────────────
 // Each key maps hero types to the combo they share (keyed by sorted pair/trio).
-// Activation: when all listed heroes are ready AND their keys are held simultaneously
-// AND pairwise distance rules are satisfied.
+// Activation: select heroes + press F when all participants are charged and in range.
 
 const COMBOS = {
   // Eliott (key 1) + Dick (key 2)
@@ -290,7 +292,6 @@ function _startHighFive(participants, def) {
   _makeImmortal(participants);
   _freezeParticipants(participants);
   _flashScreen('#ffe060', 0.15);
-  playSfx('combo.high_five');
 }
 
 function _updateHighFive(ga, gameDt, realDt) {
@@ -336,6 +337,7 @@ function _updateHighFive(ga, gameDt, realDt) {
       _electricNova(ga.midX, ga.midY, 110, 80, 2.0);
       _flashScreen('#ffe060', 0.35);
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 10);
+      playSfx('combo.high_five');
     }
     return;
   }
@@ -515,6 +517,11 @@ function _startTriangle(participants, def) {
   const [eliott, dick, habib] = participants;
   const cx = (eliott.x + dick.x + habib.x) / 3;
   const cy = (eliott.y + dick.y + habib.y) / 3;
+  const farthestDist = Math.max(
+    Math.hypot(eliott.x - cx, eliott.y - cy),
+    Math.hypot(dick.x - cx, dick.y - cy),
+    Math.hypot(habib.x - cx, habib.y - cy),
+  );
   state.groupAbility = {
     id: 'triangle',
     phase: 'triangle',
@@ -522,21 +529,21 @@ function _startTriangle(participants, def) {
     participants,
     def,
     cx, cy,
-    dickStartX: dick.x, dickStartY: dick.y,
     tetherPulse: 0,
-    stunned: new Set(),
+    nukeRadius: farthestDist + NUKE_EXTRA_RADIUS,
+    nukeR: 0,
   };
   state.cinematicSlowdown = 0.25;
-  _makeImmortal(participants, 2.5);
+  _makeImmortal(participants, 3.5);
   _freezeParticipants(participants);
   _flashScreen('#ffe060', 0.2);
   playSfx('combo.stay_in_ground');
 
-  // Immediately stun enemies inside triangle
+  // Stun enemies inside triangle
   for (const e of state.enemies) {
     if (e.dead) continue;
     if (_inTriangle(e.x, e.y, eliott, dick, habib)) {
-      e.stunTimer = Math.max(e.stunTimer, 3.5);
+      e.stunTimer = Math.max(e.stunTimer, 4.5);
       e.hurtFlash = 1;
     }
   }
@@ -546,8 +553,19 @@ function _updateTriangle(ga, gameDt, realDt) {
   const [eliott, dick, habib] = ga.participants;
   ga.tetherPulse += realDt * 8;
 
+  const _triangleDust = (rate) => {
+    if (Math.random() < realDt * rate) {
+      const r1 = Math.random(), r2 = Math.random();
+      const sqr1 = Math.sqrt(r1);
+      const px = (1 - sqr1) * eliott.x + sqr1 * (1 - r2) * dick.x + sqr1 * r2 * habib.x;
+      const py = (1 - sqr1) * eliott.y + sqr1 * (1 - r2) * dick.y + sqr1 * r2 * habib.y;
+      state.particles.push({ x: px, y: py, vx: rand(-10,10), vy: rand(-20,-4), life: rand(0.35,0.65), maxLife:0.65, color: Math.random() < 0.4 ? '#ffffff' : '#d8e4ff', size: rand(1,2.5), realtime:true });
+    }
+  };
+
   if (ga.phase === 'triangle') {
-    // Electric edge particles
+    _triangleDust(14);
+    // Electric edges
     if (Math.random() < realDt * 20) {
       const pairs = [[eliott, dick], [dick, habib], [habib, eliott]];
       const [a, b] = pairs[Math.floor(Math.random() * 3)];
@@ -555,45 +573,87 @@ function _updateTriangle(ga, gameDt, realDt) {
       state.particles.push({ x: a.x + (b.x - a.x)*t + rand(-4,4), y: a.y + (b.y - a.y)*t + rand(-4,4), vx: rand(-30,30), vy: rand(-40,-5), life: rand(0.1,0.3), maxLife:0.3, color: '#ffe060', size: rand(1.5,3), realtime:true, additive:true });
     }
     if (ga.phaseTimer <= 0) {
-      ga.phase = 'pull';
+      ga.phase = 'dust';
       ga.phaseTimer = 0.5;
       state.cinematicSlowdown = 0.35;
     }
     return;
   }
 
-  if (ga.phase === 'pull') {
-    // Pull enemies inside triangle toward centroid
-    for (const e of state.enemies) {
-      if (e.dead || !_inTriangle(e.x, e.y, eliott, dick, habib)) continue;
-      const ang = Math.atan2(ga.cy - e.y, ga.cx - e.x);
-      const pullF = 240 * realDt;
-      e.x += Math.cos(ang) * pullF; e.y += Math.sin(ang) * pullF;
-      e.knockX = 0; e.knockY = 0;
-      if (Math.random() < realDt * 10) {
-        state.particles.push({ x: e.x, y: e.y, vx: rand(-20,20), vy: rand(-30,0), life: rand(0.1,0.25), maxLife:0.25, color: '#ffe060', size: rand(1,2), realtime:true });
-      }
+  if (ga.phase === 'dust') {
+    _triangleDust(30);
+    if (Math.random() < realDt * 20) {
+      const pairs = [[eliott, dick], [dick, habib], [habib, eliott]];
+      const [a, b] = pairs[Math.floor(Math.random() * 3)];
+      const t = Math.random();
+      state.particles.push({ x: a.x + (b.x - a.x)*t + rand(-4,4), y: a.y + (b.y - a.y)*t + rand(-4,4), vx: rand(-30,30), vy: rand(-40,-5), life: rand(0.1,0.3), maxLife:0.3, color: '#ffe060', size: rand(1.5,3), realtime:true, additive:true });
     }
     if (ga.phaseTimer <= 0) {
       ga.phase = 'slam';
-      ga.phaseTimer = 0.4;
+      ga.phaseTimer = 0.45;
       state.cinematicSlowdown = 0;
-      state.hitStop = Math.max(state.hitStop, 0.09);
-      // Dick leaps to centroid
+      // Dick leaps to centroid — visual only, no damage yet
       dick.x = ga.cx; dick.y = ga.cy;
       dick.tx = ga.cx; dick.ty = ga.cy;
       dick.vz = 220; dick.z = 0;
-      _colossalSlam(ga.cx, ga.cy, 130, 130);
-      _flashScreen('#ffe060', 0.45);
-      if (!state.settings.noShake) state.shake = Math.max(state.shake, 14);
+      _flashScreen('#ffffff', 0.55);
+      _burst(ga.cx, ga.cy, 32, '#ffe060', '#ffffff');
+      state.hitStop = Math.max(state.hitStop, 0.09);
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 12);
     }
     return;
   }
 
   if (ga.phase === 'slam') {
+    // Ground-zero fire particles
+    if (Math.random() < realDt * 40) {
+      const ang = rand(0, Math.PI * 2);
+      const v = rand(50, 140);
+      state.particles.push({ x: ga.cx + rand(-6,6), y: ga.cy + rand(-6,6), vx: Math.cos(ang)*v, vy: Math.sin(ang)*v - 25, life: rand(0.2,0.5), maxLife:0.5, color: Math.random() < 0.5 ? '#ffe060' : '#ff8020', size: rand(2,5), realtime:true, additive:true });
+    }
     if (ga.phaseTimer <= 0) {
-      ga.phase = 'blink';
-      ga.phaseTimer = 0.3;
+      ga.phase = 'nuke_expand';
+      ga.phaseTimer = 0.85;
+      ga.nukeR = 0;
+    }
+    return;
+  }
+
+  if (ga.phase === 'nuke_expand') {
+    const progress = 1 - Math.max(0, ga.phaseTimer) / 0.85;
+    ga.nukeR = progress * ga.nukeRadius;
+    // Ring-edge sparks
+    if (ga.nukeR > 0 && Math.random() < realDt * 30) {
+      const ang = rand(0, Math.PI * 2);
+      state.particles.push({
+        x: ga.cx + Math.cos(ang) * ga.nukeR,
+        y: ga.cy + Math.sin(ang) * ga.nukeR,
+        vx: Math.cos(ang) * rand(50, 130) + rand(-20,20),
+        vy: Math.sin(ang) * rand(50, 130) + rand(-20,0),
+        life: rand(0.2,0.5), maxLife:0.5,
+        color: Math.random() < 0.5 ? '#ffe060' : '#ff6020',
+        size: rand(2,5), realtime:true, additive:true,
+      });
+    }
+    if (ga.phaseTimer <= 0) {
+      // Shockwave hits — apply damage, play sound, flash
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = Math.hypot(e.x - ga.cx, e.y - ga.cy);
+        if (d < ga.nukeRadius) {
+          const dmg = Math.round(200 * (1 - d / ga.nukeRadius * 0.6));
+          e.hp -= dmg;
+          e.hurtFlash = 1;
+          const ang = Math.atan2(e.y - ga.cy, e.x - ga.cx);
+          e.knockX += Math.cos(ang) * 420;
+          e.knockY += Math.sin(ang) * 420;
+          pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 200, 60] });
+        }
+      }
+      playSfx('combo.explosion');
+      _flashScreen('#ff8020', 0.4);
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 16);
+      _burst(ga.cx, ga.cy, 28, '#a060ff', '#ffe060');
       // Eliott and Habib blink in
       eliott.x = ga.cx + rand(-18,18); eliott.y = ga.cy + rand(-18,18);
       eliott.tx = eliott.x; eliott.ty = eliott.y;
@@ -601,13 +661,14 @@ function _updateTriangle(ga, gameDt, realDt) {
       habib.x  = ga.cx + rand(-18,18); habib.y  = ga.cy + rand(-18,18);
       habib.tx = habib.x; habib.ty = habib.y;
       habib.blinkFlash = 1;
-      _burst(ga.cx, ga.cy, 22, '#a060ff', '#ffe060');
       playSfx('ability.blink');
+      ga.phase = 'settle';
+      ga.phaseTimer = 0.35;
     }
     return;
   }
 
-  if (ga.phase === 'blink') {
+  if (ga.phase === 'settle') {
     if (ga.phaseTimer <= 0) _endCombo(ga);
     return;
   }
@@ -616,10 +677,11 @@ function _updateTriangle(ga, gameDt, realDt) {
 function _renderTriangle(ctx, ga) {
   const [eliott, dick, habib] = ga.participants;
   const pulse = 0.5 + 0.5 * Math.sin(ga.tetherPulse);
-  const alpha = ga.phase === 'slam' || ga.phase === 'blink' ? 0 : (0.45 + 0.3 * pulse);
+  const showTriangle = ga.phase === 'triangle' || ga.phase === 'dust';
 
-  if (alpha > 0) {
-    ctx.globalAlpha = alpha;
+  if (showTriangle) {
+    // Triangle outline
+    ctx.globalAlpha = 0.45 + 0.3 * pulse;
     ctx.strokeStyle = '#ffe060';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -628,12 +690,75 @@ function _renderTriangle(ctx, ga) {
     ctx.lineTo(habib.x, habib.y);
     ctx.closePath();
     ctx.stroke();
-    // Fill with faint gold
+    // White dust fill (brighter during dust phase)
+    const dustAlpha = ga.phase === 'dust' ? 0.13 + 0.06 * pulse : 0.07 + 0.03 * pulse;
+    ctx.fillStyle = '#e8eeff';
+    ctx.globalAlpha = dustAlpha;
+    ctx.fill();
+    // Faint gold overlay
     ctx.fillStyle = '#ffe060';
-    ctx.globalAlpha = 0.04 + 0.03 * pulse;
+    ctx.globalAlpha = 0.03 + 0.02 * pulse;
     ctx.fill();
     ctx.globalAlpha = 1;
   }
+
+  // Ground-zero impact glow (slam phase)
+  if (ga.phase === 'slam') {
+    const slamProgress = 1 - Math.max(0, ga.phaseTimer) / 0.45;
+    const glow = Math.max(0, 1 - slamProgress * 1.6);
+    if (glow > 0) {
+      const grad = ctx.createRadialGradient(ga.cx, ga.cy, 0, ga.cx, ga.cy, 100);
+      grad.addColorStop(0, 'rgba(255,255,255,' + (glow * 0.9) + ')');
+      grad.addColorStop(0.35, 'rgba(255,220,60,' + (glow * 0.6) + ')');
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(ga.cx, ga.cy, 100, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Nuclear shockwave ring (nuke_expand + settle phases)
+  if ((ga.phase === 'nuke_expand' || ga.phase === 'settle') && ga.nukeR > 0) {
+    const progress = ga.nukeR / ga.nukeRadius;
+    const ringFade = ga.phase === 'settle'
+      ? Math.max(0, 1 - (1 - ga.phaseTimer / 0.35) * 2)
+      : Math.max(0, 1 - progress * 0.5);
+
+    // Inner fireball (contracts as ring expands)
+    const fireR = ga.nukeR * 0.55 * (1 - progress * 0.7);
+    if (fireR > 4) {
+      const grad = ctx.createRadialGradient(ga.cx, ga.cy, 0, ga.cx, ga.cy, fireR);
+      grad.addColorStop(0, 'rgba(255,255,210,0.75)');
+      grad.addColorStop(0.4, 'rgba(255,190,40,0.45)');
+      grad.addColorStop(1, 'rgba(255,80,0,0)');
+      ctx.globalAlpha = ringFade * 0.85;
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(ga.cx, ga.cy, fireR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Outer glow halo just behind the shockwave
+    ctx.globalAlpha = ringFade * 0.35;
+    ctx.strokeStyle = '#ff8020';
+    ctx.lineWidth = Math.max(2, 18 - progress * 12);
+    ctx.beginPath();
+    ctx.arc(ga.cx, ga.cy, ga.nukeR * 0.9, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Main shockwave ring — bright white
+    ctx.globalAlpha = ringFade * 0.95;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(1, 7 - progress * 3);
+    ctx.beginPath();
+    ctx.arc(ga.cx, ga.cy, ga.nukeR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+  }
+
   _renderLabel(ctx, ga.def.label, ga.cx, Math.min(eliott.y, dick.y, habib.y) - 28, '#ffe080');
 }
 
