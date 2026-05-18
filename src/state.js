@@ -59,6 +59,10 @@ export const state = {
   xpToNext: 50,
   _levelUpFlash: 0,
   smokeZones: [],
+  groupAbility: null,        // active group combo state; see src/systems/groupAbilities.js
+  cinematicSlowdown: 0,      // 0 = off; 0..1 overrides normal timeFlow during group ability
+  heldAbilityKeys: new Set(), // which of {1,2,3} are physically held right now
+  devAbilityTest: false,     // ability testing dev mode: charge stays full, enemies spawn close
   difficulty: 'brood-hunter',
   menuPhase: 'main',
   settings: (() => {

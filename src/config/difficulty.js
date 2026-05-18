@@ -243,6 +243,46 @@ export const DIFFICULTY_DEFS = {
     },
   },
 
+  'ability-test': {
+    label: 'Ability Test',
+    // Group ability testing mode: superboost always full, enemies spawn close and fast.
+    devAbilityTest: true,
+    devWaves: [5],
+    devSpawn: [
+      { kind: 'raider', count: 3 },
+      { kind: 'ghoul',  count: 2 },
+      { kind: 'mutant', count: 1 },
+    ],
+
+    hero: {
+      hpMult:                  3.00,
+      armorMult:               2.00,
+      abilityCdMult:           0.40,
+      activeSkillDurabilityMod: 0,
+    },
+
+    enemy: {
+      hpMult:          0.25,
+      dmgMult:         0.25,
+      speedMult:       0.80,
+      spawnMult:       2.00,  // fast spawn rate
+      burstChanceMult: 0.50,
+      bosses: {},
+    },
+
+    loot: {
+      dropChanceMult:  2.00,
+      healAmount:      999,
+      stimDuration:    10,
+      itemChances: {
+        medkit:   0.10,
+        stimpack: 0.08,
+        bomb:     0.05,
+      },
+      specialDropMult: 2.00,
+    },
+  },
+
 };
 
 export const DIFFICULTY_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral', 'dev-mode'];

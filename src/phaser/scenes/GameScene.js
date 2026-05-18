@@ -17,6 +17,7 @@ import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from
 import { buildFlowField } from '../../utils/terrain.js';
 import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 import { preloadWeaponImages } from '../../render/weaponSprites.js';
+import { updateGroupAbility, renderGroupAbility } from '../../systems/groupAbilities.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -111,6 +112,9 @@ export class GameScene extends Phaser.Scene {
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
+      groupAbility: null, cinematicSlowdown: 0,
+      heldAbilityKeys: new Set(),
+      devAbilityTest: !!diff.devAbilityTest,
     });
 
     if (diff.devWaves?.length > 0) {
@@ -174,18 +178,22 @@ export class GameScene extends Phaser.Scene {
     if (state.spaceHeld) state.spaceHoldDuration += realDt;
     const anyMoving     = state.units.some(u => !u.dead && !u.boarded && u.moving);
     const heliDeparting = state.helicopter?.flightState === 'departing';
-    const anyAbilityActive = state.units.some(u => !u.dead && (
+    const anyAbilityActive = !!state.groupAbility || state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
       u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0 ||
       u.stonedTimer > 0
     ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
-    const targetFlow = state.gameOver        ? 0
-                     : state.allDeadPending  ? 1
-                     : spaceHoldDriving      ? state.timeSpeed
-                     : state.manualPause || state.isUpgradeScreen || state.isLevelUpScreen ? 0
-                     : (anyMoving || heliDeparting || anyAbilityActive) ? state.timeSpeed
-                     : 0;
+    let targetFlow = state.gameOver        ? 0
+                   : state.allDeadPending  ? 1
+                   : spaceHoldDriving      ? state.timeSpeed
+                   : state.manualPause || state.isUpgradeScreen || state.isLevelUpScreen ? 0
+                   : (anyMoving || heliDeparting || anyAbilityActive) ? state.timeSpeed
+                   : 0;
+    // Cinematic slowdown during group ability sequences overrides normal flow
+    if (state.groupAbility && state.cinematicSlowdown > 0 && targetFlow > 0) {
+      targetFlow = Math.min(targetFlow, state.cinematicSlowdown);
+    }
     state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
     if (state.timeFlow < 0.001) state.timeFlow = 0;
   }
@@ -251,6 +259,13 @@ export class GameScene extends Phaser.Scene {
       state.isLevelUpScreen = true;
       this.scene.launch('WeaponLevelUpScene');
       this.scene.pause();
+    }
+
+    // Update group ability system (uses realDt for animation, gameDt for damage)
+    updateGroupAbility(gameDt, realDt);
+    // Keep superboost charge full in ability-test mode
+    if (state.devAbilityTest) {
+      for (const u of state.units) if (!u.dead) u.superboostCharge = 1;
     }
 
     if (gameDt > 0 && !state.gameOver) {
@@ -429,6 +444,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   _anyAbilityInProgress() {
+    if (state.groupAbility) return true;
     return state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
       u.flamethrowerTimer > 0 || u.acidGunTimer > 0 ||
@@ -443,9 +459,13 @@ export class GameScene extends Phaser.Scene {
       state.spawnTimer -= gameDt;
       if (state.spawnTimer <= 0) {
         const burst = WAVE_DEFS.burstChance * diff.enemy.burstChanceMult;
-        spawnEnemy();
-        if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < burst) spawnEnemy();
-        if (state.wave >= WAVE_DEFS.thirdSpawnWave  && Math.random() < burst) spawnEnemy();
+        if (state.devAbilityTest) {
+          _spawnCloseToHeroes();
+        } else {
+          spawnEnemy();
+          if (state.wave >= WAVE_DEFS.secondSpawnWave && Math.random() < burst) spawnEnemy();
+          if (state.wave >= WAVE_DEFS.thirdSpawnWave  && Math.random() < burst) spawnEnemy();
+        }
         state.spawnTimer = state.spawnInterval * rand(0.7, 1.3);
       }
     }
@@ -630,6 +650,7 @@ export class GameScene extends Phaser.Scene {
     this._drawHelicopter(ctx);
     for (const ent of drawables) ent.draw(ctx);
     for (const pr of state.projectiles) pr.draw(ctx);
+    renderGroupAbility(ctx);
 
     // Render acid shots
     if (state.acidShots?.length) {
@@ -1032,6 +1053,26 @@ export class GameScene extends Phaser.Scene {
 
 // Generates evenly-distributed spawn positions for dev-mode pre-spawning.
 // Fills a grid across the play area, avoiding the centre cluster where units start.
+// Ability-test mode: spawn enemies in a ring 220-350px around the hero centroid
+function _spawnCloseToHeroes() {
+  const living = state.units.filter(u => !u.dead);
+  if (living.length === 0) { spawnEnemy(); return; }
+  const cx = living.reduce((s, u) => s + u.x, 0) / living.length;
+  const cy = living.reduce((s, u) => s + u.y, 0) / living.length;
+  const ang = rand(0, Math.PI * 2);
+  const dist = rand(220, 350);
+  const x = clamp(cx + Math.cos(ang) * dist, 6, G.WORLD_W - 6);
+  const y = clamp(cy + Math.sin(ang) * dist, 6, G.WORLD_H - 6);
+  const r = Math.random(), w = state.wave;
+  let kind;
+  if (w >= 4 && r < 0.18) kind = 'mutant';
+  else if (w >= 3 && r < 0.32) kind = 'blinker';
+  else if (w >= 2 && r < 0.52) kind = 'runner';
+  else if (w >= 2 && r < 0.74) kind = 'ghoul';
+  else kind = 'raider';
+  spawnAt(x, y, kind);
+}
+
 function _devSpawnSlots(W, playBottom, devSpawn) {
   const total = devSpawn.reduce((s, e) => s + e.count, 0);
   const cols  = Math.ceil(Math.sqrt(total * (W / playBottom)));

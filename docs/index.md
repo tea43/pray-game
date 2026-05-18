@@ -67,6 +67,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `executed/phaser_port_plan.md`: Phaser 3 port plan — **complete and active runtime**. All phases done.
 - `executed/bwaves_feature.md`: Between-wave upgrade system spec (implemented).
 - `executed/bwaves_feature_dev_plan.md`: Between-wave upgrade system implementation plan (all phases complete).
+- `executed/group_abilities.md`: Friendship-power superboost system — all 4 combos implemented (Chocho Train, High Five My Bro, Vietnam Memories, You Should Stay In The Ground).
 - `executed/wasteland_survivors_feature_plan.md`: Historical feature ledger for the v4 single-file prototype.
 
 ## rejected/ — Abandoned Approaches
