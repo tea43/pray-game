@@ -18,7 +18,7 @@ const COMBOS = {
     keys: ['1', '2'],
     label: 'CHOCHO TRAIN',
     minDist: 100,
-    maxDist: 500,
+    maxDist: 700,
     colors: { primary: '#4080ff', secondary: '#ff6040' },
   },
   // Dick (key 2) + Habib (key 3)
@@ -28,7 +28,7 @@ const COMBOS = {
     keys: ['2', '3'],
     label: 'HIGH FIVE MY BRO',
     minDist: 100,
-    maxDist: 500,
+    maxDist: 700,
     colors: { primary: '#ffe060', secondary: '#80d0ff' },
   },
   // Eliott (key 1) + Habib (key 3)
@@ -38,7 +38,7 @@ const COMBOS = {
     keys: ['1', '3'],
     label: 'VIETNAM MEMORIES',
     minDist: 100,
-    maxDist: 500,
+    maxDist: 700,
     colors: { primary: '#60ff80', secondary: '#ff8030' },
   },
   // All three
@@ -48,7 +48,7 @@ const COMBOS = {
     keys: ['1', '2', '3'],
     label: 'YOU SHOULD STAY IN THE GROUND',
     minDist: 100,
-    maxDist: 500, 
+    maxDist: 1000, 
     colors: { primary: '#ffe060', secondary: '#a060ff' },
   },
 };
