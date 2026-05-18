@@ -122,10 +122,10 @@ Each successful base ability use (keys 1/2/3) grants **+20% superboost charge** 
 
 | Name | Heroes | Distance | Effect |
 |---|---|---|---|
-| **Chocho Train** | Eliott+Dick | 100–250 px | Dick rushes to Eliott; heavy damage along path; burst at arrival |
-| **High Five My Bro** | Dick+Habib | 100–250 px | Dick and Habib converge to midpoint; large electrical nova |
-| **Vietnam Memories** | Eliott+Habib | 100–250 px | Eliott pulls Habib; fire lane ignites the path; burn damage |
-| **You Should Stay In The Ground** | All three | 80–300 px (pairwise) | Triangle prison; enemies stunned+pulled to center; Dick slams center; all blink in |
+| **Chocho Train** | Eliott+Dick | 0–500 px | Dick rushes to Eliott; heavy damage along path; burst at arrival |
+| **High Five My Bro** | Dick+Habib | 0–500 px | Dick and Habib converge to midpoint; large electrical nova |
+| **Vietnam Memories** | Eliott+Habib | 0–500 px | Eliott pulls Habib; fire lane ignites the path; burn damage |
+| **You Should Stay In The Ground** | All three | 0–500 px (pairwise) | Triangle prison; enemies stunned+pulled to center; Dick slams center; all blink in |
 
 All participating heroes are **immortal** during execution. Combos include cinematic slow-motion and screen-flash. System lives in `src/systems/groupAbilities.js`.
 
