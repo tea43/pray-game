@@ -1,6 +1,6 @@
 import { G } from '../../globals.js';
 import { clamp, dist2 } from '../../utils/math.js';
-import { tryTriggerCombo } from '../../systems/groupAbilities.js';
+import { tryStartComboHold, cancelComboHold } from '../../systems/groupAbilities.js';
 
 const Keys = null; // resolved lazily from Phaser.Input.Keyboard.KeyCodes
 
@@ -18,7 +18,10 @@ export class InputSystem {
     scene.input.mouse?.disableContextMenu();
 
     // Clear held ability keys when window loses focus (prevents stuck keys)
-    window.addEventListener('blur', () => state.heldAbilityKeys.clear(), { passive: true });
+    window.addEventListener('blur', () => {
+      state.heldAbilityKeys.clear();
+      state.comboHold = null;
+    }, { passive: true });
 
     // ── Mouse ────────────────────────────────────────────────────────────────
 
@@ -190,13 +193,26 @@ export class InputSystem {
       }
 
       // Basic abilities: 1/2/3 (Eliott/Dick/Habib)
-      // Track held keys for combo detection; try combo before normal ability.
+      // Hold-then-fire combo logic:
+      //   - Single key pressed → fire normal ability immediately (no delay).
+      //   - Second key pressed while first is held + combo conditions met
+      //     → suppress both normals, start 1s hold charging.
+      //   - Releasing a held key before 1s → cancel hold, fire that key's normal ability.
       if (k === '1' || k === '2' || k === '3') {
         e.preventDefault();
+        if (e.repeat) return; // ignore browser key-repeat events
+
         state.heldAbilityKeys.add(k);
-        if (!state.groupAbility && !tryTriggerCombo(state.heldAbilityKeys, k)) {
-          for (const u of state.units) {
-            if (u.abilityKey === k && !u.dead) u.cast();
+
+        if (!state.groupAbility && !state.comboHold) {
+          // Only try combo hold when 2+ keys are held (single key always fires normally)
+          if (state.heldAbilityKeys.size >= 2 && tryStartComboHold(state.heldAbilityKeys)) {
+            // Combo hold started — all participating abilities suppressed
+          } else {
+            // No combo started — fire the newly pressed key's normal ability
+            for (const u of state.units) {
+              if (u.abilityKey === k && !u.dead) u.cast();
+            }
           }
         }
       }
@@ -228,6 +244,8 @@ export class InputSystem {
       // Release held ability keys
       if (e.key === '1' || e.key === '2' || e.key === '3') {
         state.heldAbilityKeys.delete(e.key);
+        // If a combo hold was in progress, cancel it and fire the released key's ability
+        if (state.comboHold) cancelComboHold(e.key);
       }
     });
   }

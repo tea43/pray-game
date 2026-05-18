@@ -53,43 +53,55 @@ const COMBOS = {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
-// Called from InputSystem when keys 1/2/3 change.
-// Returns true if a combo was triggered (caller should suppress normal ability).
-export function tryTriggerCombo(heldKeys, triggerKey) {
-  if (state.groupAbility) return false; // already executing
+const HOLD_SECS = 1.0; // seconds both keys must be held to fire the combo
 
-  // Build sorted key string to look up combo
+// Called from InputSystem when a new ability key is added to heldAbilityKeys.
+// Returns true if a combo hold was started (caller must suppress normal ability for ALL
+// held keys; if only one key is held the check will return false and normal ability fires).
+export function tryStartComboHold(heldKeys) {
+  if (state.groupAbility || state.comboHold) return false;
+
   const sorted = [...heldKeys].sort().join('+');
+  const def = COMBOS[sorted];
+  if (!def) return false;
 
-  for (const [comboKey, def] of Object.entries(COMBOS)) {
-    if (sorted !== comboKey) continue;
+  const participants = def.heroes.map(type => state.units.find(u => u.type === type && !u.dead));
+  if (participants.some(u => !u)) return false;
+  if (!participants.every(u => u.superboostCharge >= 1)) return false;
+  if (!_checkDistance(def, participants)) return false;
 
-    // Find participating hero units
-    const participants = def.heroes.map(type => state.units.find(u => u.type === type && !u.dead));
-    if (participants.some(u => !u)) continue; // a hero is dead
+  state.comboHold = { def, participants, progress: 0 };
+  return true;
+}
 
-    // All must be charged
-    if (!participants.every(u => u.superboostCharge >= 1)) continue;
-
-    // Distance rules — all pairwise must be within [minDist, maxDist]
-    let distOk = true;
-    for (let i = 0; i < participants.length - 1; i++) {
-      for (let j = i + 1; j < participants.length; j++) {
-        const d = Math.hypot(participants[i].x - participants[j].x, participants[i].y - participants[j].y);
-        if (d < def.minDist || d > def.maxDist) { distOk = false; break; }
-      }
-      if (!distOk) break;
-    }
-    if (!distOk) continue;
-
-    _startCombo(def.id, participants, def);
-    return true;
+// Called from InputSystem when a combo-hold key is released before the combo fires.
+// Fires the released key's normal ability (if off cooldown).
+export function cancelComboHold(releasedKey) {
+  if (!state.comboHold) return;
+  state.comboHold = null;
+  // Fire normal ability for the released key
+  for (const u of state.units) {
+    if (u.abilityKey === releasedKey && !u.dead) u.cast();
   }
-  return false;
 }
 
 // Main update — called each frame from GameScene with gameDt (scaled) and realDt.
 export function updateGroupAbility(gameDt, realDt) {
+  // ── Combo hold progress ──────────────────────────────────────────────────
+  if (state.comboHold && !state.groupAbility) {
+    const hold = state.comboHold;
+    // Re-validate distance each frame — heroes may have drifted out of range
+    if (!_checkDistance(hold.def, hold.participants)) {
+      state.comboHold = null;
+    } else {
+      hold.progress = Math.min(1, hold.progress + realDt / HOLD_SECS);
+      if (hold.progress >= 1) {
+        state.comboHold = null;
+        _startCombo(hold.def.id, hold.participants, hold.def);
+      }
+    }
+  }
+
   const ga = state.groupAbility;
   if (!ga) return;
 
@@ -105,6 +117,12 @@ export function updateGroupAbility(gameDt, realDt) {
 
 // Renderer — called from GameScene._draw() while camera transform is active (world space).
 export function renderGroupAbility(ctx) {
+  // Combo hold charging indicator
+  if (state.comboHold) {
+    _renderComboHold(ctx, state.comboHold);
+    return;
+  }
+
   const ga = state.groupAbility;
   if (!ga) return;
 
@@ -115,6 +133,45 @@ export function renderGroupAbility(ctx) {
     case 'vietnamMemories': _renderVietnam(ctx, ga); break;
     case 'triangle':        _renderTriangle(ctx, ga); break;
   }
+  ctx.restore();
+}
+
+function _renderComboHold(ctx, hold) {
+  const { def, participants, progress } = hold;
+  const col = def.colors.primary;
+
+  ctx.save();
+
+  // Draw a dashed connection between all participants, thickening as progress grows
+  ctx.setLineDash([8, 6]);
+  ctx.lineWidth = 1.5 + progress * 2;
+  ctx.globalAlpha = 0.4 + progress * 0.4;
+  ctx.strokeStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(participants[0].x, participants[0].y);
+  for (let i = 1; i < participants.length; i++) ctx.lineTo(participants[i].x, participants[i].y);
+  if (participants.length > 2) ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Progress arc around each participant's head
+  for (const u of participants) {
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y, u.r + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Label + countdown above midpoint
+  const mx = participants.reduce((s, u) => s + u.x, 0) / participants.length;
+  const my = Math.min(...participants.map(u => u.y)) - 28;
+  ctx.globalAlpha = 1;
+  _renderLabel(ctx, def.label, mx, my, col);
+  const secsLeft = (HOLD_SECS * (1 - progress)).toFixed(1);
+  _renderLabel(ctx, secsLeft + 's', mx, my + 14, '#ffffff');
+
   ctx.restore();
 }
 
@@ -608,6 +665,16 @@ function _startCombo(id, participants, def) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+function _checkDistance(def, participants) {
+  for (let i = 0; i < participants.length - 1; i++) {
+    for (let j = i + 1; j < participants.length; j++) {
+      const d = Math.hypot(participants[i].x - participants[j].x, participants[i].y - participants[j].y);
+      if (d < def.minDist || d > def.maxDist) return false;
+    }
+  }
+  return true;
+}
 
 function _makeImmortal(participants, secs = 1.5) {
   for (const u of participants) u.immortalTimer = Math.max(u.immortalTimer, secs);
