@@ -405,6 +405,41 @@
       "volume": 0.85,
       "pitchJitter": 0.04
     },
+    "combo.chocho_train": {
+      "variants": [
+        "./assets/audio/characters/abilities/chocho/chocho_1.mp3",
+        "./assets/audio/characters/abilities/chocho/chocho_2.mp3"
+      ],
+      "fallback": "ability.blink",
+      "volume": 0.9,
+      "pitchJitter": 0.03
+    },
+    "combo.high_five": {
+      "variants": [
+        "./assets/audio/characters/abilities/high_five/brofive_1.mp3"
+      ],
+      "fallback": "ability.lightning",
+      "volume": 0.9,
+      "pitchJitter": 0.03
+    },
+    "combo.vietnam_memories": {
+      "variants": [
+        "./assets/audio/characters/abilities/vietnam/vietnam_1.mp3",
+        "./assets/audio/characters/abilities/vietnam/vietnam_2.mp3",
+        "./assets/audio/characters/abilities/vietnam/vietnam_3.mp3"
+      ],
+      "fallback": "ability.rage",
+      "volume": 0.9,
+      "pitchJitter": 0.03
+    },
+    "combo.stay_in_ground": {
+      "variants": [
+        "./assets/audio/characters/abilities/stay_in_ground/nani.mp3"
+      ],
+      "fallback": "ability.smashing_time",
+      "volume": 0.95,
+      "pitchJitter": 0.02
+    },
     "loot.essence": {
       "variants": [
         "./assets/audio/loot/essence/essence_pick_1.mp3",
