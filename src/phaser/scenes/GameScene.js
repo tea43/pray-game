@@ -263,6 +263,14 @@ export class GameScene extends Phaser.Scene {
       this.scene.pause();
     }
 
+    // Open ability upgrade picker when essence XP threshold crossed
+    if (state.pendingAbilityPicks > 0 && !state.isUpgradeScreen && !state.isLevelUpScreen && !state.gameOver) {
+      state.pendingAbilityPicks -= 1;
+      state.isUpgradeScreen = true;
+      this.scene.pause();
+      this.scene.launch('UpgradeScene');
+    }
+
     // Update group ability system (uses realDt for animation, gameDt for damage)
     updateGroupAbility(gameDt, realDt);
     // Keep superboost charge full in ability-test mode
@@ -486,11 +494,10 @@ export class GameScene extends Phaser.Scene {
     if (state._pendingWaveUpgrade && !state.allWavesCleared && !this._anyAbilityInProgress()) {
       state._pendingWaveUpgrade = false;
       if (state.wave < WAVE_DEFS.maxWave) {
-        state.isUpgradeScreen = true;
+        // Reset per-wave passive bonuses and advance wave immediately (no upgrade screen here)
         removeWaveUpgrades();
         tickActiveSkillDurability();
-        this.scene.pause();
-        this.scene.launch('UpgradeScene');
+        this.advanceWave();
       } else {
         state.allWavesCleared = true;
         state.waveTimer = 0;
