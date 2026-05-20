@@ -109,6 +109,7 @@ function _performBlink(unit) {
   }
 
   unit.x = nx; unit.y = ny; unit.tx = nx; unit.ty = ny;
+  unit._lastBlinkDest = { x: nx, y: ny, _originX: startX, _originY: startY };
   unit.z = 0; unit.vz = 220; unit.blinkFlash = 1;
 
   for (let i = 0; i < 22; i++) {
@@ -1168,3 +1169,496 @@ export const ABILITY_DEFS = {
   },
 
 };
+
+// ── Combination System ────────────────────────────────────────────────────────
+
+// How long a secondary ability's combo window stays open after activation (seconds).
+export const COMBO_WINDOW = 8;
+
+// ── Combo helpers ─────────────────────────────────────────────────────────────
+
+// Attach a per-hit callback to one or both of Dick's active boomerangs.
+function _addBoomerangCombo(main, fn) {
+  for (const b of [main.boomerang, main.boomerang2]) {
+    if (!b) continue;
+    b.comboHitFns = b.comboHitFns ?? [];
+    b.comboHitFns.push(fn);
+  }
+}
+
+// Apply fn(enemy, landX, landY) to all enemies within radius of the blink landing.
+function _blinkAoE(main, radius, fn) {
+  const lx = main._lastBlinkDest?.x ?? main.x;
+  const ly = main._lastBlinkDest?.y ?? main.y;
+  for (const e of state.enemies) {
+    if (e.dead) continue;
+    if (dist2(lx, ly, e.x, e.y) < radius) fn(e, lx, ly);
+  }
+}
+
+// Chain lightning starting from a given enemy, jumping to nearby enemies.
+function _comboChainLightning(mainUnit, startEnemy, jumps, dmg) {
+  const range = 180;
+  let cx = startEnemy.x, cy = startEnemy.y;
+  const hit = new Set([startEnemy]);
+  const pts = [{ x: cx, y: cy }];
+  for (let i = 0; i < jumps; i++) {
+    let next = null, nd = range;
+    for (const e of state.enemies) {
+      if (e.dead || hit.has(e)) continue;
+      const d = dist2(cx, cy, e.x, e.y);
+      if (d < nd) { nd = d; next = e; }
+    }
+    if (!next) break;
+    hit.add(next);
+    pts.push({ x: next.x, y: next.y });
+    next.hp -= dmg;
+    next.hurtFlash = 0.5;
+    cx = next.x; cy = next.y;
+  }
+  if (pts.length > 1) state.bolts.push({ points: pts, life: 0.35, maxLife: 0.35 });
+}
+
+// Chain lightning from the nearest enemy within radius of a point.
+function _comboChainLightningAtPoint(x, y, radius, jumps, dmg) {
+  let start = null, nd = radius;
+  for (const e of state.enemies) {
+    if (e.dead) continue;
+    const d = dist2(x, y, e.x, e.y);
+    if (d < nd) { nd = d; start = e; }
+  }
+  if (!start) return;
+  start.hp -= dmg;
+  start.hurtFlash = 0.5;
+  const pts = [{ x, y }, { x: start.x, y: start.y }];
+  let cx = start.x, cy = start.y;
+  const hit = new Set([start]);
+  for (let i = 1; i < jumps; i++) {
+    let next = null, nd2 = 180;
+    for (const e of state.enemies) {
+      if (e.dead || hit.has(e)) continue;
+      const d = dist2(cx, cy, e.x, e.y);
+      if (d < nd2) { nd2 = d; next = e; }
+    }
+    if (!next) break;
+    hit.add(next);
+    pts.push({ x: next.x, y: next.y });
+    next.hp -= dmg;
+    next.hurtFlash = 0.5;
+    cx = next.x; cy = next.y;
+  }
+  if (pts.length > 1) state.bolts.push({ points: pts, life: 0.4, maxLife: 0.4 });
+  if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.12); state.flashColor = '#a0d8ff'; }
+}
+
+// Damage enemies along the corridor from blink origin to landing.
+function _blinkTrail(main, halfWidth, dmg, vortexPull) {
+  const ox = main._lastBlinkDest?._originX ?? main.x;
+  const oy = main._lastBlinkDest?._originY ?? main.y;
+  const lx = main._lastBlinkDest?.x ?? main.x;
+  const ly = main._lastBlinkDest?.y ?? main.y;
+  const len = Math.hypot(lx - ox, ly - oy);
+  if (len < 2) return;
+  const nx = (lx - ox) / len, ny = (ly - oy) / len;
+  for (const e of state.enemies) {
+    if (e.dead) continue;
+    // Project enemy onto blink line
+    const t = clamp(((e.x - ox) * nx + (e.y - oy) * ny) / len, 0, 1);
+    const px = ox + t * (lx - ox), py = oy + t * (ly - oy);
+    if (dist2(e.x, e.y, px, py) < halfWidth + e.r) {
+      e.hp -= dmg;
+      e.hurtFlash = 0.6;
+      if (vortexPull) {
+        // Weak pull toward landing zone
+        const a = Math.atan2(ly - e.y, lx - e.x);
+        e.knockX += Math.cos(a) * 80;
+        e.knockY += Math.sin(a) * 80;
+      }
+      for (let i = 0; i < 5; i++) {
+        state.particles.push({ x: px + rand(-4, 4), y: py + rand(-4, 4), vx: rand(-50, 50), vy: rand(-70, -10), life: rand(0.2, 0.5), maxLife: 0.5, color: '#ffd060', size: rand(1.5, 3), realtime: true });
+      }
+    }
+  }
+}
+
+// Damage + optional vortex burst around a protected hero (for Blockade + Spin Clubs combo).
+function _blockadeMillPulse(hero, radius, dmg, type) {
+  for (const e of state.enemies) {
+    if (e.dead) continue;
+    if (dist2(hero.x, hero.y, e.x, e.y) < radius + e.r) {
+      e.hp -= dmg;
+      e.hurtFlash = 0.5;
+      const a = Math.atan2(e.y - hero.y, e.x - hero.x);
+      if (type === 0) {
+        e.knockX += Math.cos(a) * 100;
+        e.knockY += Math.sin(a) * 100;
+      } else if (type === 1) {
+        // Vortex: pull inward
+        e.knockX -= Math.cos(a) * 80;
+        e.knockY -= Math.sin(a) * 80;
+      } else {
+        // Type 2: blast outward + stun
+        e.knockX += Math.cos(a) * 200;
+        e.knockY += Math.sin(a) * 200;
+        e.stunTimer = Math.max(e.stunTimer, 1.5);
+      }
+      _radialParticles(hero.x, hero.y, 12, '#ff8020', '#ffd060');
+    }
+  }
+}
+
+// ── Combo table ───────────────────────────────────────────────────────────────
+// Key format: `${mainHeroType}_${secondaryHeroType}_${secondaryTreeNum}`
+// Each entry: array of 3 handlers [level1Fn, level2Fn, level3Fn]
+// Handler signature: (mainUnit, secondaryUnit) => void
+
+const COMBO_TABLE = {
+
+  // ── Dick (Boomerang T1) + Eliott (Green Pipe T2) ─────────────────────────
+  dick_eliott_2: [
+    // L1: slow on boomerang hit
+    (main) => {
+      _addBoomerangCombo(main, (e) => {
+        e.slowTimer = Math.max(e.slowTimer, 2);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.5);
+      });
+    },
+    // L2: slow + brief freeze
+    (main) => {
+      _addBoomerangCombo(main, (e) => {
+        e.slowTimer = Math.max(e.slowTimer, 2);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.5);
+        e.stunTimer = Math.max(e.stunTimer, 0.8);
+      });
+    },
+    // L3: slow + freeze + extra damage
+    (main) => {
+      _addBoomerangCombo(main, (e) => {
+        e.slowTimer = Math.max(e.slowTimer, 2.5);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.4);
+        e.stunTimer = Math.max(e.stunTimer, 0.8);
+        e.hp -= 15;
+        e.hurtFlash = 0.5;
+      });
+    },
+  ],
+
+  // ── Dick (Boomerang T1) + Eliott (White Powder T3) ───────────────────────
+  dick_eliott_3: [
+    // L1: knockback on hit
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 120; e.knockY += Math.sin(a) * 120;
+      });
+    },
+    // L2: heavy knockback
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 250; e.knockY += Math.sin(a) * 250;
+      });
+    },
+    // L3: heavy knockback + stun
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 250; e.knockY += Math.sin(a) * 250;
+        e.stunTimer = Math.max(e.stunTimer, 1.0);
+      });
+    },
+  ],
+
+  // ── Dick (Boomerang T1) + Habib (Tinkering T2) ───────────────────────────
+  dick_habib_2: [
+    // L1: acid on hit
+    (main) => {
+      _addBoomerangCombo(main, (e) => {
+        e.acidDot = Math.max(e.acidDot || 0, 3);
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      });
+    },
+    // L2: fire on hit
+    (main) => {
+      _addBoomerangCombo(main, (e) => {
+        e.fireDot = Math.max(e.fireDot || 0, 3);
+        e.hp -= 10; e.hurtFlash = 0.5;
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      });
+    },
+    // L3: lightning chain on hit
+    (main) => {
+      _addBoomerangCombo(main, (e, _bx, _by, mainUnit) => {
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+        _comboChainLightning(mainUnit, e, 3, 18);
+      });
+    },
+  ],
+
+  // ── Dick (Boomerang T1) + Habib (Weapon Effects T3) ──────────────────────
+  dick_habib_3: [
+    // L1: knockback + flame on hit
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 100; e.knockY += Math.sin(a) * 100;
+        e.fireDot = Math.max(e.fireDot || 0, 2);
+        e.hp -= 8; e.hurtFlash = 0.4;
+      });
+    },
+    // L2: knockback + stun on hit
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 100; e.knockY += Math.sin(a) * 100;
+        e.stunTimer = Math.max(e.stunTimer, 1.2);
+      });
+    },
+    // L3: knockback + chain lightning on hit
+    (main) => {
+      _addBoomerangCombo(main, (e, bx, by, mainUnit) => {
+        const a = Math.atan2(e.y - by, e.x - bx);
+        e.knockX += Math.cos(a) * 100; e.knockY += Math.sin(a) * 100;
+        _comboChainLightning(mainUnit, e, 3, 18);
+      });
+    },
+  ],
+
+  // ── Eliott (Blink T1) + Habib (Tinkering T2) ─────────────────────────────
+  eliott_habib_2: [
+    // L1: acid burst at landing
+    (main) => {
+      _blinkAoE(main, 110, (e) => {
+        e.acidDot = Math.max(e.acidDot || 0, 4); e.hp -= 12; e.hurtFlash = 0.5;
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      });
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _radialParticles(lx, ly, 14, '#40ff40', '#80ff80');
+    },
+    // L2: fire burst at landing
+    (main) => {
+      _blinkAoE(main, 120, (e) => {
+        e.fireDot = Math.max(e.fireDot || 0, 4); e.hp -= 18; e.hurtFlash = 0.6;
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      });
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _radialParticles(lx, ly, 16, '#ff6020', '#ffb040');
+    },
+    // L3: lightning burst at landing
+    (main) => {
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _blinkAoE(main, 130, (e) => {
+        e.slowTimer = Math.max(e.slowTimer, TINKERING_SLOW_CONFIG.duration);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      });
+      _comboChainLightningAtPoint(lx, ly, 130, 5, 25);
+      _radialParticles(lx, ly, 18, '#a0e0ff', '#e0f0ff');
+    },
+  ],
+
+  // ── Eliott (Blink T1) + Habib (Weapon Effects T3) ────────────────────────
+  eliott_habib_3: [
+    // L1: knockback + flame at landing
+    (main) => {
+      _blinkAoE(main, 110, (e, lx, ly) => {
+        const a = Math.atan2(e.y - ly, e.x - lx);
+        e.knockX += Math.cos(a) * 150; e.knockY += Math.sin(a) * 150;
+        e.fireDot = Math.max(e.fireDot || 0, 3); e.hp -= 10; e.hurtFlash = 0.5;
+      });
+    },
+    // L2: knockback + stun at landing
+    (main) => {
+      _blinkAoE(main, 120, (e, lx, ly) => {
+        const a = Math.atan2(e.y - ly, e.x - lx);
+        e.knockX += Math.cos(a) * 150; e.knockY += Math.sin(a) * 150;
+        e.stunTimer = Math.max(e.stunTimer, 1.5);
+      });
+    },
+    // L3: knockback + chain lightning at landing
+    (main) => {
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _blinkAoE(main, 130, (e, elx, ely) => {
+        const a = Math.atan2(e.y - ely, e.x - elx);
+        e.knockX += Math.cos(a) * 150; e.knockY += Math.sin(a) * 150;
+      });
+      _comboChainLightningAtPoint(lx, ly, 140, 4, 22);
+    },
+  ],
+
+  // ── Eliott (Blink T1) + Dick (Spin Clubs T2) ─────────────────────────────
+  eliott_dick_2: [
+    // L1: damage trail from origin to landing
+    (main) => { _blinkTrail(main, 70, 18, 0); },
+    // L2: wider trail
+    (main) => { _blinkTrail(main, 95, 22, 0); },
+    // L3: wider trail + vortex pull at landing
+    (main) => { _blinkTrail(main, 115, 26, 1); },
+  ],
+
+  // ── Eliott (Blink T1) + Dick (Scream T3) ─────────────────────────────────
+  eliott_dick_3: [
+    // L1: stun in landing radius
+    (main) => {
+      _blinkAoE(main, 120, (e) => { e.stunTimer = Math.max(e.stunTimer, 2.0); e.hurtFlash = 0.5; });
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _radialParticles(lx, ly, 20, '#ff4040', '#ff8080');
+    },
+    // L2: longer stun + slow
+    (main) => {
+      _blinkAoE(main, 140, (e) => {
+        e.stunTimer = Math.max(e.stunTimer, 3.0);
+        e.slowTimer = Math.max(e.slowTimer, 2.5);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.5);
+        e.hurtFlash = 0.5;
+      });
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _radialParticles(lx, ly, 22, '#ff4040', '#ff8080');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
+    },
+    // L3: max stun + slow + heavy shake
+    (main) => {
+      _blinkAoE(main, 160, (e) => {
+        e.stunTimer = Math.max(e.stunTimer, 4.0);
+        e.slowTimer = Math.max(e.slowTimer, 3.5);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.4);
+        e.hurtFlash = 0.7;
+      });
+      const lx = main._lastBlinkDest?.x ?? main.x, ly = main._lastBlinkDest?.y ?? main.y;
+      _radialParticles(lx, ly, 28, '#ff2020', '#ff6060');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 7);
+    },
+  ],
+
+  // ── Habib (Blockade T1) + Eliott (Green Pipe T2) ─────────────────────────
+  habib_eliott_2: [
+    // L1: 2× protection (stack alchemyArmor on top of blockade)
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) u.alchemyArmorTimer = Math.max(u.alchemyArmorTimer, 6);
+      }
+    },
+    // L2: 2× + slow enemies on hit
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) {
+          u.alchemyArmorTimer = Math.max(u.alchemyArmorTimer, 6);
+          u.blockadeSlowOnHit = Math.max(u.blockadeSlowOnHit, 2.0);
+        }
+      }
+    },
+    // L3: 2× + stun enemies on hit
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) {
+          u.alchemyArmorTimer = Math.max(u.alchemyArmorTimer, 6);
+          u.blockadeStunOnHit = Math.max(u.blockadeStunOnHit, 1.5);
+        }
+      }
+    },
+  ],
+
+  // ── Habib (Blockade T1) + Eliott (White Powder T3) ───────────────────────
+  habib_eliott_3: [
+    // L1: heavy knockback on attacker
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) u.blockadeKbOnHit = Math.max(u.blockadeKbOnHit, 300);
+      }
+    },
+    // L2: heavy knockback + stun
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) {
+          u.blockadeKbOnHit   = Math.max(u.blockadeKbOnHit, 300);
+          u.blockadeStunOnHit = Math.max(u.blockadeStunOnHit, 1.0);
+        }
+      }
+    },
+    // L3: heavy knockback + stun + acid
+    (main) => {
+      for (const u of state.units) {
+        if (!u.dead && u.blockadeTimer > 0) {
+          u.blockadeKbOnHit   = Math.max(u.blockadeKbOnHit, 300);
+          u.blockadeStunOnHit = Math.max(u.blockadeStunOnHit, 1.0);
+          u.blockadeAcidOnHit = true;
+        }
+      }
+    },
+  ],
+
+  // ── Habib (Blockade T1) + Dick (Spin Clubs T2) ───────────────────────────
+  habib_dick_2: [
+    // L1: damage pulse around each protected hero
+    (main) => {
+      for (const u of state.units) { if (!u.dead && u.blockadeTimer > 0) _blockadeMillPulse(u, 80, 28, 0); }
+    },
+    // L2: vortex pull + damage
+    (main) => {
+      for (const u of state.units) { if (!u.dead && u.blockadeTimer > 0) _blockadeMillPulse(u, 100, 32, 1); }
+    },
+    // L3: blast + stun
+    (main) => {
+      for (const u of state.units) { if (!u.dead && u.blockadeTimer > 0) _blockadeMillPulse(u, 130, 50, 2); }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 8);
+    },
+  ],
+
+  // ── Habib (Blockade T1) + Dick (Scream T3) ───────────────────────────────
+  habib_dick_3: [
+    // L1: 3× stun duration for already-stunned enemies near protected heroes
+    (main) => {
+      for (const e of state.enemies) {
+        if (e.dead || e.stunTimer <= 0) continue;
+        if (state.units.some(u => !u.dead && u.blockadeTimer > 0 && dist2(u.x, u.y, e.x, e.y) < 200)) {
+          e.stunTimer = Math.min(e.stunTimer * 3, 8);
+        }
+      }
+    },
+    // L2: 3× stun + slow
+    (main) => {
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (!state.units.some(u => !u.dead && u.blockadeTimer > 0 && dist2(u.x, u.y, e.x, e.y) < 200)) continue;
+        if (e.stunTimer > 0) e.stunTimer = Math.min(e.stunTimer * 3, 8);
+        e.slowTimer = Math.max(e.slowTimer, 3);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.4);
+      }
+    },
+    // L3: 3× stun + slow + flee knockback
+    (main) => {
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (!state.units.some(u => !u.dead && u.blockadeTimer > 0 && dist2(u.x, u.y, e.x, e.y) < 200)) continue;
+        if (e.stunTimer > 0) e.stunTimer = Math.min(e.stunTimer * 3, 8);
+        e.slowTimer = Math.max(e.slowTimer, 3);
+        e.slowFactor = Math.min(e.slowFactor ?? 1, 0.4);
+        const fa = rand(0, Math.PI * 2);
+        e.knockX += Math.cos(fa) * 400; e.knockY += Math.sin(fa) * 400;
+      }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
+    },
+  ],
+};
+
+// ── Public entry point ────────────────────────────────────────────────────────
+// Called by cast() after each main ability fires.
+// Scans teammates' comboTimer windows and applies any matching combo effects.
+export function applyCombos(mainUnit) {
+  for (const other of state.units) {
+    if (other === mainUnit || other.dead) continue;
+    for (const treeNum of [2, 3]) {
+      if ((other.comboTimer?.[treeNum] ?? 0) <= 0) continue;
+      const level = other.comboLevel?.[treeNum] ?? 1;
+      const key = `${mainUnit.type}_${other.type}_${treeNum}`;
+      const handlers = COMBO_TABLE[key];
+      if (!handlers) continue;
+      const fn = handlers[level - 1];
+      if (fn) fn(mainUnit, other);
+    }
+  }
+}
