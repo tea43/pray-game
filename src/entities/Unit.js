@@ -92,7 +92,21 @@ export class Unit {
     this.medkitHealPerSec    = 0;  // HP/s rate
 
     // Dick boomerang state
-    this.boomerang = null; // {startX, startY, targetX, targetY, phase, t, clubX, clubY, hitOut, hitRet}
+    this.boomerang  = null; // {startX, startY, targetX, targetY, phase, t, clubX, clubY, hitOut, hitRet, ellipseWidth?}
+    this.boomerang2 = null; // second boomerang for dual_boomerangs (L3)
+
+    // Dick Dance of Death state
+    this.danceOfDeathTimer    = 0;
+    this.danceOfDeathCenterX  = 0;
+    this.danceOfDeathCenterY  = 0;
+    this.danceOfDeathPullR    = 90;    // pull radius (configurable via ability params)
+    this.danceOfDeathSlamDmg  = 120;   // slam damage on leap
+    this.danceOfDeathStunDur  = 2.0;   // post-slam stun duration
+
+    // Dick Transgender Talk state
+    this.transgenderTalkTimer  = 0;
+    this.transgenderTalkRadius = 250;
+    this._tTalkStunCd          = 0;    // stun re-application cooldown
 
     // Passive upgrade flags (set per-wave by applyWaveUpgrades)
     this.residualHaze = false;
@@ -216,6 +230,10 @@ export class Unit {
     const _prevVortex = this.vortexTimer;
     this.millTimer        = Math.max(0, this.millTimer - dt);
     this.vortexTimer      = Math.max(0, this.vortexTimer - dt);
+    const _prevDance  = this.danceOfDeathTimer;
+    this.danceOfDeathTimer = Math.max(0, this.danceOfDeathTimer - dt);
+    this.transgenderTalkTimer = Math.max(0, this.transgenderTalkTimer - dt);
+    this._tTalkStunCd = Math.max(0, this._tTalkStunCd - dt);
 
     if (this.medkitHealRemaining > 0) {
       const tick = Math.min(this.medkitHealPerSec * dt, this.medkitHealRemaining);
@@ -283,6 +301,57 @@ export class Unit {
       this.x = this.vortexCenterX; this.y = this.vortexCenterY;
       this.tx = this._vortexTargetX; this.ty = this._vortexTargetY;
       this._vortexSoundHandle?.stop(); this._vortexSoundHandle = null;
+    }
+
+    // Dance of Death: black-hole pull + immortality; slam on expiry
+    if (this.danceOfDeathTimer > 0) {
+      this.immortalTimer = Math.max(this.immortalTimer, dt + 0.05);
+      const pullForce = 80 * dt;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const dx = this.danceOfDeathCenterX - e.x;
+        const dy = this.danceOfDeathCenterY - e.y;
+        const d  = Math.hypot(dx, dy);
+        if (d < this.danceOfDeathPullR && d > 1) {
+          e.knockX += (dx / d) * pullForce;
+          e.knockY += (dy / d) * pullForce;
+        }
+      }
+    }
+    if (_prevDance > 0 && this.danceOfDeathTimer <= 0) {
+      // Slam: leap to center, damage all nearby, stun survivors
+      this.x = this.danceOfDeathCenterX;
+      this.y = this.danceOfDeathCenterY;
+      this.tx = this.x; this.ty = this.y;
+      this.vz = 220; this.z = 0; this.blinkFlash = 1;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(this.x, this.y, e.x, e.y) < 80 + e.r) {
+          e.hp -= this.danceOfDeathSlamDmg;
+          e.hurtFlash = 1;
+          const ang = Math.atan2(e.y - this.y, e.x - this.x);
+          e.knockX += Math.cos(ang) * 200;
+          e.knockY += Math.sin(ang) * 200;
+          if (e.hp > 0) e.stunTimer = Math.max(e.stunTimer, this.danceOfDeathStunDur);
+          pushDamageNumber(e.x, e.y - e.r - 4, this.danceOfDeathSlamDmg, { crit: true, rgb: [255, 80, 20] });
+        }
+      }
+      for (let i = 0; i < 30; i++) {
+        const a = rand(0, Math.PI * 2), v = rand(80, 200);
+        state.particles.push({ x: this.x, y: this.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: rand(0.4, 0.9), maxLife: 0.9, color: i % 2 ? '#ff3010' : '#ffb030', size: rand(2, 4), realtime: true });
+      }
+      if (!state.settings.noShake) { state.shake = Math.max(state.shake, 14); state.hitStop = Math.max(state.hitStop, 0.08); }
+    }
+
+    // Transgender Talk: re-apply stun to nearby enemies every 0.4s
+    if (this.transgenderTalkTimer > 0 && this._tTalkStunCd <= 0) {
+      this._tTalkStunCd = 0.4;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(this.x, this.y, e.x, e.y) < this.transgenderTalkRadius) {
+          e.stunTimer = Math.max(e.stunTimer, 0.6);
+        }
+      }
     }
 
     if (this.speedBoostTimer <= 0 && this.alchemyRageMult !== 1) this.alchemyRageMult = 1;
@@ -468,7 +537,10 @@ export class Unit {
 
     // Dick boomerang update
     if (this.type === 'dick' && this.boomerang !== null) {
-      this._updateBoomerang(dt);
+      this._updateBoomerang(dt, this.boomerang, 'primary');
+    }
+    if (this.type === 'dick' && this.boomerang2 !== null) {
+      this._updateBoomerang(dt, this.boomerang2, 'secondary');
     }
 
     // Auto-attack: iterate all filled weapon slots independently (skip while Dick is boomeranging)
@@ -491,27 +563,21 @@ export class Unit {
     this._tickAnim(dt);
   }
 
-  _updateBoomerang(dt) {
-    const b = this.boomerang;
+  // which: 'primary' | 'secondary' — determines which field is nulled on completion
+  _updateBoomerang(dt, b, which) {
     const speed = b.phase === 'outbound' ? 260 : 300;
+    const ellipseW = b.ellipseWidth ?? 80;
 
-    // Endpoint changes dynamically for return phase
-    const sx = b.clubX ?? b.startX;
-    const sy = b.clubY ?? b.startY;
     const ex = b.phase === 'outbound' ? b.targetX : this.x;
     const ey = b.phase === 'outbound' ? b.targetY : this.y;
-
     const dx = ex - (b.phase === 'outbound' ? b.startX : b.targetX);
     const dy = ey - (b.phase === 'outbound' ? b.startY : b.targetY);
     const totalDist = Math.hypot(dx, dy);
 
-    if (totalDist < 1) {
-      this._boomerangPhaseEnd();
-      return;
-    }
+    if (totalDist < 1) { this._boomerangPhaseEnd(which); return; }
 
-    const perpX = -dy / totalDist * 80;
-    const perpY = dx / totalDist * 80;
+    const perpX = -dy / totalDist * ellipseW;
+    const perpY =  dx / totalDist * ellipseW;
     const bsx = b.phase === 'outbound' ? b.startX : b.targetX;
     const bsy = b.phase === 'outbound' ? b.startY : b.targetY;
     const bex = b.phase === 'outbound' ? b.targetX : this.x;
@@ -526,7 +592,6 @@ export class Unit {
     b.clubX = (1-t)*(1-t)*bsx + 2*(1-t)*t*ctrlX + t*t*bex;
     b.clubY = (1-t)*(1-t)*bsy + 2*(1-t)*t*ctrlY + t*t*bey;
 
-    // Hit detection
     const hitSet = b.phase === 'outbound' ? b.hitOut : b.hitRet;
     const dmg = Math.round((b.phase === 'outbound' ? 50 : 35) * (this.upgradeDmgMult || 1));
     for (const e of state.enemies) {
@@ -547,17 +612,22 @@ export class Unit {
       }
     }
 
-    if (b.t >= 1) this._boomerangPhaseEnd();
+    if (b.t >= 1) this._boomerangPhaseEnd(which);
   }
 
-  _boomerangPhaseEnd() {
-    const b = this.boomerang;
+  _boomerangPhaseEnd(which) {
+    const b = which === 'secondary' ? this.boomerang2 : this.boomerang;
+    if (!b) return;
     if (b.phase === 'outbound') {
       b.phase = 'return';
       b.t = 0;
     } else {
-      this.boomerang = null;
-      this.abilityCd = this.abilityMaxCd;
+      if (which === 'secondary') {
+        this.boomerang2 = null;
+      } else {
+        this.boomerang = null;
+        this.abilityCd = this.abilityMaxCd;
+      }
     }
   }
 

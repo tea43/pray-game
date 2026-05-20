@@ -781,6 +781,125 @@ export const ABILITY_DEFS = {
     },
   },
 
+  // ── Dick Tree 1 — Boomerang L2/L3 ────────────────────────────────────────
+
+  ellipse_boomerang: {
+    icon:  'assets/icons/abilities/boomerang.svg',
+    color: '#ff7050',
+    sound: 'ability.boomerang',
+    maxCd: 10,
+    activate(unit) {
+      if (unit.boomerang !== null) return false;
+      let target = null, maxHp = -1;
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        const d = dist2(unit.x, unit.y, e.x, e.y);
+        if (d < 320 && e.hp > maxHp) { maxHp = e.hp; target = e; }
+      }
+      if (!target) return false;
+      unit.boomerang = {
+        startX: unit.x, startY: unit.y,
+        targetX: target.x, targetY: target.y,
+        phase: 'outbound', t: 0,
+        clubX: unit.x, clubY: unit.y,
+        hitOut: new Set(), hitRet: new Set(),
+        ellipseWidth: 140,
+      };
+      return true;
+    },
+  },
+
+  dual_boomerangs: {
+    icon:  'assets/icons/abilities/boomerang.svg',
+    color: '#ff9060',
+    sound: 'ability.boomerang',
+    maxCd: 12,
+    activate(unit) {
+      if (unit.boomerang !== null) return false;
+      // Find 2 most dangerous (highest threat: HP * nearby allies) — use HP as proxy
+      const alive = state.enemies.filter(e => !e.dead && dist2(unit.x, unit.y, e.x, e.y) < 360);
+      if (alive.length === 0) return false;
+      alive.sort((a, b) => b.hp - a.hp);
+      const t1 = alive[0];
+      const t2 = alive[1] ?? alive[0];
+      unit.boomerang = {
+        startX: unit.x, startY: unit.y,
+        targetX: t1.x, targetY: t1.y,
+        phase: 'outbound', t: 0,
+        clubX: unit.x, clubY: unit.y,
+        hitOut: new Set(), hitRet: new Set(),
+        ellipseWidth: 120,
+      };
+      unit.boomerang2 = {
+        startX: unit.x, startY: unit.y,
+        targetX: t2.x, targetY: t2.y,
+        phase: 'outbound', t: 0,
+        clubX: unit.x + rand(-10, 10), clubY: unit.y + rand(-10, 10),
+        hitOut: new Set(), hitRet: new Set(),
+        ellipseWidth: -120,  // mirror arc direction
+      };
+      return true;
+    },
+  },
+
+  // ── Dick Tree 2 — Dance of Death (L3) ────────────────────────────────────
+
+  dance_of_death: {
+    icon:  'assets/icons/abilities/mill_360.svg',
+    color: '#ff2000',
+    maxCd: 22,
+    activate(unit) {
+      const duration     = 5.0;
+      const pullRadius   = 90;
+      const slamDamage   = 120;
+      const postStunDur  = 2.0;
+      unit.danceOfDeathTimer   = duration;
+      unit.danceOfDeathCenterX = unit.x;
+      unit.danceOfDeathCenterY = unit.y;
+      unit.danceOfDeathPullR   = pullRadius;
+      unit.danceOfDeathSlamDmg = slamDamage;
+      unit.danceOfDeathStunDur = postStunDur;
+      unit.immortalTimer = Math.max(unit.immortalTimer || 0, duration + 0.1);
+      _radialParticles(unit.x, unit.y, 40, '#ff2000', '#ff8030');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 10);
+    },
+  },
+
+  // ── Dick Tree 3 — Transgender Talk (L3) ──────────────────────────────────
+
+  transgender_talk: {
+    icon:  'assets/icons/abilities/inappropriate_stories.svg',
+    color: '#ff6080',
+    sound: 'ability.inappropriate_stories',
+    maxCd: 20,
+    activate(unit) {
+      const radius       = 250;
+      const heroDuration = 6;
+      const heroAtkBoost = 6;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        if (dist2(unit.x, unit.y, ally.x, ally.y) < radius) {
+          ally.speedBoostTimer = Math.max(ally.speedBoostTimer || 0, heroDuration);
+          ally.storiesRateBoost = Math.max(ally.storiesRateBoost || 0, heroAtkBoost);
+        }
+      }
+      // Initial stun burst
+      for (const e of state.enemies) {
+        if (e.dead) continue;
+        if (dist2(unit.x, unit.y, e.x, e.y) < radius) {
+          e.stunTimer = Math.max(e.stunTimer, 0.8);
+          e.hurtFlash = 0.5;
+        }
+      }
+      // Set continuous stun timer on Dick (ticked in Unit.update)
+      unit.transgenderTalkTimer  = heroDuration;
+      unit.transgenderTalkRadius = radius;
+      unit._tTalkStunCd = 0;
+      _radialParticles(unit.x, unit.y, 22, '#ff6080', '#ffb0c0');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
+    },
+  },
+
   // ── Passive-only entries (icon/color only) ────────────────────────────────
 
   residual_haze: {
