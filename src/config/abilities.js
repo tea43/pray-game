@@ -79,6 +79,46 @@ function _radialParticles(x, y, n, col1, col2) {
   }
 }
 
+// Core blink movement: teleport unit toward mouse, return {startX,startY,nx,ny}.
+// Does NOT apply ally pull or post-blink effects — call site adds those.
+function _performBlink(unit) {
+  const mx = state.mouse.x + G.camera.x, my = state.mouse.y + G.camera.y;
+  const dx = mx - unit.x, dy = my - unit.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 6) return null;
+  const step = Math.min(d, 240);
+  const startX = unit.x, startY = unit.y;
+
+  for (let i = 0; i < 14; i++) {
+    state.particles.push({ x: unit.x, y: unit.y, vx: rand(-90, 90), vy: rand(-110, 60), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
+  }
+  for (let i = 0; i < 10; i++) {
+    state.particles.push({ x: unit.x, y: unit.y, vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.3, 0.55), maxLife: 0.55, color: 'rgba(180,230,255,1)', size: rand(2, 4), realtime: true, additive: true });
+  }
+
+  const rawX = clamp(unit.x + (dx / d) * step, 6, G.WORLD_W - 6);
+  const rawY = clamp(unit.y + (dy / d) * step, 6, G.WORLD_H - 6);
+  const landed = isWalkable(rawX, rawY) ? { x: rawX, y: rawY } : nearestWalkable(rawX, rawY);
+  const nx = landed.x, ny = landed.y;
+
+  const steps = 16;
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    state.particles.push({ x: unit.x + (nx - unit.x) * t + rand(-1.5, 1.5), y: unit.y + (ny - unit.y) * t + rand(-1.5, 1.5), vx: 0, vy: 0, life: 0.32, maxLife: 0.32, color: 'rgba(180,230,255,1)', size: 3.5, realtime: true, additive: true });
+  }
+
+  unit.x = nx; unit.y = ny; unit.tx = nx; unit.ty = ny;
+  unit.z = 0; unit.vz = 220; unit.blinkFlash = 1;
+
+  for (let i = 0; i < 22; i++) {
+    state.particles.push({ x: unit.x, y: unit.y, vx: rand(-130, 130), vy: rand(-130, 80), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
+  }
+  for (let i = 0; i < 14; i++) {
+    state.particles.push({ x: unit.x, y: unit.y, vx: rand(-80, 80), vy: rand(-80, 80), life: rand(0.3, 0.6), maxLife: 0.6, color: 'rgba(200,240,255,1)', size: rand(2, 4), realtime: true, additive: true });
+  }
+  return { startX, startY, nx, ny };
+}
+
 // ── Ability tree definitions per hero ────────────────────────────────────────
 // Maps each hero to their 3 ability trees. treeNum matches unit.abilityTrees keys.
 // levelNames[i] is the ability name at level i+1 (0-indexed).
@@ -89,6 +129,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 1, hotkey: '1',
       name: 'Blink',
       abilityId: 'group_blink',
+      levelAbilityIds: ['blink_self', 'group_blink', 'vacuum_group_blink'],
       levelNames: ['Blink', 'Group Blink', 'Vacuum + Group Blink'],
       levelDescs: [
         'Eliott blinks up to 240px toward cursor.',
@@ -100,6 +141,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 2, hotkey: 'Q',
       name: 'Green Pipe',
       abilityId: 'green_pipe',
+      levelAbilityIds: ['green_pipe', 'stoned_green_pipe', 'overcharged_pipe'],
       levelNames: ['Green Pipe', 'Stoned Green Pipe', 'Overcharged Pipe'],
       levelDescs: [
         'Eliott and nearby allies gain damage reduction for a duration.',
@@ -111,6 +153,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 3, hotkey: 'A',
       name: 'White Powder',
       abilityId: 'white_powder_hit',
+      levelAbilityIds: ['white_powder_hit', 'white_powder_dominance', 'potato_starch'],
       levelNames: ['White Powder of Hit', 'White Powder of Dominance', 'Potato Starch'],
       levelDescs: [
         'Each ally blinks behind the nearest enemy and strikes.',
@@ -124,6 +167,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 1, hotkey: '2',
       name: 'Boomerang',
       abilityId: 'boomerang',
+      levelAbilityIds: ['boomerang', 'ellipse_boomerang', 'dual_boomerangs'],
       levelNames: ['Standard Boomerang', 'Ellipse Boomerang', 'Dual Boomerangs'],
       levelDescs: [
         'Throws club in an arc at the heaviest nearby enemy.',
@@ -135,6 +179,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 2, hotkey: 'W',
       name: 'Spin Clubs',
       abilityId: 'mill_360',
+      levelAbilityIds: ['mill_360', 'vortex', 'dance_of_death'],
       levelNames: ['Mill 360', 'Vortex', 'Dance of Death'],
       levelDescs: [
         'Dick\'s club spins in a circle, dealing continuous damage. Dick stays movable.',
@@ -146,6 +191,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 3, hotkey: 'S',
       name: 'Scream',
       abilityId: 'scream',
+      levelAbilityIds: ['scream', 'inappropriate_stories', 'transgender_talk'],
       levelNames: ['Scream', 'Inappropriate Stories', 'Transgender Talk'],
       levelDescs: [
         'Stuns all nearby enemies.',
@@ -159,6 +205,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 1, hotkey: '3',
       name: 'Backdoor Blockade',
       abilityId: 'backdoor_blockade',
+      levelAbilityIds: ['backdoor_blockade', 'stunned_backdoor_blockade', 'fire_backdoor_blockade'],
       levelNames: ['Backdoor Blockade', 'Stunned Backdoor', 'Fire Backdoor'],
       levelDescs: [
         'All heroes within radius take 50% reduced damage for a duration.',
@@ -170,6 +217,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 2, hotkey: 'E',
       name: 'Tinkering',
       abilityId: 'acid_gun',
+      levelAbilityIds: ['acid_slingshot', 'flamethrower', 'lightning_chain_tinkering'],
       levelNames: ['Acid Slingshot', 'Flamethrower', 'Lightning Chain'],
       levelDescs: [
         'Habib fires a burst of acid projectiles. Each hit slows and applies acid DoT.',
@@ -181,6 +229,7 @@ export const HERO_ABILITY_TREES = {
       treeNum: 3, hotkey: 'D',
       name: 'Weapon Effects',
       abilityId: 'weapon_effects',
+      levelAbilityIds: ['weapon_effects_flame', 'weapon_effects_stun', 'weapon_effects_lightning'],
       levelNames: ['Flame Weapons', 'Stun Weapons', 'Chain Lightning Weapons'],
       levelDescs: [
         'All heroes\' weapons gain a chance to apply flame on hit for a timed window.',
@@ -200,57 +249,45 @@ export const ABILITY_DEFS = {
 
   // ── Base hero abilities ───────────────────────────────────────────────────
 
+  // ── Eliott Tree 1 — Blink levels ─────────────────────────────────────────
+
+  blink_self: {
+    icon:  'assets/icons/abilities/group_blink.svg',
+    color: '#80c8ff',
+    sound: 'ability.blink',
+    maxCd: 9,
+    activate(unit) {
+      const blink = _performBlink(unit);
+      if (!blink) return false;
+      const { startX, startY } = blink;
+      if (unit.smokescreen) {
+        for (let i = 0; i < 20; i++) {
+          state.particles.push({ x: startX + rand(-15, 15), y: startY + rand(-15, 15), vx: rand(-20, 20), vy: rand(-30, -5), life: rand(1.5, 3.0), maxLife: 3.0, color: `rgba(160,160,160,${rand(0.2, 0.5)})`, size: rand(8, 18), realtime: true });
+        }
+        state.smokeZones = state.smokeZones || [];
+        state.smokeZones.push({ x: startX, y: startY, r: 40, life: 3.0, maxLife: 3.0 });
+      }
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.18); state.flashColor = '#a0d8ff'; }
+      unit.abilityCd = unit.abilityMaxCd;
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
+      return true;
+    },
+  },
+
   group_blink: {
     icon:  'assets/icons/abilities/group_blink.svg',
     color: '#80c8ff',
     sound: 'ability.blink',
     maxCd: 9,
     activate(unit) {
-      const mx = state.mouse.x + G.camera.x, my = state.mouse.y + G.camera.y;
-      const dx = mx - unit.x, dy = my - unit.y;
-      const d = Math.hypot(dx, dy);
-      if (d < 6) return false;
-      const maxRange = 240;
-      const step = Math.min(d, maxRange);
-      const startX = unit.x, startY = unit.y;
+      const blink = _performBlink(unit);
+      if (!blink) return false;
+      const { startX, startY, nx, ny } = blink;
 
-      // Departure burst
-      for (let i = 0; i < 14; i++) {
-        state.particles.push({ x: unit.x, y: unit.y, vx: rand(-90, 90), vy: rand(-110, 60), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
-      }
-      for (let i = 0; i < 10; i++) {
-        state.particles.push({ x: unit.x, y: unit.y, vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.3, 0.55), maxLife: 0.55, color: 'rgba(180, 230, 255, 1)', size: rand(2, 4), realtime: true, additive: true });
-      }
-
-      const rawX = clamp(unit.x + (dx / d) * step, 6, G.WORLD_W - 6);
-      const rawY = clamp(unit.y + (dy / d) * step, 6, G.WORLD_H - 6);
-      const landed = isWalkable(rawX, rawY) ? { x: rawX, y: rawY } : nearestWalkable(rawX, rawY);
-      const nx = landed.x, ny = landed.y;
-
-      const steps = 16;
-      for (let i = 1; i < steps; i++) {
-        const t = i / steps;
-        state.particles.push({ x: unit.x + (nx - unit.x) * t + rand(-1.5, 1.5), y: unit.y + (ny - unit.y) * t + rand(-1.5, 1.5), vx: 0, vy: 0, life: 0.32, maxLife: 0.32, color: 'rgba(180, 230, 255, 1)', size: 3.5, realtime: true, additive: true });
-      }
-
-      unit.x = nx; unit.y = ny;
-      unit.tx = nx; unit.ty = ny;
-      unit.z = 0; unit.vz = 220;
-      unit.blinkFlash = 1;
-
-      for (let i = 0; i < 22; i++) {
-        state.particles.push({ x: unit.x, y: unit.y, vx: rand(-130, 130), vy: rand(-130, 80), life: rand(0.35, 0.7), maxLife: 0.7, color: '#80c8ff', size: rand(1.5, 3), realtime: true });
-      }
-      for (let i = 0; i < 14; i++) {
-        state.particles.push({ x: unit.x, y: unit.y, vx: rand(-80, 80), vy: rand(-80, 80), life: rand(0.3, 0.6), maxLife: 0.6, color: 'rgba(200, 240, 255, 1)', size: rand(2, 4), realtime: true, additive: true });
-      }
-
-      // Smokescreen passive: leave a smoke cloud at origin
       if (unit.smokescreen) {
         for (let i = 0; i < 20; i++) {
           state.particles.push({ x: startX + rand(-15, 15), y: startY + rand(-15, 15), vx: rand(-20, 20), vy: rand(-30, -5), life: rand(1.5, 3.0), maxLife: 3.0, color: `rgba(160,160,160,${rand(0.2, 0.5)})`, size: rand(8, 18), realtime: true });
         }
-        // Mark smoke zone for enemy AI disruption
         state.smokeZones = state.smokeZones || [];
         state.smokeZones.push({ x: startX, y: startY, r: 40, life: 3.0, maxLife: 3.0 });
       }
@@ -274,7 +311,6 @@ export const ABILITY_DEFS = {
         }
       }
 
-      // Residual Haze passive: slow enemies at landing point
       if (unit.residualHaze) {
         for (const e of state.enemies) {
           if (e.dead) continue;
@@ -288,6 +324,64 @@ export const ABILITY_DEFS = {
       unit.abilityCd = unit.abilityMaxCd;
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
       return true;
+    },
+  },
+
+  vacuum_group_blink: {
+    icon:  'assets/icons/abilities/group_blink.svg',
+    color: '#60b0ff',
+    sound: 'ability.blink',
+    maxCd: 11,
+    activate(unit) {
+      // Step 1: vacuum — pull all alive allies within vacuumRadius to Eliott's current position
+      const vacuumRadius = 200;
+      for (const ally of state.units) {
+        if (ally === unit || ally.dead) continue;
+        if (dist2(unit.x, unit.y, ally.x, ally.y) < vacuumRadius) {
+          const ang = rand(0, Math.PI * 2);
+          const off = rand(8, 22);
+          const ax = clamp(unit.x + Math.cos(ang) * off, 6, G.WORLD_W - 6);
+          const ay = clamp(unit.y + Math.sin(ang) * off, 6, G.WORLD_H - 6);
+          ally.x = ax; ally.y = ay; ally.tx = ax; ally.ty = ay;
+          ally.blinkFlash = 0.5;
+          for (let i = 0; i < 6; i++) {
+            state.particles.push({ x: ax, y: ay, vx: rand(-40, 40), vy: rand(-50, 20), life: rand(0.2, 0.4), maxLife: 0.4, color: '#60b0ff', size: rand(1, 2), realtime: true });
+          }
+        }
+      }
+      // Step 2: group blink (reuses existing L2 activate, skipping smokescreen and residualHaze duplicate)
+      return ABILITY_DEFS.group_blink.activate(unit);
+    },
+  },
+
+  // ── Eliott Tree 2 — Green Pipe L3 ─────────────────────────────────────────
+
+  overcharged_pipe: {
+    icon:  'assets/icons/abilities/stoned_green_pipe.svg',
+    color: '#20e860',
+    sound: 'ability.stoned_green_pipe',
+    maxCd: 28,
+    activate(unit) {
+      unit.stonedTimer = 4;
+      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 4);
+      unit.tx = unit.x; unit.ty = unit.y; unit.aggroTarget = null;
+      unit.stonedAcidExplosion = true;
+      _radialParticles(unit.x, unit.y, 20, '#20e860', '#40ff80');
+    },
+  },
+
+  // ── Eliott Tree 3 — White Powder L3 ───────────────────────────────────────
+
+  potato_starch: {
+    icon:  'assets/icons/abilities/white_powder_dominance.svg',
+    color: '#d0b0ff',
+    sound: 'ability.white_powder_dominance',
+    maxCd: 25,
+    activate(unit) {
+      // Same as white_powder_dominance but mark unit for group blink after chain completes
+      const result = ABILITY_DEFS.white_powder_dominance.activate(unit);
+      if (result !== false) unit._dominanceGroupBlink = true;
+      return result;
     },
   },
 

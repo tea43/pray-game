@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES } from '../config/abilities.js';
+import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite } from '../render/weaponSprites.js';
 
@@ -84,6 +84,8 @@ export class Unit {
     this._dominanceTargets = null;
     this._dominanceOrigin = null;
     this._dominanceTimer = 0;
+    this._dominanceGroupBlink = false;  // Potato Starch: group blink after dominance completes
+    this.stonedAcidExplosion = false;   // Overcharged Pipe: acid explosion on stoned expiry
 
     // Medkit over-time heal
     this.medkitHealRemaining = 0;  // HP remaining to be healed
@@ -169,6 +171,25 @@ export class Unit {
     const _prevStoned = this.stonedTimer;
     this.stonedTimer      = Math.max(0, this.stonedTimer - dt);
     if (_prevStoned > 0 && this.stonedTimer <= 0) {
+      // Overcharged Pipe (L3): acid explosion before blink-back
+      if (this.stonedAcidExplosion) {
+        this.stonedAcidExplosion = false;
+        const acidRadius = 130;
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          if (dist2(this.x, this.y, e.x, e.y) < acidRadius) {
+            e.hp -= 25;
+            e.acidDot = Math.max(e.acidDot || 0, 4);
+            e.acidDotDmg = ACID_CONFIG.dotDamage;
+            e.acidInterval = ACID_CONFIG.dotInterval;
+            e.hurtFlash = 0.7;
+          }
+        }
+        for (let i = 0; i < 22; i++) {
+          const a = rand(0, Math.PI * 2), v = rand(50, 130);
+          state.particles.push({ x: this.x, y: this.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.4, 0.8), maxLife: 0.8, color: i % 2 ? '#40ff40' : '#80ff60', size: rand(1.5, 3), realtime: true });
+        }
+      }
       let closestAlly = null, closestDist = Infinity;
       for (const ally of state.units) {
         if (ally === this || ally.dead) continue;
@@ -332,6 +353,11 @@ export class Unit {
           }
           this._dominanceTargets = null;
           this.blinkFlash = 1;
+          // Potato Starch (L3): trigger group blink to this unit's move destination
+          if (this._dominanceGroupBlink) {
+            this._dominanceGroupBlink = false;
+            ABILITY_DEFS.group_blink.activate(this);
+          }
         }
       }
     }
@@ -808,7 +834,11 @@ export class Unit {
 
   cast() {
     if (this.dead || this.abilityCd > 0) return false;
-    const def = ABILITY_DEFS[this.abilityId];
+    // Resolve level-specific ability via tree 1 levelAbilityIds
+    const treeDef1 = (HERO_ABILITY_TREES[this.type] || []).find(t => t.treeNum === 1);
+    const level1   = this.abilityTrees[1] ?? 1;
+    const abilityId = treeDef1?.levelAbilityIds?.[level1 - 1] ?? this.abilityId;
+    const def = ABILITY_DEFS[abilityId] ?? ABILITY_DEFS[this.abilityId];
     if (!def?.activate) return false;
     const result = def.activate(this);
     if (result !== false && def.sound) playSfx(def.sound);
@@ -832,7 +862,8 @@ export class Unit {
     const treeDef = (HERO_ABILITY_TREES[this.type] || []).find(t => t.treeNum === treeNum);
     if (!treeDef) return false;
 
-    const abilityDef = ABILITY_DEFS[treeDef.abilityId];
+    const levelAbilityId = treeDef.levelAbilityIds?.[level - 1] ?? treeDef.abilityId;
+    const abilityDef = ABILITY_DEFS[levelAbilityId];
     if (!abilityDef?.activate) return false;
 
     const result = abilityDef.activate(this);
