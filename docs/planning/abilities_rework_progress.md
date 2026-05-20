@@ -14,8 +14,8 @@ Branch: `group-abilities` (continue here)
 | 3 | Slot Machine Rework | ✅ done | UpgradeScene shows ability tree level-ups per hero, spin disabled |
 | 4 | Ability Dispatch by Level | ✅ done | castTree(treeNum) dispatches by level; Q/W/E/A/S/D wired to tree 2/3 |
 | 5a | Eliott Ability Levels | ✅ done | levelAbilityIds dispatch; blink_self, vacuum_group_blink, overcharged_pipe, potato_starch |
-| 5b | Dick Ability Levels | ⬜ todo | Boomerang Ellipse/Dual; Vortex pull; Dance of Death; Scream L3 |
-| 5c | Habib Ability Levels | ⬜ todo | Backdoor Blockade L2/L3; Tinkering L1/L2/L3 new params; Weapon Effects |
+| 5b | Dick Ability Levels | ✅ done | ellipse_boomerang, dual_boomerangs, dance_of_death, transgender_talk |
+| 5c | Habib Ability Levels | ✅ done | stunned/fire blockade, acid_slingshot, lightning_chain_tinkering, weapon_effects_* |
 | 6 | Combination System | ⬜ todo | cross-hero combo detection + bonus effects table |
 | 7 | Revive Minigame | ⬜ todo | EKG bar, dark zones, marker, success/fail feedback |
 | 8 | ReviveTestScene | ⬜ todo | 10-round standalone test, accessible from dev tools |
