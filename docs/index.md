@@ -54,6 +54,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `planning/backlog.md`: Long-horizon design questions and open-ended discussions (sprites, scrolling maps, terrain, enemies, loot). Not immediate work.
 - `planning/large_map_plan.md`: 3×3 world (9× screen area) with centroid-locked camera — phased implementation plan (Phases A–J).
 - `planning/pr-pickup-range.md`: Per-hero essence pickup radius — adds `pickupR` to `HERO_DEFS`, expands the essence pickup check, optional ground-ring visual.
+- `planning/abilities_rework_progress.md`: Implementation tracker for the abilities rework (two XP tracks, ability trees, slot machine rework, combo system, revive minigame). Phases 1–3 complete.
 
 ## planned/ — Brainstorms
 

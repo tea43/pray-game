@@ -18,6 +18,7 @@ import { buildFlowField } from '../../utils/terrain.js';
 import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 import { preloadWeaponImages } from '../../render/weaponSprites.js';
 import { updateGroupAbility, renderGroupAbility } from '../../systems/groupAbilities.js';
+import { ABILITY_XP_CONFIG, WEAPON_XP_CONFIG } from '../../config/abilities.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -112,6 +113,7 @@ export class GameScene extends Phaser.Scene {
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
+      abilityXp: 0, abilityXpThreshold: ABILITY_XP_CONFIG.startThreshold, abilityXpPicks: 0, pendingAbilityPicks: 0,
       groupAbility: null, cinematicSlowdown: 0,
       devAbilityTest: !!diff.devAbilityTest,
     });

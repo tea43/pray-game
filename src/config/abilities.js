@@ -5,6 +5,61 @@ import { isWalkable, nearestWalkable } from '../utils/terrain.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
+// ── XP Configs ────────────────────────────────────────────────────────────────
+// Threshold formula: next = A × prev + B (linear escalation when A=1)
+
+export const ABILITY_XP_CONFIG = {
+  startThreshold: 100,
+  A: 1,
+  B: 10,
+};
+
+export const WEAPON_XP_CONFIG = {
+  startThreshold: 100,
+  A: 1,
+  B: 10,
+};
+
+// ── Global effect configs ─────────────────────────────────────────────────────
+// All acid DoT effects share these values; override per-ability only when spec
+// explicitly calls out a different duration (e.g. Lightning Chain slowDuration).
+
+export const ACID_CONFIG = {
+  dotDamage: 3,
+  dotInterval: 0.5,
+};
+
+export const TINKERING_SLOW_CONFIG = {
+  factor: 0.5,     // speed multiplier while slowed (0.5 = half speed)
+  duration: 2.0,
+};
+
+// ── Revive Minigame config ─────────────────────────────────────────────────────
+
+export const REVIVE_MINIGAME_CONFIG = {
+  baseRounds: 3,
+  roundsIncrement: 2,
+  markerSpeed: 3.0,         // seconds for marker to cross the full bar
+  zoneCount: 2,
+  zoneWidthFraction: 0.18,  // dark zone width as fraction of bar width at wave 1
+  zoneWidthDecayA: 0.97,    // multiplied by wave: width = fraction × A^wave
+  zoneWidthDecayB: 0,       // flat subtraction per wave after multiplier
+  zoneWidthMin: 0.06,       // floor — zones never shrink below this fraction
+  reviveHpFraction: 0.33,
+  failureMessages: [
+    "Your hands weren't exactly steady for a heart massage.",
+    "You broke three of his ribs. Was that a rescue or an attack?",
+    "Did you just slap him in the face and call it medicine?",
+    "CPR certification: revoked.",
+    "He was already dead. You made it worse somehow.",
+    "Field surgery with the confidence of a drunk mechanic.",
+    "Next time try not to kneel on his neck.",
+    "The worms outside are less dangerous than your first aid.",
+    "He twitched. You panicked. He died again.",
+    "Technically that counts as a second cause of death.",
+  ],
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function _alchemyRadius(unit, base) {
@@ -23,6 +78,118 @@ function _radialParticles(x, y, n, col1, col2) {
     });
   }
 }
+
+// ── Ability tree definitions per hero ────────────────────────────────────────
+// Maps each hero to their 3 ability trees. treeNum matches unit.abilityTrees keys.
+// levelNames[i] is the ability name at level i+1 (0-indexed).
+
+export const HERO_ABILITY_TREES = {
+  eliott: [
+    {
+      treeNum: 1, hotkey: '1',
+      name: 'Blink',
+      abilityId: 'group_blink',
+      levelNames: ['Blink', 'Group Blink', 'Vacuum + Group Blink'],
+      levelDescs: [
+        'Eliott blinks up to 240px toward cursor.',
+        'Pulls allies within 120px of starting position to destination.',
+        'Draws all nearby heroes to Eliott first, then group-blinks to destination.',
+      ],
+    },
+    {
+      treeNum: 2, hotkey: 'Q',
+      name: 'Green Pipe',
+      abilityId: 'green_pipe',
+      levelNames: ['Green Pipe', 'Stoned Green Pipe', 'Overcharged Pipe'],
+      levelDescs: [
+        'Eliott and nearby allies gain damage reduction for a duration.',
+        'Eliott freezes and becomes immortal, attracting enemies. Blinks back to ally on expiry.',
+        'Stoned Pipe effect, then an acid explosion around Eliott before he blinks back.',
+      ],
+    },
+    {
+      treeNum: 3, hotkey: 'A',
+      name: 'White Powder',
+      abilityId: 'white_powder_hit',
+      levelNames: ['White Powder of Hit', 'White Powder of Dominance', 'Potato Starch'],
+      levelDescs: [
+        'Each ally blinks behind the nearest enemy and strikes.',
+        'Each ally chains blink-strikes through all nearby enemies.',
+        'Dominance effect, then all heroes blink as a group to Eliott\'s move destination.',
+      ],
+    },
+  ],
+  dick: [
+    {
+      treeNum: 1, hotkey: '2',
+      name: 'Boomerang',
+      abilityId: 'boomerang',
+      levelNames: ['Standard Boomerang', 'Ellipse Boomerang', 'Dual Boomerangs'],
+      levelDescs: [
+        'Throws club in an arc at the heaviest nearby enemy.',
+        'Boomerang arcs in a wider ellipse, hitting all enemies in the arc path.',
+        'Two boomerangs launched simultaneously targeting the 2 most dangerous enemies.',
+      ],
+    },
+    {
+      treeNum: 2, hotkey: 'W',
+      name: 'Spin Clubs',
+      abilityId: 'mill_360',
+      levelNames: ['Mill 360', 'Vortex', 'Dance of Death'],
+      levelDescs: [
+        'Dick\'s club spins in a circle, dealing continuous damage. Dick stays movable.',
+        'Spin with a gentle pull: enemies near the circle perimeter are drawn toward it.',
+        'Dick becomes immortal. Enemies are pulled into a black hole. Dick slams at the end.',
+      ],
+    },
+    {
+      treeNum: 3, hotkey: 'S',
+      name: 'Scream',
+      abilityId: 'scream',
+      levelNames: ['Scream', 'Inappropriate Stories', 'Transgender Talk'],
+      levelDescs: [
+        'Stuns all nearby enemies.',
+        'Boosts hero speed and attack rate. Stuns nearby enemies.',
+        'Same boost as Inappropriate Stories. Nearby enemies are continuously stunned.',
+      ],
+    },
+  ],
+  habib: [
+    {
+      treeNum: 1, hotkey: '3',
+      name: 'Backdoor Blockade',
+      abilityId: 'backdoor_blockade',
+      levelNames: ['Backdoor Blockade', 'Stunned Backdoor', 'Fire Backdoor'],
+      levelDescs: [
+        'All heroes within radius take 50% reduced damage for a duration.',
+        'Same reduction; enemies that strike a protected hero are stunned.',
+        'Same reduction; enemies that strike a protected hero take fire damage and burn.',
+      ],
+    },
+    {
+      treeNum: 2, hotkey: 'E',
+      name: 'Tinkering',
+      abilityId: 'acid_gun',
+      levelNames: ['Acid Slingshot', 'Flamethrower', 'Lightning Chain'],
+      levelDescs: [
+        'Habib fires a burst of acid projectiles. Each hit slows and applies acid DoT.',
+        'Cone fire blast. Enemies hit take damage, are slowed, and burn.',
+        'Lightning chains through multiple enemies. Each hit slows.',
+      ],
+    },
+    {
+      treeNum: 3, hotkey: 'D',
+      name: 'Weapon Effects',
+      abilityId: 'weapon_effects',
+      levelNames: ['Flame Weapons', 'Stun Weapons', 'Chain Lightning Weapons'],
+      levelDescs: [
+        'All heroes\' weapons gain a chance to apply flame on hit for a timed window.',
+        'All heroes\' weapons gain a chance to stun on hit for a timed window.',
+        'All heroes\' weapons gain a chance to chain lightning on hit for a timed window.',
+      ],
+    },
+  ],
+};
 
 // ── ABILITY_DEFS ─────────────────────────────────────────────────────────────
 // Each entry shape:

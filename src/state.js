@@ -58,6 +58,11 @@ export const state = {
   level: 1,
   xpToNext: 50,
   _levelUpFlash: 0,
+  // Ability XP — shared pool filled by essence drops; triggers ability tree picker
+  abilityXp: 0,
+  abilityXpThreshold: 100,
+  abilityXpPicks: 0,       // total picks unlocked across the run
+  pendingAbilityPicks: 0,  // picks queued but not yet consumed by picker UI
   smokeZones: [],
   groupAbility: null,        // active group combo state; see src/systems/groupAbilities.js
   cinematicSlowdown: 0,      // 0 = off; 0..1 overrides normal timeFlow during group ability

@@ -4,6 +4,7 @@ import { DIFFICULTY_DEFS } from '../config/difficulty.js';
 import { LOOT_DEFS } from '../config/loot.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 import { playSfx } from './audio.js';
+import { ABILITY_XP_CONFIG } from '../config/abilities.js';
 
 export function applyLoot(loot, unit) {
   const diff = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS['brood-hunter'];
@@ -58,6 +59,8 @@ export function applyLoot(loot, unit) {
     while (state.xp >= state.xpToNext) {
       _levelUp();
     }
+    // Ability XP accumulation (shared pool for ability tree picks)
+    _gainAbilityXp(LOOT_DEFS.essence.xpPerPickup);
   }
 }
 
@@ -67,6 +70,16 @@ function _levelUp() {
   state._levelUpFlash = 0.9;
   state.pendingLevelUps = (state.pendingLevelUps || 0) + 1;
   playSfx('ui.levelup', { synthetic: 'loot' });
+}
+
+function _gainAbilityXp(amount) {
+  state.abilityXp = (state.abilityXp || 0) + amount;
+  while (state.abilityXp >= state.abilityXpThreshold) {
+    state.abilityXp -= state.abilityXpThreshold;
+    state.abilityXpThreshold = ABILITY_XP_CONFIG.A * state.abilityXpThreshold + ABILITY_XP_CONFIG.B;
+    state.abilityXpPicks = (state.abilityXpPicks || 0) + 1;
+    state.pendingAbilityPicks = (state.pendingAbilityPicks || 0) + 1;
+  }
 }
 
 // Weapon loot on the ground now grants +10 XP bonus instead of equipping.

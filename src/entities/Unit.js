@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ABILITY_DEFS } from '../config/abilities.js';
+import { ABILITY_DEFS, WEAPON_XP_CONFIG } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite } from '../render/weaponSprites.js';
 
@@ -33,6 +33,14 @@ export class Unit {
     this.type = type;
     this.abilityCd = 0;
     this.superboostCharge = 0;  // 0..1; charges on each base ability cast; 1 = ready for group combo
+
+    // Ability tree levels: tree 1 starts at 1 (active at game start); trees 2 & 3 start locked (0)
+    this.abilityTrees = { 1: 1, 2: 0, 3: 0 };
+
+    // Per-hero Weapon XP: fills from damage dealt; triggers weapon level-up when threshold crossed
+    this.weaponXp = 0;
+    this.weaponXpThreshold = WEAPON_XP_CONFIG.startThreshold;
+    this.weaponXpPicks = 0;
     this.rageTimer = 0;
     this.blinkFlash = 0;
     this.dualSide = false;
@@ -632,6 +640,15 @@ export class Unit {
     }
   }
 
+  _gainWeaponXp(dmg) {
+    this.weaponXp += dmg;
+    while (this.weaponXp >= this.weaponXpThreshold) {
+      this.weaponXp -= this.weaponXpThreshold;
+      this.weaponXpThreshold = WEAPON_XP_CONFIG.A * this.weaponXpThreshold + WEAPON_XP_CONFIG.B;
+      this.weaponXpPicks = (this.weaponXpPicks || 0) + 1;
+    }
+  }
+
   _attackMelee(stats, enemy) {
     if (stats.dual) this.dualSide = !this.dualSide;
     if (this.z === 0) this.vz = 120;
@@ -640,6 +657,7 @@ export class Unit {
     playSfx(stats.sfxAttack || 'weapon.attack.default', { fallback: stats.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
     playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
+    this._gainWeaponXp(dmg);
     enemy.knockX += Math.cos(this.facing) * kb;
     enemy.knockY += Math.sin(this.facing) * kb;
     enemy.hurtFlash = 1;
@@ -670,6 +688,7 @@ export class Unit {
       if (Math.abs(da) > halfArc) continue;
       const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
       e.hp -= dmg;
+      this._gainWeaponXp(dmg);
       e.knockX += Math.cos(this.facing) * kb;
       e.knockY += Math.sin(this.facing) * kb;
       e.hurtFlash = 1;
