@@ -54,6 +54,7 @@ export const state = {
   selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
   score: 0,
   heroesDied: 0,
+  heroReviveCounts: { eliott: 0, dick: 0, habib: 0 },
   xp: 0,
   level: 1,
   xpToNext: 50,

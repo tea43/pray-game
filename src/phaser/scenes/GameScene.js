@@ -114,6 +114,7 @@ export class GameScene extends Phaser.Scene {
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
       abilityXp: 0, abilityXpThreshold: ABILITY_XP_CONFIG.startThreshold, abilityXpPicks: 0, pendingAbilityPicks: 0,
+      heroReviveCounts: { eliott: 0, dick: 0, habib: 0 },
       groupAbility: null, cinematicSlowdown: 0,
       devAbilityTest: !!diff.devAbilityTest,
     });
