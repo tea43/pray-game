@@ -54,21 +54,18 @@ export function applyLoot(loot, unit) {
     detonateBananaBomb(loot.x, loot.y);
   } else if (loot.type === 'essence') {
     playSfx('loot.essence', { synthetic: 'loot', volume: 0.3 });
-    state.xp += LOOT_DEFS.essence.xpPerPickup;
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'xp', text: '+1' });
-    while (state.xp >= state.xpToNext) {
-      _levelUp();
-    }
-    // Ability XP accumulation (shared pool for ability tree picks)
     _gainAbilityXp(LOOT_DEFS.essence.xpPerPickup);
   }
 }
 
-function _levelUp() {
+function _levelUp(heroType) {
   state.xp -= state.xpToNext;
   state.level += 1;
   state._levelUpFlash = 0.9;
   state.pendingLevelUps = (state.pendingLevelUps || 0) + 1;
+  if (!state.pendingWeaponUpgrades) state.pendingWeaponUpgrades = [];
+  state.pendingWeaponUpgrades.push(heroType || 'eliott');
   playSfx('ui.levelup', { synthetic: 'loot' });
 }
 
@@ -82,15 +79,14 @@ function _gainAbilityXp(amount) {
   }
 }
 
-// Weapon loot on the ground now grants +10 XP bonus instead of equipping.
-// Sprites and SFX still play so it feels like a significant pickup.
+// Weapon loot on the ground now grants an immediate weapon upgrade for the picking hero.
 function _weaponPickupBonus(unit, weaponKey, lootX, lootY) {
   const wDef = WEAPON_DEFS[weaponKey];
   const xpBonus = 10;
   playSfx(`loot.weapon.${weaponKey}`, { synthetic: 'loot' });
 
   state.xp += xpBonus;
-  while (state.xp >= state.xpToNext) { _levelUp(); }
+  while (state.xp >= state.xpToNext) { _levelUp(unit.type); }
 
   const isRanged = wDef?.type === 'ranged';
   const color1   = isRanged ? '#ffa040' : '#e8e060';

@@ -109,7 +109,7 @@ export class GameScene extends Phaser.Scene {
       extractionPhase: false, helicopter: null, timeFlow: 0,
       manualPause: false, timeSpeed: 1, spaceHeld: false, spaceHoldDuration: 0,
       survivedSeconds: 0, menuPhase: 'playing', score: 0, heroesDied: 0,
-      isUpgradeScreen: false, isLevelUpScreen: false, pendingLevelUps: 0, _pendingWaveUpgrade: false,
+      isUpgradeScreen: false, isLevelUpScreen: false, pendingLevelUps: 0, pendingWeaponUpgrades: [], currentWeaponLevelUpHero: null, _pendingWaveUpgrade: false,
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
@@ -255,9 +255,10 @@ export class GameScene extends Phaser.Scene {
     }
     state.particles = state.particles.filter(p => p.life > 0);
 
-    // Open weapon level-up picker when pending and no other screen is active
-    if (state.pendingLevelUps > 0 && !state.isLevelUpScreen && !state.isUpgradeScreen && !state.gameOver) {
-      state.pendingLevelUps -= 1;
+    // Open weapon level-up picker for the next queued hero
+    if (state.pendingWeaponUpgrades.length > 0 && !state.isLevelUpScreen && !state.isUpgradeScreen && !state.gameOver) {
+      state.currentWeaponLevelUpHero = state.pendingWeaponUpgrades.shift();
+      state.pendingLevelUps = Math.max(0, state.pendingLevelUps - 1);
       state.isLevelUpScreen = true;
       this.scene.launch('WeaponLevelUpScene');
       this.scene.pause();
