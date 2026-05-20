@@ -23,6 +23,8 @@ export class Enemy {
     this.deathTimer = 0;
     this.hurtFlash = 0;
     this.stunTimer = 0;
+    this.slowTimer = 0;
+    this.slowFactor = 1;
     this.acidDot = 0;
     this.kbResist = 1;
 
@@ -193,6 +195,12 @@ export class Enemy {
       }
     }
 
+    // Slow
+    if (this.slowTimer > 0) {
+      this.slowTimer = Math.max(0, this.slowTimer - dt);
+      if (this.slowTimer <= 0) this.slowFactor = 1;
+    }
+
     // Acid DoT
     if (this.acidDot > 0) {
       this.acidDot = Math.max(0, this.acidDot - dt);
@@ -262,8 +270,8 @@ export class Enemy {
       this.facing += Math.sign(dFacing) * Math.min(Math.abs(dFacing), this.turnSpeed * dt);
       if (d > this.r + target.r - 2) {
         const terrMult = terrainSpeedMult(this.x, this.y);
-        const ex = this.x + moveDx * this.speed * dt * terrMult;
-        const ey = this.y + moveDy * this.speed * dt * terrMult;
+        const ex = this.x + moveDx * this.speed * dt * terrMult * this.slowFactor;
+        const ey = this.y + moveDy * this.speed * dt * terrMult * this.slowFactor;
         if (oob || isWalkable(ex, ey)) {
           this.x = ex; this.y = ey;
         } else if (isWalkable(ex, this.y)) {

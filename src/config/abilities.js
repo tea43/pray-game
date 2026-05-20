@@ -25,6 +25,7 @@ export const WEAPON_XP_CONFIG = {
 // explicitly calls out a different duration (e.g. Lightning Chain slowDuration).
 
 export const ACID_CONFIG = {
+  initialDamage: 18,  // direct hit damage for acid slingshot projectiles
   dotDamage: 3,
   dotInterval: 0.5,
 };
@@ -897,6 +898,184 @@ export const ABILITY_DEFS = {
       unit._tTalkStunCd = 0;
       _radialParticles(unit.x, unit.y, 22, '#ff6080', '#ffb0c0');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
+    },
+  },
+
+  // ── Habib Tree 1 — Backdoor Blockade L2/L3 ───────────────────────────────
+
+  stunned_backdoor_blockade: {
+    icon:  'assets/icons/abilities/backdoor_blockade.svg',
+    color: '#b08cff',
+    sound: 'ability.backdoor_blockade',
+    maxCd: 14,
+    activate(unit) {
+      const radius = 150;
+      const stunDuration = 1.5;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        if (dist2(unit.x, unit.y, ally.x, ally.y) < radius) {
+          ally.blockadeTimer = 6;
+          ally.blockadeStunOnHit = stunDuration;
+          for (let i = 0; i < 12; i++) {
+            const a = rand(0, Math.PI * 2);
+            const v = rand(40, 100);
+            state.particles.push({ x: ally.x, y: ally.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.3, 0.7), maxLife: 0.7, color: i % 2 ? '#c8d8ff' : '#a0b8e8', size: rand(1.5, 3), realtime: true });
+          }
+        }
+      }
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.15); state.flashColor = '#b090ff'; }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
+      unit.abilityCd = unit.abilityMaxCd;
+      return true;
+    },
+  },
+
+  fire_backdoor_blockade: {
+    icon:  'assets/icons/abilities/backdoor_blockade.svg',
+    color: '#ff9060',
+    sound: 'ability.backdoor_blockade',
+    maxCd: 14,
+    activate(unit) {
+      const radius = 150;
+      const fireDamage = 15;
+      const burnTimer = 3;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        if (dist2(unit.x, unit.y, ally.x, ally.y) < radius) {
+          ally.blockadeTimer = 6;
+          ally.blockadeFireOnHitDmg  = fireDamage;
+          ally.blockadeFireOnHitBurn = burnTimer;
+          for (let i = 0; i < 12; i++) {
+            const a = rand(0, Math.PI * 2);
+            const v = rand(40, 100);
+            state.particles.push({ x: ally.x, y: ally.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: rand(0.3, 0.7), maxLife: 0.7, color: i % 2 ? '#ffb060' : '#ff7030', size: rand(1.5, 3), realtime: true });
+          }
+        }
+      }
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.2); state.flashColor = '#ff8040'; }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 5);
+      unit.abilityCd = unit.abilityMaxCd;
+      return true;
+    },
+  },
+
+  // ── Habib Tree 2 — Tinkering L1/L3 ──────────────────────────────────────
+
+  acid_slingshot: {
+    icon:  'assets/icons/abilities/acid_gun.svg',
+    color: '#40ff40',
+    sound: 'ability.acid_gun',
+    maxCd: 16,
+    activate(unit) {
+      unit.acidSlingshotShots    = 5;
+      unit.acidSlingshotCd       = 0;
+      unit.acidSlingshotInterval = 0.15;
+      _radialParticles(unit.x, unit.y, 10, '#40ff40', '#80ff80');
+    },
+  },
+
+  lightning_chain_tinkering: {
+    icon:  'assets/icons/abilities/chain_lightning.svg',
+    color: '#80d0ff',
+    sound: 'ability.lightning',
+    maxCd: 10,
+    activate(unit) {
+      const maxRange = 200;
+      const hasTarget = state.enemies.some(e => !e.dead && dist2(unit.x, unit.y, e.x, e.y) < maxRange);
+      if (!hasTarget) return false;
+      const jumps = 6;
+      let cx = unit.x, cy = unit.y;
+      const hit = new Set();
+      const points = [{ x: cx, y: cy }];
+      for (let i = 0; i < jumps; i++) {
+        let nearest = null, nd = maxRange;
+        for (const e of state.enemies) {
+          if (e.dead || hit.has(e)) continue;
+          const d = dist2(cx, cy, e.x, e.y);
+          if (d < nd) { nd = d; nearest = e; }
+        }
+        if (!nearest) break;
+        hit.add(nearest);
+        points.push({ x: nearest.x, y: nearest.y });
+        const dmg = Math.round(22 * (unit.upgradeDmgMult || 1));
+        nearest.hp -= dmg;
+        nearest.hurtFlash = 1;
+        nearest.slowTimer = Math.max(nearest.slowTimer || 0, TINKERING_SLOW_CONFIG.duration);
+        nearest.slowFactor = Math.min(nearest.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+        nearest.knockX += rand(-20, 20);
+        nearest.knockY += rand(-20, 20);
+        for (let j = 0; j < 8; j++) {
+          state.particles.push({ x: nearest.x, y: nearest.y, vx: rand(-80, 80), vy: rand(-100, -20), life: rand(0.2, 0.5), maxLife: 0.5, color: j % 2 ? '#80d0ff' : '#e0f4ff', size: rand(1.2, 2.5), realtime: true });
+        }
+        pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { rgb: [140, 210, 255] });
+        cx = nearest.x; cy = nearest.y;
+      }
+      if (points.length > 1) {
+        state.bolts.push({ points, life: 0.4, maxLife: 0.4 });
+        if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.18); state.flashColor = '#80d0ff'; }
+        if (!state.settings.noShake) state.hitStop = Math.max(state.hitStop, 0.03);
+      }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
+    },
+  },
+
+  // ── Habib Tree 3 — Weapon Effects L1/L2/L3 ───────────────────────────────
+
+  weapon_effects_flame: {
+    icon:  'assets/icons/abilities/chain_lightning.svg',
+    color: '#ff8030',
+    maxCd: 18,
+    activate(unit) {
+      const duration     = 8;
+      const triggerChance = 0.80;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        ally.weaponEffectTimer  = duration;
+        ally.weaponEffectType   = 'flame';
+        ally.weaponEffectChance = triggerChance;
+        ally.weaponEffectParams = { damage: 10, burnTimer: 2 };
+      }
+      _radialParticles(unit.x, unit.y, 16, '#ff8030', '#ffc060');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
+    },
+  },
+
+  weapon_effects_stun: {
+    icon:  'assets/icons/abilities/chain_lightning.svg',
+    color: '#c080ff',
+    maxCd: 20,
+    activate(unit) {
+      const duration      = 8;
+      const triggerChance = 0.85;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        ally.weaponEffectTimer  = duration;
+        ally.weaponEffectType   = 'stun';
+        ally.weaponEffectChance = triggerChance;
+        ally.weaponEffectParams = { stunTime: 1.2 };
+      }
+      _radialParticles(unit.x, unit.y, 16, '#c080ff', '#e0b0ff');
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 3);
+    },
+  },
+
+  weapon_effects_lightning: {
+    icon:  'assets/icons/abilities/chain_lightning.svg',
+    color: '#a0e0ff',
+    maxCd: 22,
+    activate(unit) {
+      const duration      = 8;
+      const triggerChance = 0.75;
+      for (const ally of state.units) {
+        if (ally.dead) continue;
+        ally.weaponEffectTimer  = duration;
+        ally.weaponEffectType   = 'lightning';
+        ally.weaponEffectChance = triggerChance;
+        ally.weaponEffectParams = { chainCount: 3 };
+      }
+      _radialParticles(unit.x, unit.y, 20, '#a0e0ff', '#e0f8ff');
+      if (!state.settings.noLightning) { state.flashAlpha = Math.max(state.flashAlpha, 0.12); state.flashColor = '#a0d8ff'; }
+      if (!state.settings.noShake) state.shake = Math.max(state.shake, 4);
     },
   },
 
