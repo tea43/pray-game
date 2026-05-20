@@ -292,10 +292,15 @@ export class GameScene extends Phaser.Scene {
           for (const e of state.enemies) {
             if (e.dead) continue;
             if (dist2(shot.x, shot.y, e.x, e.y) < e.r + 6) {
-              const dmg = Math.round(15 * (shot.owner?.upgradeDmgMult || 1));
+              const baseDmg = shot.damage ?? 15;
+              const dmg = Math.round(baseDmg * (shot.owner?.upgradeDmgMult || 1));
               e.hp -= dmg;
               e.hurtFlash = 0.4;
-              e.acidDot = Math.max(e.acidDot || 0, 3);
+              e.acidDot = Math.max(e.acidDot || 0, shot.acidDuration ?? 3);
+              if (shot.slowDuration > 0) {
+                e.slowTimer = Math.max(e.slowTimer, shot.slowDuration);
+                e.slowFactor = Math.min(e.slowFactor, shot.slowFactor ?? 0.5);
+              }
               for (let i = 0; i < 10; i++) {
                 const a = Math.random() * Math.PI * 2;
                 const v = 40 + Math.random() * 80;

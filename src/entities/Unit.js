@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG } from '../config/abilities.js';
+import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG, TINKERING_SLOW_CONFIG } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite } from '../render/weaponSprites.js';
 
@@ -108,6 +108,22 @@ export class Unit {
     this.transgenderTalkRadius = 250;
     this._tTalkStunCd          = 0;    // stun re-application cooldown
 
+    // Habib Backdoor Blockade L2/L3 retaliation
+    this.blockadeStunOnHit    = 0;    // stun duration applied to attacker (L2)
+    this.blockadeFireOnHitDmg = 0;    // fire damage applied to attacker (L3)
+    this.blockadeFireOnHitBurn = 0;   // burn timer applied to attacker (L3)
+
+    // Habib Acid Slingshot burst state
+    this.acidSlingshotShots    = 0;   // remaining shots in burst
+    this.acidSlingshotCd       = 0;   // fire rate cooldown
+    this.acidSlingshotInterval = 0.15;
+
+    // Habib Weapon Effects window state
+    this.weaponEffectTimer    = 0;    // duration remaining
+    this.weaponEffectType     = '';   // 'flame' | 'stun' | 'lightning'
+    this.weaponEffectChance   = 0;    // 0–1 triggerChance
+    this.weaponEffectParams   = null; // {damage, burnTimer} | {stunTime} | {chainCount}
+
     // Passive upgrade flags (set per-wave by applyWaveUpgrades)
     this.residualHaze = false;
     this.extendedFormula = false;
@@ -178,7 +194,13 @@ export class Unit {
     this.treeCd[2]        = Math.max(0, (this.treeCd[2] ?? 0) - dt);
     this.treeCd[3]        = Math.max(0, (this.treeCd[3] ?? 0) - dt);
     this.immortalTimer    = Math.max(0, this.immortalTimer - dt);
+    const _prevBlockade = this.blockadeTimer;
     this.blockadeTimer    = Math.max(0, this.blockadeTimer - dt);
+    if (_prevBlockade > 0 && this.blockadeTimer <= 0) {
+      this.blockadeStunOnHit    = 0;
+      this.blockadeFireOnHitDmg = 0;
+      this.blockadeFireOnHitBurn = 0;
+    }
     this.alchemyArmorTimer= Math.max(0, this.alchemyArmorTimer - dt);
     this.speedBoostTimer  = Math.max(0, this.speedBoostTimer - dt);
     this.storiesRateBoost = Math.max(0, this.storiesRateBoost - dt);
@@ -234,6 +256,37 @@ export class Unit {
     this.danceOfDeathTimer = Math.max(0, this.danceOfDeathTimer - dt);
     this.transgenderTalkTimer = Math.max(0, this.transgenderTalkTimer - dt);
     this._tTalkStunCd = Math.max(0, this._tTalkStunCd - dt);
+    this.weaponEffectTimer = Math.max(0, this.weaponEffectTimer - dt);
+
+    // Acid Slingshot burst — fire remaining shots
+    if (this.acidSlingshotShots > 0) {
+      this.acidSlingshotCd = Math.max(0, this.acidSlingshotCd - dt);
+      if (this.acidSlingshotCd <= 0) {
+        let nearest = null, nd = Infinity;
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          const d = dist2(this.x, this.y, e.x, e.y);
+          if (d < nd) { nd = d; nearest = e; }
+        }
+        if (nearest) {
+          const ang = Math.atan2(nearest.y - this.y, nearest.x - this.x) + rand(-0.2, 0.2);
+          state.acidShots = state.acidShots || [];
+          state.acidShots.push({
+            x: this.x + Math.cos(ang) * (this.r + 4),
+            y: this.y + Math.sin(ang) * (this.r + 4),
+            vx: Math.cos(ang) * 260, vy: Math.sin(ang) * 260,
+            life: 2.0, maxLife: 2.0, dead: false,
+            owner: this,
+            damage: ACID_CONFIG.initialDamage ?? 18,
+            acidDuration: 4,
+            slowFactor: TINKERING_SLOW_CONFIG.factor,
+            slowDuration: TINKERING_SLOW_CONFIG.duration,
+          });
+        }
+        this.acidSlingshotShots--;
+        this.acidSlingshotCd = this.acidSlingshotInterval;
+      }
+    }
 
     if (this.medkitHealRemaining > 0) {
       const tick = Math.min(this.medkitHealPerSec * dt, this.medkitHealRemaining);
@@ -750,6 +803,48 @@ export class Unit {
     }
   }
 
+  // Weapon Effects (Habib Tree 3): if any hero has an active weapon effect window,
+  // roll the trigger chance and apply the enchant to the struck enemy.
+  _applyWeaponEffect(enemy) {
+    if (!enemy || enemy.dead) return;
+    let src = null;
+    for (const u of state.units) {
+      if (!u.dead && u.weaponEffectTimer > 0) { src = u; break; }
+    }
+    if (!src) return;
+    if (Math.random() >= src.weaponEffectChance) return;
+    const p = src.weaponEffectParams;
+    if (src.weaponEffectType === 'flame') {
+      enemy.hp -= p.damage ?? 10;
+      enemy.hurtFlash = 0.5;
+      enemy.fireDot = Math.max(enemy.fireDot || 0, p.burnTimer ?? 3);
+      state.particles.push({ x: enemy.x, y: enemy.y, vx: rand(-40, 40), vy: rand(-80, -20), life: 0.4, maxLife: 0.4, color: '#ff6020', size: rand(2, 4), realtime: true });
+    } else if (src.weaponEffectType === 'stun') {
+      enemy.stunTimer = Math.max(enemy.stunTimer, p.stunTime ?? 1.2);
+      enemy.hurtFlash = 0.4;
+    } else if (src.weaponEffectType === 'lightning') {
+      const jumps = p.chainCount ?? 3;
+      let cx = enemy.x, cy = enemy.y;
+      const hit = new Set([enemy]);
+      const pts = [{ x: cx, y: cy }];
+      for (let i = 0; i < jumps; i++) {
+        let next = null, nd = 180;
+        for (const e of state.enemies) {
+          if (e.dead || hit.has(e)) continue;
+          const d = dist2(cx, cy, e.x, e.y);
+          if (d < nd) { nd = d; next = e; }
+        }
+        if (!next) break;
+        hit.add(next);
+        pts.push({ x: next.x, y: next.y });
+        next.hp -= 12;
+        next.hurtFlash = 0.5;
+        cx = next.x; cy = next.y;
+      }
+      if (pts.length > 1) state.bolts.push({ points: pts, life: 0.35, maxLife: 0.35 });
+    }
+  }
+
   _attackMelee(stats, enemy) {
     if (stats.dual) this.dualSide = !this.dualSide;
     if (this.z === 0) this.vz = 120;
@@ -759,6 +854,7 @@ export class Unit {
     playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
     enemy.hp -= dmg;
     this._gainWeaponXp(dmg);
+    this._applyWeaponEffect(enemy);
     enemy.knockX += Math.cos(this.facing) * kb;
     enemy.knockY += Math.sin(this.facing) * kb;
     enemy.hurtFlash = 1;
@@ -790,6 +886,7 @@ export class Unit {
       const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
       e.hp -= dmg;
       this._gainWeaponXp(dmg);
+      this._applyWeaponEffect(e);
       e.knockX += Math.cos(this.facing) * kb;
       e.knockY += Math.sin(this.facing) * kb;
       e.hurtFlash = 1;
@@ -980,6 +1077,19 @@ export class Unit {
       if (this.backdoorArmorSpikes) {
         attacker.hp -= 12;
         attacker.hurtFlash = 0.5;
+      }
+      // Blockade L2: stun attacker
+      if (this.blockadeTimer > 0 && this.blockadeStunOnHit > 0) {
+        attacker.stunTimer = Math.max(attacker.stunTimer, this.blockadeStunOnHit);
+        attacker.hurtFlash = 0.5;
+      }
+      // Blockade L3: fire damage + burn
+      if (this.blockadeTimer > 0 && this.blockadeFireOnHitDmg > 0) {
+        attacker.hp -= this.blockadeFireOnHitDmg;
+        attacker.hurtFlash = 0.7;
+        if (!attacker.fireDot || attacker.fireDot < this.blockadeFireOnHitBurn) {
+          attacker.fireDot = this.blockadeFireOnHitBurn;
+        }
       }
     }
 
