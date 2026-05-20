@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG, TINKERING_SLOW_CONFIG } from '../config/abilities.js';
+import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG, TINKERING_SLOW_CONFIG, applyCombos, COMBO_WINDOW } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite } from '../render/weaponSprites.js';
 
@@ -108,10 +108,18 @@ export class Unit {
     this.transgenderTalkRadius = 250;
     this._tTalkStunCd          = 0;    // stun re-application cooldown
 
-    // Habib Backdoor Blockade L2/L3 retaliation
+    // Habib Backdoor Blockade L2/L3 retaliation (and combo augments)
     this.blockadeStunOnHit    = 0;    // stun duration applied to attacker (L2)
     this.blockadeFireOnHitDmg = 0;    // fire damage applied to attacker (L3)
     this.blockadeFireOnHitBurn = 0;   // burn timer applied to attacker (L3)
+    this.blockadeSlowOnHit    = 0;    // slow duration for attacker (combo: Green Pipe L2)
+    this.blockadeKbOnHit      = 0;    // knockback force for attacker (combo: White Powder)
+    this.blockadeAcidOnHit    = false;// acid on attacker (combo: White Powder L3)
+
+    // Combo detection — set by castTree(), read by cast() to detect active secondaries
+    this.comboTimer = { 2: 0, 3: 0 };  // how long secondary window stays active
+    this.comboLevel = { 2: 0, 3: 0 };  // tree level when the window was opened
+    this._lastBlinkDest = null;         // landing position stored for blink combos
 
     // Habib Acid Slingshot burst state
     this.acidSlingshotShots    = 0;   // remaining shots in burst
@@ -200,6 +208,9 @@ export class Unit {
       this.blockadeStunOnHit    = 0;
       this.blockadeFireOnHitDmg = 0;
       this.blockadeFireOnHitBurn = 0;
+      this.blockadeSlowOnHit    = 0;
+      this.blockadeKbOnHit      = 0;
+      this.blockadeAcidOnHit    = false;
     }
     this.alchemyArmorTimer= Math.max(0, this.alchemyArmorTimer - dt);
     this.speedBoostTimer  = Math.max(0, this.speedBoostTimer - dt);
@@ -257,6 +268,8 @@ export class Unit {
     this.transgenderTalkTimer = Math.max(0, this.transgenderTalkTimer - dt);
     this._tTalkStunCd = Math.max(0, this._tTalkStunCd - dt);
     this.weaponEffectTimer = Math.max(0, this.weaponEffectTimer - dt);
+    this.comboTimer[2] = Math.max(0, (this.comboTimer[2] ?? 0) - dt);
+    this.comboTimer[3] = Math.max(0, (this.comboTimer[3] ?? 0) - dt);
 
     // Acid Slingshot burst — fire remaining shots
     if (this.acidSlingshotShots > 0) {
@@ -662,6 +675,10 @@ export class Unit {
         for (let i = 0; i < 6; i++) {
           state.particles.push({ x: e.x + rand(-3,3), y: e.y + rand(-3,3), vx: rand(-70,70), vy: rand(-90,-10), life: rand(0.2,0.5), maxLife: 0.5, color: e.bloodColor, size: rand(1.2, 2.5), realtime: true });
         }
+        // Apply boomerang combo hit effects (attached by applyCombos)
+        if (b.comboHitFns?.length) {
+          for (const cfn of b.comboHitFns) cfn(e, b.clubX, b.clubY, this);
+        }
       }
     }
 
@@ -1013,6 +1030,8 @@ export class Unit {
       // Each successful base ability cast grants 20% superboost charge (5 uses = ready)
       this.superboostCharge = Math.min(1, this.superboostCharge + 0.2);
       if (state.devAbilityTest) this.superboostCharge = 1;
+      // Check for active secondary combos on teammates
+      applyCombos(this);
     }
     return result ?? true;
   }
@@ -1038,6 +1057,10 @@ export class Unit {
 
     if (abilityDef.sound) playSfx(abilityDef.sound);
     this.treeCd[treeNum] = abilityDef.maxCd ?? 12;
+
+    // Open combo detection window for this secondary tree
+    this.comboTimer[treeNum] = COMBO_WINDOW;
+    this.comboLevel[treeNum] = level;
 
     // Secondary ability casts also charge superboost (+20%)
     this.superboostCharge = Math.min(1, this.superboostCharge + 0.2);
@@ -1089,6 +1112,21 @@ export class Unit {
         attacker.hurtFlash = 0.7;
         if (!attacker.fireDot || attacker.fireDot < this.blockadeFireOnHitBurn) {
           attacker.fireDot = this.blockadeFireOnHitBurn;
+        }
+      }
+      // Combo: Green Pipe L2 — slow attacker
+      if (this.blockadeTimer > 0 && this.blockadeSlowOnHit > 0) {
+        attacker.slowTimer = Math.max(attacker.slowTimer, this.blockadeSlowOnHit);
+        attacker.slowFactor = Math.min(attacker.slowFactor ?? 1, TINKERING_SLOW_CONFIG.factor);
+      }
+      // Combo: White Powder — knockback attacker
+      if (this.blockadeTimer > 0 && this.blockadeKbOnHit > 0) {
+        const a = Math.atan2(attacker.y - this.y, attacker.x - this.x);
+        attacker.knockX += Math.cos(a) * this.blockadeKbOnHit;
+        attacker.knockY += Math.sin(a) * this.blockadeKbOnHit;
+        if (this.blockadeAcidOnHit) {
+          attacker.acidDot = Math.max(attacker.acidDot || 0, 3);
+          attacker.hurtFlash = 0.6;
         }
       }
     }
