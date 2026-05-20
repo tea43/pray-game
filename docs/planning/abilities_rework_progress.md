@@ -16,7 +16,7 @@ Branch: `group-abilities` (continue here)
 | 5a | Eliott Ability Levels | ✅ done | levelAbilityIds dispatch; blink_self, vacuum_group_blink, overcharged_pipe, potato_starch |
 | 5b | Dick Ability Levels | ✅ done | ellipse_boomerang, dual_boomerangs, dance_of_death, transgender_talk |
 | 5c | Habib Ability Levels | ✅ done | stunned/fire blockade, acid_slingshot, lightning_chain_tinkering, weapon_effects_* |
-| 6 | Combination System | ⬜ todo | cross-hero combo detection + bonus effects table |
+| 6 | Combination System | ✅ done | 12 cross-hero combos × 3 levels; comboTimer window on castTree, applyCombos on cast |
 | 7 | Revive Minigame | ⬜ todo | EKG bar, dark zones, marker, success/fail feedback |
 | 8 | ReviveTestScene | ⬜ todo | 10-round standalone test, accessible from dev tools |
 
