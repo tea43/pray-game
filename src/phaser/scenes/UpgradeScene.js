@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { state } from '../../state.js';
 import { playSfx } from '../../systems/audio.js';
 import { DIFFICULTY_DEFS } from '../../config/difficulty.js';
-import { ABILITY_DEFS, HERO_ABILITY_TREES } from '../../config/abilities.js';
+import { ABILITY_DEFS, HERO_ABILITY_TREES, REVIVE_MINIGAME_CONFIG } from '../../config/abilities.js';
 
 const DPR    = window.devicePixelRatio || 1;
 const CARD_H = 150;
@@ -131,6 +131,7 @@ export class UpgradeScene extends Phaser.Scene {
     this._selected = null;
     this._ready    = false;
     this._tooltipContainer = null;
+    this._reviveStates = {};   // keyed by heroId
     this._FX = FX; this._FY = FY; this._FW = FW; this._FH = FH;
 
     HEROES.forEach((h, i) => this._buildReel(h, i));
@@ -206,14 +207,7 @@ export class UpgradeScene extends Phaser.Scene {
     const unit = state.units?.find(u => u.type === hero.id);
 
     if (unit?.dead) {
-      this._txt(cx, centreY - 10, '†', {
-        fontSize: '28px', fontFamily: 'Georgia, serif', color: '#5a2a1a',
-      }).setOrigin(0.5);
-      this._txt(cx, centreY + 20, 'FALLEN', {
-        fontSize: '10px', fontFamily: "'Courier New', monospace",
-        fontStyle: 'bold', color: '#6a2a1a',
-      }).setOrigin(0.5);
-      state.pendingUpgrades[hero.id] = 'none';
+      this._buildReviveMinigame(hero, colIdx, cx, centreY);
       this._reels.push(null);
       return;
     }
@@ -549,6 +543,14 @@ export class UpgradeScene extends Phaser.Scene {
       unit.abilityTrees[upg.treeNum] = Math.min(3, currentLevel + 1);
     }
 
+    this._resumeGame();
+  }
+
+  _resumeGame() {
+    // Cancel any in-progress revive (player picked an upgrade instead)
+    for (const rv of Object.values(this._reviveStates)) {
+      rv.done = true;
+    }
     const initData = this._initData || {};
     this.scene.stop();
     if (initData.returnScene) {
@@ -556,6 +558,257 @@ export class UpgradeScene extends Phaser.Scene {
     } else {
       this.scene.resume('GameScene');
       this.scene.get('GameScene').advanceWave();
+    }
+  }
+
+  // ── Revive Minigame ──────────────────────────────────────────────────────────
+
+  _buildReviveMinigame(hero, colIdx, cx, centreY) {
+    const cardW = this._cardW;
+    const heroId = hero.id;
+
+    const reviveCount = state.heroReviveCounts?.[heroId] ?? 0;
+    const roundsNeeded = REVIVE_MINIGAME_CONFIG.baseRounds
+      + reviveCount * REVIVE_MINIGAME_CONFIG.roundsIncrement;
+
+    // Heart icon (pulsing)
+    const heartTxt = this._txt(cx, centreY - 52, '♥', {
+      fontSize: '30px', fontFamily: 'Georgia, serif', color: '#c03030',
+    }).setOrigin(0.5);
+    this.tweens.add({
+      targets: heartTxt, scaleX: 1.25, scaleY: 1.25,
+      yoyo: true, repeat: -1, duration: 480, ease: 'Sine.easeInOut',
+    });
+
+    this._txt(cx, centreY - 18, 'REVIVE', {
+      fontSize: '11px', fontFamily: "'Courier New', monospace",
+      fontStyle: 'bold', color: '#c04040',
+    }).setOrigin(0.5);
+
+    // EKG bar
+    const BAR_W = cardW - 8;
+    const BAR_H = 20;
+    const barX  = cx - BAR_W / 2;
+    const barY  = centreY + 4;
+
+    const barGfx    = this.add.graphics();
+    const markerGfx = this.add.graphics();
+    const roundTxt  = this._txt(cx, barY + BAR_H + 5, `ROUND 1 / ${roundsNeeded}`, {
+      fontSize: '9px', fontFamily: "'Courier New', monospace", color: '#806040',
+    }).setOrigin(0.5);
+    const statusTxt = this._txt(cx, barY + BAR_H + 18, 'CLICK TO START', {
+      fontSize: '9px', fontFamily: "'Courier New', monospace",
+      fontStyle: 'bold', color: '#c05030',
+    }).setOrigin(0.5);
+
+    // Click area — invisible rectangle over the column
+    const hitZone = this.add.graphics();
+    hitZone.fillStyle(0xffffff, 0.0);
+    hitZone.fillRect(cx - cardW / 2, centreY - 60, cardW, 120);
+    hitZone.setInteractive(
+      new Phaser.Geom.Rectangle(cx - cardW / 2, centreY - 60, cardW, 120),
+      Phaser.Geom.Rectangle.Contains
+    );
+
+    const rv = {
+      heroId,
+      roundsNeeded,
+      currentRound: 1,
+      zones: [],
+      markerT: 0,
+      started: false,
+      done: false,
+      success: false,
+      barGfx, markerGfx, barX, barY, BAR_W, BAR_H,
+      roundTxt, statusTxt, hitZone,
+    };
+
+    hitZone.on('pointerdown', () => this._reviveClick(rv));
+    hitZone.on('pointerover', () => {
+      if (!rv.done) statusTxt.setColor('#ff6040');
+    });
+    hitZone.on('pointerout', () => {
+      if (!rv.done) statusTxt.setColor('#c05030');
+    });
+
+    // Mark as 'none' so scene can advance even if revive isn't attempted
+    state.pendingUpgrades[heroId] = 'none';
+
+    // Draw initial bar (no zones yet)
+    this._drawReviveBar(rv);
+    this._reviveStates[heroId] = rv;
+  }
+
+  _reviveZonesForRound() {
+    const cfg = REVIVE_MINIGAME_CONFIG;
+    const wave = state.wave ?? 1;
+    let zoneW = cfg.zoneWidthFraction * Math.pow(cfg.zoneWidthDecayA, wave - 1) - cfg.zoneWidthDecayB * (wave - 1);
+    zoneW = Math.max(cfg.zoneWidthMin, zoneW);
+    const zones = [];
+    const gap = 0.04; // min gap between zones
+    for (let attempt = 0; attempt < 50 && zones.length < cfg.zoneCount; attempt++) {
+      const start = Math.random() * (1 - zoneW - gap);
+      const end   = start + zoneW;
+      const overlap = zones.some(z => start < z.end + gap && end > z.start - gap);
+      if (!overlap) zones.push({ start, end });
+    }
+    return zones;
+  }
+
+  _startReviveRound(rv) {
+    rv.zones    = this._reviveZonesForRound();
+    rv.markerT  = 0;
+    rv.roundTxt.setText(`ROUND ${rv.currentRound} / ${rv.roundsNeeded}`);
+    rv.statusTxt.setText('CLICK IN THE ZONE');
+    this._drawReviveBar(rv);
+  }
+
+  _drawReviveBar(rv) {
+    rv.barGfx.clear();
+    // Background
+    rv.barGfx.fillStyle(0x1a1008, 1);
+    rv.barGfx.fillRect(rv.barX, rv.barY, rv.BAR_W, rv.BAR_H);
+    rv.barGfx.lineStyle(1, 0x503020, 1);
+    rv.barGfx.strokeRect(rv.barX, rv.barY, rv.BAR_W, rv.BAR_H);
+    // Dark zones (success areas)
+    for (const z of rv.zones) {
+      const zx = rv.barX + z.start * rv.BAR_W;
+      const zw = (z.end - z.start) * rv.BAR_W;
+      rv.barGfx.fillStyle(0x204010, 1);
+      rv.barGfx.fillRect(zx, rv.barY + 2, zw, rv.BAR_H - 4);
+      rv.barGfx.lineStyle(1, 0x40a030, 0.7);
+      rv.barGfx.strokeRect(zx, rv.barY + 2, zw, rv.BAR_H - 4);
+    }
+  }
+
+  _reviveClick(rv) {
+    if (rv.done || this._ready) return;
+    if (!rv.started) {
+      // First click: start the marker
+      rv.started = true;
+      rv.statusTxt.setText('CLICK IN THE ZONE');
+      this._startReviveRound(rv);
+      return;
+    }
+    // Subsequent clicks: check if marker is in a dark zone
+    const inZone = rv.zones.some(z => rv.markerT >= z.start && rv.markerT <= z.end);
+    if (inZone) {
+      if (rv.currentRound >= rv.roundsNeeded) {
+        this._reviveSuccess(rv);
+      } else {
+        // Round passed — pause marker briefly and start next round
+        rv.markerT = 0;
+        rv.currentRound++;
+        rv.statusTxt.setColor('#60c040');
+        rv.statusTxt.setText('✓ ROUND PASS!');
+        this.time.delayedCall(500, () => {
+          if (rv.done) return;
+          rv.statusTxt.setColor('#c05030');
+          this._startReviveRound(rv);
+        });
+      }
+    } else {
+      this._reviveFail(rv);
+    }
+  }
+
+  _reviveSuccess(rv) {
+    rv.done = true;
+    rv.success = true;
+    rv.markerGfx.clear();
+    rv.statusTxt.setColor('#60ff40');
+    rv.statusTxt.setText('REVIVED!');
+    rv.barGfx.clear();
+
+    // Revive the hero
+    const unit = state.units?.find(u => u.type === rv.heroId);
+    if (unit) {
+      unit.dead  = false;
+      unit.hp    = Math.ceil(unit.maxHp * REVIVE_MINIGAME_CONFIG.reviveHpFraction);
+      unit.hurtFlash = 0;
+      // Place near centroid of surviving heroes
+      const living = state.units.filter(u => !u.dead && u !== unit);
+      if (living.length > 0) {
+        const cx = living.reduce((s, u) => s + u.x, 0) / living.length;
+        const cy = living.reduce((s, u) => s + u.y, 0) / living.length;
+        unit.x = cx + (Math.random() - 0.5) * 40;
+        unit.y = cy + (Math.random() - 0.5) * 40;
+        unit.tx = unit.x; unit.ty = unit.y;
+      }
+      // Green healing pulse (via state.particles)
+      for (let i = 0; i < 20; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = 40 + Math.random() * 80;
+        state.particles.push({
+          x: unit.x, y: unit.y,
+          vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30,
+          life: 0.5 + Math.random() * 0.5, maxLife: 1.0,
+          color: i % 2 ? '#40ff40' : '#a0ffa0', size: 2 + Math.random() * 3,
+          realtime: true,
+        });
+      }
+      unit.immortalTimer = Math.max(unit.immortalTimer || 0, 2.0);
+      state.heroReviveCounts = state.heroReviveCounts || {};
+      state.heroReviveCounts[rv.heroId] = (state.heroReviveCounts[rv.heroId] ?? 0) + 1;
+    }
+
+    this.time.delayedCall(1000, () => {
+      if (this.scene.isActive()) this._resumeGame();
+    });
+  }
+
+  _reviveFail(rv) {
+    if (rv.done) return;
+    rv.done = true;
+    rv.markerGfx.clear();
+    rv.barGfx.clear();
+    rv.hitZone.removeInteractive();
+
+    const msgs = REVIVE_MINIGAME_CONFIG.failureMessages;
+    const msg  = msgs[Math.floor(Math.random() * msgs.length)];
+
+    rv.statusTxt.setColor('#ff4020');
+    rv.statusTxt.setText('FAILED');
+
+    const { width: W, height: H } = this.scale;
+    const failTxt = this._txt(W / 2, H / 2 - 30, msg, {
+      fontSize: '15px', fontFamily: 'Georgia, serif',
+      color: '#ff6040', wordWrap: { width: 480 }, align: 'center',
+      stroke: '#0a0604', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(200);
+
+    this.tweens.add({
+      targets: failTxt, alpha: 0, y: H / 2 - 60,
+      duration: 2200, ease: 'Sine.easeIn',
+      onComplete: () => {
+        failTxt.destroy();
+        if (this.scene.isActive()) this._resumeGame();
+      },
+    });
+  }
+
+  // ── Per-frame: advance marker for all active revive states ─────────────────
+
+  update(_time, delta) {
+    const dt = delta / 1000;
+    for (const rv of Object.values(this._reviveStates)) {
+      if (rv.done || !rv.started || rv.markerT < 0) continue;
+      rv.markerT += dt / REVIVE_MINIGAME_CONFIG.markerSpeed;
+      // Draw marker
+      rv.markerGfx.clear();
+      if (rv.markerT <= 1) {
+        rv.markerGfx.lineStyle(2, 0xff2020, 1);
+        const mx = rv.barX + rv.markerT * rv.BAR_W;
+        rv.markerGfx.beginPath();
+        rv.markerGfx.moveTo(mx, rv.barY);
+        rv.markerGfx.lineTo(mx, rv.barY + rv.BAR_H);
+        rv.markerGfx.strokePath();
+      }
+      // Marker exited bar — fail
+      if (rv.markerT > 1) {
+        rv.markerT = -1;
+        this._reviveFail(rv);
+      }
     }
   }
 
