@@ -12,7 +12,7 @@ Branch: `group-abilities` (continue here)
 | 1 | State & Config Foundation | ✅ done | abilityXp state, tree levels per hero, global acid/slow config |
 | 2 | XP Wiring | ✅ done | essence → abilityXp, melee/cleave → weaponXp, threshold formula |
 | 3 | Slot Machine Rework | ✅ done | UpgradeScene shows ability tree level-ups per hero, spin disabled |
-| 4 | Ability Dispatch by Level | ⬜ todo | hotkey → reads tree level → calls correct activate fn |
+| 4 | Ability Dispatch by Level | ✅ done | castTree(treeNum) dispatches by level; Q/W/E/A/S/D wired to tree 2/3 |
 | 5a | Eliott Ability Levels | ⬜ todo | Blink self/Group/Vacuum; Green Pipe L1/L2/L3; White Powder L3 (Potato Starch) |
 | 5b | Dick Ability Levels | ⬜ todo | Boomerang Ellipse/Dual; Vortex pull; Dance of Death; Scream L3 |
 | 5c | Habib Ability Levels | ⬜ todo | Backdoor Blockade L2/L3; Tinkering L1/L2/L3 new params; Weapon Effects |

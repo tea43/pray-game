@@ -170,7 +170,7 @@ export class InputSystem {
 
       if (k === 's') {
         for (const u of state.units) {
-          if (u.type === 'dick' && !u.dead) u.activateSkill(1);
+          if (u.type === 'dick' && !u.dead) u.castTree(3);
         }
         return;
       }
@@ -201,18 +201,18 @@ export class InputSystem {
         tryFireComboForSelection(state.selected);
       }
 
-      // Active skill slot 0: Q/W/E; slot 1: A/D (S handled above)
-      const ACTIVE_KEYS = {
-        'q': { type: 'eliott', slot: 0 },
-        'w': { type: 'dick',   slot: 0 },
-        'e': { type: 'habib',  slot: 0 },
-        'a': { type: 'eliott', slot: 1 },
-        'd': { type: 'habib',  slot: 1 },
+      // Secondary ability trees: Q/W/E → tree 2; A/D → tree 3 (S handled above for Dick tree 3)
+      const TREE_KEYS = {
+        'q': { type: 'eliott', treeNum: 2 },
+        'w': { type: 'dick',   treeNum: 2 },
+        'e': { type: 'habib',  treeNum: 2 },
+        'a': { type: 'eliott', treeNum: 3 },
+        'd': { type: 'habib',  treeNum: 3 },
       };
-      if (ACTIVE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
-        const { type, slot } = ACTIVE_KEYS[k];
+      if (TREE_KEYS[k] && !e.ctrlKey && !e.metaKey) {
+        const { type, treeNum } = TREE_KEYS[k];
         for (const u of state.units) {
-          if (u.type === type && !u.dead) u.activateSkill(slot);
+          if (u.type === type && !u.dead) u.castTree(treeNum);
         }
       }
     });

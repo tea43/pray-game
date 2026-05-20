@@ -9,7 +9,7 @@ import { Projectile } from './Projectile.js';
 import { ShotgunBullet } from './ShotgunBullet.js';
 import { playSfx } from '../systems/audio.js';
 import { pushDamageNumber } from '../render/effects.js';
-import { ABILITY_DEFS, WEAPON_XP_CONFIG } from '../config/abilities.js';
+import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES } from '../config/abilities.js';
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite } from '../render/weaponSprites.js';
 
@@ -36,6 +36,9 @@ export class Unit {
 
     // Ability tree levels: tree 1 starts at 1 (active at game start); trees 2 & 3 start locked (0)
     this.abilityTrees = { 1: 1, 2: 0, 3: 0 };
+
+    // Cooldowns for tree 2 and tree 3 secondary abilities
+    this.treeCd  = { 2: 0, 3: 0 };
 
     // Per-hero Weapon XP: fills from damage dealt; triggers weapon level-up when threshold crossed
     this.weaponXp = 0;
@@ -156,6 +159,8 @@ export class Unit {
     // Tick all timers
     this.rageTimer        = Math.max(0, this.rageTimer - dt);
     this.abilityCd        = Math.max(0, this.abilityCd - dt);
+    this.treeCd[2]        = Math.max(0, (this.treeCd[2] ?? 0) - dt);
+    this.treeCd[3]        = Math.max(0, (this.treeCd[3] ?? 0) - dt);
     this.immortalTimer    = Math.max(0, this.immortalTimer - dt);
     this.blockadeTimer    = Math.max(0, this.blockadeTimer - dt);
     this.alchemyArmorTimer= Math.max(0, this.alchemyArmorTimer - dt);
@@ -810,10 +815,37 @@ export class Unit {
     if (result !== false) {
       // Each successful base ability cast grants 20% superboost charge (5 uses = ready)
       this.superboostCharge = Math.min(1, this.superboostCharge + 0.2);
-      // In ability-test mode: keep charge full
       if (state.devAbilityTest) this.superboostCharge = 1;
     }
     return result ?? true;
+  }
+
+  // Activate a secondary ability tree (treeNum 2 or 3).
+  // Reads current tree level; if locked (0) or on cooldown, returns false.
+  // Phase 5 will add level-specific handlers; for now dispatches to existing ability.
+  castTree(treeNum) {
+    if (this.dead) return false;
+    const level = this.abilityTrees[treeNum] ?? 0;
+    if (level === 0) return false;   // tree still locked
+    if ((this.treeCd[treeNum] ?? 0) > 0) return false;
+
+    const treeDef = (HERO_ABILITY_TREES[this.type] || []).find(t => t.treeNum === treeNum);
+    if (!treeDef) return false;
+
+    const abilityDef = ABILITY_DEFS[treeDef.abilityId];
+    if (!abilityDef?.activate) return false;
+
+    const result = abilityDef.activate(this);
+    if (result === false) return false;
+
+    if (abilityDef.sound) playSfx(abilityDef.sound);
+    this.treeCd[treeNum] = abilityDef.maxCd ?? 12;
+
+    // Secondary ability casts also charge superboost (+20%)
+    this.superboostCharge = Math.min(1, this.superboostCharge + 0.2);
+    if (state.devAbilityTest) this.superboostCharge = 1;
+
+    return true;
   }
 
   // Apply incoming damage to this hero, respecting reductions.
