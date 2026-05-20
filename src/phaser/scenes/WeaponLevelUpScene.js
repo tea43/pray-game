@@ -51,12 +51,13 @@ export class WeaponLevelUpScene extends Phaser.Scene {
     fg.lineStyle(1, 0x3a2818);
     fg.beginPath().moveTo(FX + 1, FY + HDR_H).lineTo(FX + FW - 1, FY + HDR_H).strokePath();
 
-    this._txt(W / 2, FY + 10, `LEVEL UP  —  LV ${state.level}`, {
+    const heroName = (state.currentWeaponLevelUpHero || 'hero').toUpperCase();
+    this._txt(W / 2, FY + 10, `WEAPON UPGRADE  —  ${heroName}`, {
       fontSize: '20px', fontFamily: 'Georgia, serif',
       color: '#f0e4c0', letterSpacing: 5,
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5, 0);
-    this._txt(W / 2, FY + 30, 'Choose one upgrade', {
+    this._txt(W / 2, FY + 30, 'Choose one upgrade for this hero', {
       fontSize: '13px', fontFamily: 'Georgia, serif',
       color: '#a89470', letterSpacing: 1,
       stroke: '#000000', strokeThickness: 2,
@@ -97,9 +98,11 @@ export class WeaponLevelUpScene extends Phaser.Scene {
     const { WEAPON_DEFS, resolveWeaponStats } = this._getWeaponImports();
     const { HERO_DEFS } = this._getHeroImports();
     const candidates = [];
+    const targetHero = state.currentWeaponLevelUpHero;
 
     for (const unit of state.units) {
       if (unit.dead) continue;
+      if (targetHero && unit.type !== targetHero) continue;
       const heroDef = HERO_DEFS[unit.type];
 
       // Upgrade offers: filled slots below level 5
@@ -151,10 +154,9 @@ export class WeaponLevelUpScene extends Phaser.Scene {
       pool.splice(pool.indexOf(chosen), 1);
     }
 
-    // Fill remaining slots with heal fallback
+    // Fill remaining slots with heal fallback for the target hero
     while (picks.length < 3) {
-      const lowestHP = [...state.units].filter(u => !u.dead).sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
-      picks.push({ kind: 'heal', heroId: lowestHP?.type || 'eliott', rarity: 'Common' });
+      picks.push({ kind: 'heal', heroId: targetHero || 'eliott', rarity: 'Common' });
     }
     return picks;
   }

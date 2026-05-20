@@ -817,6 +817,13 @@ export class Unit {
       this.weaponXp -= this.weaponXpThreshold;
       this.weaponXpThreshold = WEAPON_XP_CONFIG.A * this.weaponXpThreshold + WEAPON_XP_CONFIG.B;
       this.weaponXpPicks = (this.weaponXpPicks || 0) + 1;
+      state.pendingLevelUps = (state.pendingLevelUps || 0) + 1;
+      if (!state.pendingWeaponUpgrades) state.pendingWeaponUpgrades = [];
+      if (!state.pendingWeaponUpgrades.includes(this.type)) {
+        state.pendingWeaponUpgrades.push(this.type);
+      }
+      state._levelUpFlash = 0.9;
+      playSfx('ui.levelup', { synthetic: 'loot' });
     }
   }
 

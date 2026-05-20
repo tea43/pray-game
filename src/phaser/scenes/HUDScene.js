@@ -21,8 +21,8 @@ export class HUDScene extends Phaser.Scene {
 
     const S = { resolution: window.devicePixelRatio, stroke: '#000000', strokeThickness: 3 };
 
-    // ── XP / Level (top-right) ────────────────────────────────────────────────
-    this._lvText = this.add.text(xpRightX, topY, 'LV 1', {
+    // ── Ability XP (top-right) ───────────────────────────────────────────────
+    this._lvText = this.add.text(xpRightX, topY, 'ABILITY XP', {
       ...S, fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8b848',
     }).setOrigin(1, 0);
 
@@ -58,34 +58,29 @@ export class HUDScene extends Phaser.Scene {
       this._pauseText.setText(`TIME ×${s.timeSpeed}`).setColor('#8bc34a');
     }
 
-    // ── XP bar ────────────────────────────────────────────────────────────────
-    const { xp, level, xpToNext, _levelUpFlash } = s;
-    this._lvText.setText(`LV ${level}`);
+    // ── Ability XP bar ───────────────────────────────────────────────────────
+    const abilityXp = s.abilityXp || 0;
+    const abilityThreshold = s.abilityXpThreshold || 100;
+    const picks = s.abilityXpPicks || 0;
+    this._lvText.setText(`ABILITY XP  ·  ${picks} picks`);
 
-    const xpFill = Math.min(1, xp / (xpToNext || 100));
+    const xpFill = Math.min(1, abilityXp / abilityThreshold);
     const { x: bx, y: by, w: bw, h: bh } = this._xpBarBounds;
     const g = this._xpBar;
     g.clear();
 
     // Background
-    g.fillStyle(0x1a120a, 1);
+    g.fillStyle(0x0a121a, 1);
     g.fillRect(bx, by, bw, bh);
 
-    // XP fill — brighter amber during level-up flash
-    const flash = _levelUpFlash || 0;
-    const fillHex = flash > 0 ? 0xffe070 : 0xd8a040;
+    // Fill — teal/blue for ability XP
     if (xpFill > 0) {
-      g.fillStyle(fillHex, 1);
+      g.fillStyle(0x40a8d8, 1);
       g.fillRect(bx, by, bw * xpFill, bh);
     }
 
     // Frame
-    g.lineStyle(1, 0x5a4a30, 1);
+    g.lineStyle(1, 0x304a5a, 1);
     g.strokeRect(bx, by, bw, bh);
-
-    // Decay flash in real time (delta is ms)
-    if (s._levelUpFlash > 0) {
-      s._levelUpFlash = Math.max(0, s._levelUpFlash - delta / 1000);
-    }
   }
 }

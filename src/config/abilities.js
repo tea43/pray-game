@@ -9,15 +9,15 @@ import { playSfx } from '../systems/audio.js';
 // Threshold formula: next = A × prev + B (linear escalation when A=1)
 
 export const ABILITY_XP_CONFIG = {
-  startThreshold: 100,
+  startThreshold: 38,
   A: 1,
-  B: 10,
+  B: 2,
 };
 
 export const WEAPON_XP_CONFIG = {
   startThreshold: 100,
-  A: 1,
-  B: 10,
+  A: 5,
+  B: 20,
 };
 
 // ── Global effect configs ─────────────────────────────────────────────────────
