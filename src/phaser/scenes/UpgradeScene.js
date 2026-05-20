@@ -556,8 +556,9 @@ export class UpgradeScene extends Phaser.Scene {
     if (initData.returnScene) {
       this.scene.start(initData.returnScene, { cycle: (initData.cycle || 0) + 1 });
     } else {
+      state.isUpgradeScreen = false;
       this.scene.resume('GameScene');
-      this.scene.get('GameScene').advanceWave();
+      // Wave was already advanced by the wave timer; don't double-advance here.
     }
   }
 

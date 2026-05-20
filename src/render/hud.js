@@ -3,7 +3,7 @@ import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 import { getHighScore } from '../systems/score.js';
 import { GameData } from '../systems/upgrades.js';
-import { ABILITY_DEFS } from '../config/abilities.js';
+import { ABILITY_DEFS, HERO_ABILITY_TREES } from '../config/abilities.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
 import { drawWeaponSprite } from './weaponSprites.js';
@@ -365,45 +365,55 @@ function _drawWeaponSlots(ctx, unit, sx, rowY, panelY) {
 
 function _drawAbilityButtons(ctx, unit, sx, btnY, BH, panelY) {
   const keys    = HERO_KEYS[unit.type] || ['?', '?', '?'];
-  const upgPool = GameData.upgrades[unit.type] || [];
+  const treeDefs = HERO_ABILITY_TREES[unit.type] || [];
   const bxs     = [
     sx + B_LEFT,
     sx + B_LEFT + BW + BG,
     sx + B_LEFT + (BW + BG) * 2,
   ];
 
-  // Basic ability
+  // Tree 1 — main ability, resolved by current level
+  const tree1     = treeDefs.find(t => t.treeNum === 1);
+  const level1    = unit.abilityTrees?.[1] ?? 1;
+  const mainId    = tree1?.levelAbilityIds?.[level1 - 1] ?? unit.abilityId;
+  const mainDef   = ABILITY_DEFS[mainId] ?? {};
+  const mainName  = tree1?.levelNames?.[level1 - 1] ?? unit.abilityName;
+  const mainDesc  = tree1?.levelDescs?.[level1 - 1] ?? unit.abilityDescription;
+
   _processBtn(ctx, {
     x: bxs[0], y: btnY, bh: BH,
     key:         keys[0],
-    abilityId:   unit.abilityId,
+    abilityId:   mainId,
     cd:          unit.abilityCd,
     maxCd:       unit.abilityMaxCd,
-    color:       unit.abilityColor,
-    name:        unit.abilityName,
-    description: unit.abilityDescription,
+    color:       mainDef.color ?? unit.abilityColor,
+    name:        mainName,
+    description: mainDesc,
     wavesLeft:   null,
     isEmpty:     false,
   }, panelY);
 
-  // Upgrade slots 0 and 1 (active or passive)
+  // Trees 2 & 3 — secondary abilities (locked until leveled)
   for (let si = 0; si < 2; si++) {
-    const slot      = unit.upgradeSlots?.[si] ?? null;
-    const isPassive = slot?.kind === 'passive';
-    const upgDef    = slot ? upgPool.find(u => u.id === slot.id) : null;
-    const iconCfg   = slot ? (ABILITY_DEFS[slot.id] || null) : null;
+    const treeNum  = si + 2;
+    const treeDef  = treeDefs.find(t => t.treeNum === treeNum);
+    const level    = unit.abilityTrees?.[treeNum] ?? 0;
+    const secId    = level > 0 ? (treeDef?.levelAbilityIds?.[level - 1] ?? '') : '';
+    const secDef   = secId ? (ABILITY_DEFS[secId] ?? null) : null;
+    const secName  = level > 0 ? (treeDef?.levelNames?.[level - 1] ?? '') : '';
+    const secDesc  = level > 0 ? (treeDef?.levelDescs?.[level - 1] ?? '') : '';
     _processBtn(ctx, {
       x: bxs[si + 1], y: btnY, bh: BH,
       key:         keys[si + 1],
-      abilityId:   slot?.id || '',
-      cd:          isPassive ? 0 : (slot?.cd ?? 0),
-      maxCd:       isPassive ? 1 : (slot?.maxCd ?? 1),
-      color:       iconCfg?.color || '#6a5030',
-      name:        upgDef?.name || '',
-      description: upgDef?.description || '',
-      wavesLeft:   isPassive ? null : (slot?.wavesLeft ?? null),
-      isEmpty:     !slot,
-      isPassive,
+      abilityId:   secId,
+      cd:          unit.treeCd?.[treeNum] ?? 0,
+      maxCd:       secDef?.maxCd ?? 1,
+      color:       secDef?.color ?? '#6a5030',
+      name:        secName,
+      description: secDesc,
+      wavesLeft:   null,
+      isEmpty:     level === 0,
+      isPassive:   false,
     }, panelY);
   }
 }
