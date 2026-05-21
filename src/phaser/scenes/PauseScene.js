@@ -44,7 +44,9 @@ export class PauseScene extends Phaser.Scene {
 
   create(data) {
     const { width: W, height: H } = this.scale;
-    const fromUpgrade = !!data?.fromUpgrade;
+    const fromUpgrade  = !!data?.fromUpgrade;
+    const fromLevelUp  = !!data?.fromLevelUp;
+    this._fromLevelUp  = fromLevelUp;
 
     // Dim the game behind the panel
     this.add.graphics()
@@ -73,7 +75,9 @@ export class PauseScene extends Phaser.Scene {
     y += ROW.title;
 
     // ── Resume ────────────────────────────────────────────────────────────
-    const resume = fromUpgrade
+    // fromUpgrade / fromLevelUp: the GameScene is already paused by the
+    // overlay scene — just close the pause panel and let the overlay resume.
+    const resume = (fromUpgrade || fromLevelUp)
       ? () => this.scene.stop('PauseScene')
       : () => { this.scene.stop('PauseScene'); this.scene.resume('GameScene'); };
     btn(this, cx, y, BOX.width - BOX.padding * 2, BTN_H, 'RESUME', resume);
@@ -185,8 +189,13 @@ export class PauseScene extends Phaser.Scene {
       this.scene.stop('PauseScene');
       this.scene.stop('UpgradeScene');
       this.scene.stop('UpgradeTestScene');
+      this.scene.stop('WeaponLevelUpScene');
       this.scene.stop('HUDScene');
       this.scene.stop('GameScene');
+      // Clear weapon level-up state so it doesn't replay after the next game starts
+      state.isLevelUpScreen = false;
+      state.pendingWeaponUpgrades = [];
+      state.currentWeaponLevelUpHero = null;
       this.scene.start('MenuScene');
     });
     confirmObjs.push(yesZone);

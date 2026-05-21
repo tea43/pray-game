@@ -410,6 +410,7 @@ export const ABILITY_DEFS = {
         clubX: unit.x, clubY: unit.y,
         hitOut: new Set(),
         hitRet: new Set(),
+        _trail: [],
       };
       // Cooldown is set when caught (in _boomerangPhaseEnd return phase end)
       return true;
@@ -519,6 +520,7 @@ export const ABILITY_DEFS = {
     maxCd: 18,
     activate(unit) {
       const radius = _alchemyRadius(unit, 150);
+      let allyIdx = 0;
       for (const ally of state.units) {
         if (ally.dead) continue;
         if (dist2(unit.x, unit.y, ally.x, ally.y) > radius) continue;
@@ -533,23 +535,10 @@ export const ABILITY_DEFS = {
         const bx = clamp(nearest.x + Math.cos(ang) * 30, 6, G.WORLD_W - 6);
         const by = clamp(nearest.y + Math.sin(ang) * 30, 6, G.WORLD_H);
         const origX = ally.x, origY = ally.y;
-        ally.x = bx; ally.y = by; ally.tx = bx; ally.ty = by;
-        ally.blinkFlash = 1;
-        ally.immortalTimer = Math.max(ally.immortalTimer || 0, 0.6);
-        // SOUND POINT 2 — BLINK-IN: reuses Eliott's blink whoosh.
-        playSfx('ability.blink');
         const dmg = Math.round(ally.atkDmg * 1.5 * (ally.upgradeDmgMult || 1));
-        nearest.hp -= dmg;
-        nearest.hurtFlash = 1;
-        // SOUND POINT 3 — IMPACT: ally's current weapon attack + alien hit.
-        playSfx(ally._wDef.sfxAttack || 'weapon.attack.default', { fallback: ally._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
-        playSfx('alien.hit.default', { synthetic: 'hit' });
-        pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
-        // teleport back after 0.3s — return blink is handled in Unit.update()
-        // SOUND POINT 4 — BLINK-OUT (return teleport, 0.3 s later).
-        // Handled in Unit.js where _wpHitReturn timer expires — see comment there.
-        ally._wpHitReturn = { timer: 0.3, x: origX, y: origY };
-        _radialParticles(bx, by, 8, '#ffffff', '#ffe0ff');
+        // Stagger: each ally blinks with a random offset (0–150 ms) so timings look chaotic.
+        ally._wpHitPending = { delay: Math.random() * 0.15, bx, by, origX, origY, nearest, dmg };
+        allyIdx++;
       }
     },
   },
@@ -573,7 +562,8 @@ export const ABILITY_DEFS = {
         if (targets.length === 0) continue;
         ally._dominanceOrigin = { x: ally.x, y: ally.y };
         ally._dominanceTargets = [...targets];
-        ally._dominanceTimer = 0;
+        // Stagger: random 0–150 ms delay before the first chain strike per ally.
+        ally._dominanceTimer = Math.random() * 0.15;
         // SOUND POINT 2 — CHAIN START: blink whoosh once per ally when the chain begins.
         playSfx('ability.blink');
         _radialParticles(ally.x, ally.y, 12, '#ffffff', '#e0c0ff');
@@ -831,6 +821,7 @@ export const ABILITY_DEFS = {
         clubX: unit.x, clubY: unit.y,
         hitOut: new Set(), hitRet: new Set(),
         ellipseWidth: 120,
+        _trail: [],
       };
       unit.boomerang2 = {
         startX: unit.x, startY: unit.y,
@@ -838,7 +829,8 @@ export const ABILITY_DEFS = {
         phase: 'outbound', t: 0,
         clubX: unit.x + rand(-10, 10), clubY: unit.y + rand(-10, 10),
         hitOut: new Set(), hitRet: new Set(),
-        ellipseWidth: -120,  // mirror arc direction
+        ellipseWidth: -120,
+        _trail: [],
       };
       return true;
     },
@@ -852,15 +844,18 @@ export const ABILITY_DEFS = {
     maxCd: 22,
     activate(unit) {
       const duration     = 5.0;
-      const pullRadius   = 90;
+      const pullRadius   = 150;
       const slamDamage   = 120;
       const postStunDur  = 2.0;
-      unit.danceOfDeathTimer   = duration;
-      unit.danceOfDeathCenterX = unit.x;
-      unit.danceOfDeathCenterY = unit.y;
-      unit.danceOfDeathPullR   = pullRadius;
-      unit.danceOfDeathSlamDmg = slamDamage;
-      unit.danceOfDeathStunDur = postStunDur;
+      unit.danceOfDeathTimer    = duration;
+      unit.danceOfDeathCenterX  = unit.x;
+      unit.danceOfDeathCenterY  = unit.y;
+      unit.danceOfDeathAngle    = unit.facing;
+      unit._danceOfDeathTargetX = unit.tx;
+      unit._danceOfDeathTargetY = unit.ty;
+      unit.danceOfDeathPullR    = pullRadius;
+      unit.danceOfDeathSlamDmg  = slamDamage;
+      unit.danceOfDeathStunDur  = postStunDur;
       unit.immortalTimer = Math.max(unit.immortalTimer || 0, duration + 0.1);
       _radialParticles(unit.x, unit.y, 40, '#ff2000', '#ff8030');
       if (!state.settings.noShake) state.shake = Math.max(state.shake, 10);

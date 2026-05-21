@@ -273,8 +273,7 @@ export function playSfx(id, options = {}, visited = new Set()) {
   visited.add(resolvedId);
 
   if (resolvedId.startsWith('synthetic.')) {
-    const syntheticType = getSyntheticType(resolvedId, options);
-    if (syntheticType) playSyntheticSfx(syntheticType);
+    if (resolvedId !== 'misc.empty') playSfx('misc.empty', {}, visited);
     return;
   }
 
@@ -306,7 +305,7 @@ export function playSfx(id, options = {}, visited = new Set()) {
   }
 
   const syntheticType = getSyntheticType(resolvedId, options);
-  if (syntheticType) playSyntheticSfx(syntheticType);
+  if (syntheticType && resolvedId !== 'misc.empty') playSfx('misc.empty', {}, visited);
 }
 
 function createSoundHandle(source, gain) {

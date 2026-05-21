@@ -63,7 +63,14 @@ export class VictoryScene extends Phaser.Scene {
       addT(cy, `SURVIVED: ${Math.floor(s.survivedSeconds)}s`, {
         fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#d9c7a0', letterSpacing: 2,
       });
-      cy += 28;
+      cy += 22;
+      if (s.essenceSurplus > 0) {
+        addT(cy, `ESSENCE SURPLUS: ${s.essenceSurplus}`, {
+          fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#60d890', letterSpacing: 2,
+        });
+        cy += 22;
+      }
+      cy += 6;
     }
 
     // Fallen heroes
