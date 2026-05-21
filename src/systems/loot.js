@@ -53,7 +53,7 @@ export function applyLoot(loot, unit) {
   } else if (loot.type === 'banana_bomb') {
     detonateBananaBomb(loot.x, loot.y);
   } else if (loot.type === 'essence') {
-    playSfx('loot.essence', { synthetic: 'loot', volume: 0.3 });
+    playSfx('loot.essence', { volume: 0.3 });
     state.moveMarkers.push({ x: unit.x, y: unit.y - 18, life: 0.9, maxLife: 0.9, type: 'xp', text: '+1' });
     _gainAbilityXp(LOOT_DEFS.essence.xpPerPickup);
   }
@@ -66,10 +66,18 @@ function _levelUp(heroType) {
   state.pendingLevelUps = (state.pendingLevelUps || 0) + 1;
   if (!state.pendingWeaponUpgrades) state.pendingWeaponUpgrades = [];
   state.pendingWeaponUpgrades.push(heroType || 'eliott');
-  playSfx('ui.levelup', { synthetic: 'loot' });
+  playSfx('ui.levelup');
+}
+
+function _allAbilitiesMaxed() {
+  return state.units?.every(u => [1, 2, 3].every(t => (u.abilityTrees?.[t] ?? 0) >= 3));
 }
 
 function _gainAbilityXp(amount) {
+  if (_allAbilitiesMaxed()) {
+    state.essenceSurplus = (state.essenceSurplus || 0) + amount;
+    return;
+  }
   state.abilityXp = (state.abilityXp || 0) + amount;
   while (state.abilityXp >= state.abilityXpThreshold) {
     state.abilityXp -= state.abilityXpThreshold;
@@ -83,7 +91,7 @@ function _gainAbilityXp(amount) {
 function _weaponPickupBonus(unit, weaponKey, lootX, lootY) {
   const wDef = WEAPON_DEFS[weaponKey];
   const xpBonus = 10;
-  playSfx(`loot.weapon.${weaponKey}`, { synthetic: 'loot' });
+  playSfx(`loot.weapon.${weaponKey}`);
 
   state.xp += xpBonus;
   while (state.xp >= state.xpToNext) { _levelUp(unit.type); }

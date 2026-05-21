@@ -108,19 +108,25 @@ export function drawAbilityPanel() {
 
     if (u.dead) {
       _txt(ctx, 'DEAD', x + 27, y + HEADER_H + 9, '#e04030', 'bold 12px Georgia, serif');
-      // Crosshatch over buff row + button area to make it visually non-interactive
+      // Crosshatch over buff row + button area to make it visually non-interactive.
+      // Clip to card bounds so diagonal lines never bleed into adjacent hero cards.
       const btnY = y + HEADER_H + 2;
       const BH   = PANEL_H - HEADER_H - 4;
       ctx.fillStyle = 'rgba(40, 8, 5, 0.75)';
       ctx.fillRect(x, btnY, SLOT_W, BH);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, btnY, SLOT_W, BH);
+      ctx.clip();
       ctx.strokeStyle = 'rgba(120, 30, 20, 0.45)';
       ctx.lineWidth = 1;
-      for (let xi = 0; xi < SLOT_W; xi += 8) {
+      for (let xi = 0; xi < SLOT_W + BH; xi += 8) {
         ctx.beginPath();
         ctx.moveTo(x + xi, btnY);
         ctx.lineTo(x + xi - BH, btnY + BH);
         ctx.stroke();
       }
+      ctx.restore();
       continue;
     }
 

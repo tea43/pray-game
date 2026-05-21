@@ -26,8 +26,8 @@ export class ShotgunBullet {
     for (const e of state.enemies) {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
-        playSfx('weapon.impact.default', { synthetic: 'hit' });
-        playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
+        playSfx('weapon.impact.default');
+        playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
         e.hp -= this.dmg;
         e.hurtFlash = 1;
         e.knockX += this.vx * 0.18;

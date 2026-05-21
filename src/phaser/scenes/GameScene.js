@@ -113,7 +113,7 @@ export class GameScene extends Phaser.Scene {
       pendingUpgrades: { eliott: null, dick: null, habib: null },
       upgradeSpinCredits: 0, selectedUpgradeHistory: { eliott: [], dick: [], habib: [] },
       xp: 0, level: 1, xpToNext: 50, _levelUpFlash: 0,
-      abilityXp: 0, abilityXpThreshold: ABILITY_XP_CONFIG.startThreshold, abilityXpPicks: 0, pendingAbilityPicks: 0,
+      abilityXp: 0, abilityXpThreshold: ABILITY_XP_CONFIG.startThreshold, abilityXpPicks: 0, pendingAbilityPicks: 0, essenceSurplus: 0,
       heroReviveCounts: { eliott: 0, dick: 0, habib: 0 },
       groupAbility: null, cinematicSlowdown: 0,
       devAbilityTest: !!diff.devAbilityTest,
@@ -139,6 +139,30 @@ export class GameScene extends Phaser.Scene {
     // Snap camera to world centre
     G.camera.x = Math.max(0, cx - G.W / 2);
     G.camera.y = Math.max(0, cy - G.PLAY_BOTTOM / 2);
+
+    // Pre-place initial enemies around the hero start so they arrive within ~10
+    // game-seconds rather than after the long walk from the world edges.
+    if (!diff.devWaves?.length) {
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + rand(-0.3, 0.3);
+        const d = 350 + rand(0, 120);
+        spawnAt(
+          clamp(cx + Math.cos(angle) * d, 40, G.WORLD_W - 40),
+          clamp(cy + Math.sin(angle) * d, 40, G.WORLD_H - 40),
+          'raider',
+        );
+      }
+    }
+
+    // Max-abilities mode: set every tree to level 3 and mark the XP pool as exhausted
+    // so no ability picker opens and surplus tracking works from the start.
+    if (diff.devMaxAbilities) {
+      for (const u of state.units) {
+        u.abilityTrees = { 1: 3, 2: 3, 3: 3 };
+      }
+      state.abilityXpPicks    = 24;
+      state.pendingAbilityPicks = 0;
+    }
 
     if (diff.devWaves?.length > 0) {
       const bossMap = diff.enemy.bosses;
@@ -183,7 +207,7 @@ export class GameScene extends Phaser.Scene {
     const anyAbilityActive = !!state.groupAbility || state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
       u.flamethrowerTimer > 0 || u.acidGunTimer > 0 || u.millTimer > 0 || u.vortexTimer > 0 ||
-      u.stonedTimer > 0
+      u.stonedTimer > 0 || u.danceOfDeathTimer > 0
     ));
     const spaceHoldDriving = state.spaceHeld && state.spaceHoldDuration >= 1.0;
     let targetFlow = state.gameOver        ? 0
@@ -196,7 +220,13 @@ export class GameScene extends Phaser.Scene {
     if (state.groupAbility && state.cinematicSlowdown > 0 && targetFlow > 0) {
       targetFlow = Math.min(targetFlow, state.cinematicSlowdown);
     }
-    state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
+    // Snap immediately when speed should increase; smooth-ramp only on slowdown.
+    // This prevents the sluggish feel when resuming movement after a long idle.
+    if (targetFlow > state.timeFlow) {
+      state.timeFlow = targetFlow;
+    } else {
+      state.timeFlow += (targetFlow - state.timeFlow) * Math.min(1, realDt * 12);
+    }
     if (state.timeFlow < 0.001) state.timeFlow = 0;
   }
 
@@ -264,12 +294,20 @@ export class GameScene extends Phaser.Scene {
       this.scene.pause();
     }
 
-    // Open ability upgrade picker when essence XP threshold crossed
+    // Open ability upgrade picker when essence XP threshold crossed.
+    // If all trees are at max level (3), drain the queue without opening the scene.
     if (state.pendingAbilityPicks > 0 && !state.isUpgradeScreen && !state.isLevelUpScreen && !state.gameOver) {
-      state.pendingAbilityPicks -= 1;
-      state.isUpgradeScreen = true;
-      this.scene.pause();
-      this.scene.launch('UpgradeScene');
+      const anyUpgradeable = state.units.some(u =>
+        [1, 2, 3].some(t => (u.abilityTrees?.[t] ?? 0) < 3)
+      );
+      if (!anyUpgradeable) {
+        state.pendingAbilityPicks = 0;
+      } else {
+        state.pendingAbilityPicks -= 1;
+        state.isUpgradeScreen = true;
+        this.scene.pause();
+        this.scene.launch('UpgradeScene');
+      }
     }
 
     // Update group ability system (uses realDt for animation, gameDt for damage)
@@ -464,7 +502,7 @@ export class GameScene extends Phaser.Scene {
     return state.units.some(u => !u.dead && (
       (u._dominanceTargets?.length > 0) || u._wpHitReturn !== null ||
       u.flamethrowerTimer > 0 || u.acidGunTimer > 0 ||
-      u.millTimer > 0 || u.vortexTimer > 0 || u.boomerang !== null
+      u.millTimer > 0 || u.vortexTimer > 0 || u.boomerang !== null || u.danceOfDeathTimer > 0
     ));
   }
 

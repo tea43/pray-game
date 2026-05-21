@@ -288,8 +288,8 @@ export class Enemy {
         if (actualDmg > 0) {
           if (!target.applyDamage) { target.hp -= actualDmg; target.hurtFlash = 1; }
           this.dmgCd = 0.75;
-          playSfx('alien.attack.default', { synthetic: 'hit' });
-          playSfx('character.damaged.default', { synthetic: 'hit' });
+          playSfx('alien.attack.default');
+          playSfx('character.damaged.default');
           if (!state.settings.noShake) state.shake = Math.max(state.shake, 2);
           for (let i = 0; i < 6; i++) {
             state.particles.push({

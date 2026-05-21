@@ -32,10 +32,8 @@ export class Projectile {
     this.life = 0;
     this.maxLife = 2.5;
     const sfxThrow = wDef.sfxThrow || 'weapon.thrownClub.throw';
-    const sfxSynthetic = wDef.sfxFallbackThrow || 'shoot';
-    this.flightSound = playSfx(sfxThrow, { synthetic: sfxSynthetic });
+    this.flightSound = playSfx(sfxThrow);
     this._sfxImpact = wDef.sfxImpact || 'weapon.thrownClub.impact';
-    this._sfxImpactFallback = wDef.sfxFallbackImpact || 'hit';
   }
 
   update(dt) {
@@ -107,8 +105,8 @@ export class Projectile {
     if (!this.piercing) this.hasHit = true;
 
     this.stopFlightSound();
-    playSfx(this._sfxImpact, { fallback: 'weapon.impact.default', synthetic: this._sfxImpactFallback });
-    playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
+    playSfx(this._sfxImpact, { fallback: 'weapon.impact.default' });
+    playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
 
     if (this.aoeRadius > 0) {
       for (const ae of state.enemies) {

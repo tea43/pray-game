@@ -283,6 +283,49 @@ export const DIFFICULTY_DEFS = {
     },
   },
 
+  'max-abilities': {
+    label: 'Max Abilities',
+    // All ability trees start at level 3. Superboost always full.
+    // Use this to test every ability and Dance of Death at full power.
+    devMaxAbilities: true,
+    devAbilityTest: true,   // keeps superboost meter full
+    devWaves: [5],
+    devSpawn: [
+      { kind: 'raider', count: 4 },
+      { kind: 'ghoul',  count: 3 },
+      { kind: 'mutant', count: 2 },
+      { kind: 'blinker', count: 1 },
+    ],
+
+    hero: {
+      hpMult:                  3.00,
+      armorMult:               2.00,
+      abilityCdMult:           0.30,   // short cooldowns for rapid testing
+      activeSkillDurabilityMod: 0,
+    },
+
+    enemy: {
+      hpMult:          0.25,
+      dmgMult:         0.20,
+      speedMult:       0.80,
+      spawnMult:       2.00,
+      burstChanceMult: 0.50,
+      bosses: { miniboss: { 5: 1 } },
+    },
+
+    loot: {
+      dropChanceMult:  3.00,
+      healAmount:      999,
+      stimDuration:    15,
+      itemChances: {
+        medkit:   0.12,
+        stimpack: 0.10,
+        bomb:     0.06,
+      },
+      specialDropMult: 3.00,
+    },
+  },
+
 };
 
 export const DIFFICULTY_ORDER = ['cavity-cadet', 'brood-hunter', 'crack-knight', 'rear-admiral', 'dev-mode'];

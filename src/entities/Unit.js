@@ -81,6 +81,7 @@ export class Unit {
     this._vortexTargetX = 0;
     this._vortexTargetY = 0;
     this._wpHitReturn = null;    // White Powder of Hit return data
+    this._wpHitPending = null;   // White Powder of Hit delayed blink (stagger)
     this._dominanceTargets = null;
     this._dominanceOrigin = null;
     this._dominanceTimer = 0;
@@ -99,6 +100,9 @@ export class Unit {
     this.danceOfDeathTimer    = 0;
     this.danceOfDeathCenterX  = 0;
     this.danceOfDeathCenterY  = 0;
+    this.danceOfDeathAngle    = 0;
+    this._danceOfDeathTargetX = 0;
+    this._danceOfDeathTargetY = 0;
     this.danceOfDeathPullR    = 90;    // pull radius (configurable via ability params)
     this.danceOfDeathSlamDmg  = 120;   // slam damage on leap
     this.danceOfDeathStunDur  = 2.0;   // post-slam stun duration
@@ -369,10 +373,25 @@ export class Unit {
       this._vortexSoundHandle?.stop(); this._vortexSoundHandle = null;
     }
 
-    // Dance of Death: black-hole pull + immortality; slam on expiry
+    // Dance of Death: Dick orbits a circle (larger than Vortex), enemies sucked
+    // toward the orbit center like a black hole, Dick is immortal; slam on expiry.
     if (this.danceOfDeathTimer > 0) {
       this.immortalTimer = Math.max(this.immortalTimer, dt + 0.05);
-      const pullForce = 80 * dt;
+      this.danceOfDeathAngle += dt * 3.5;
+      const orbitR = 68;
+      const ddx = this._danceOfDeathTargetX - this.danceOfDeathCenterX;
+      const ddy = this._danceOfDeathTargetY - this.danceOfDeathCenterY;
+      const ddd = Math.hypot(ddx, ddy);
+      if (ddd > 2) {
+        const s = Math.min(ddd, this.speed * dt);
+        this.danceOfDeathCenterX = clamp(this.danceOfDeathCenterX + ddx / ddd * s, 6, G.WORLD_W - 6);
+        this.danceOfDeathCenterY = clamp(this.danceOfDeathCenterY + ddy / ddd * s, 6, G.WORLD_H);
+      }
+      this.x  = clamp(this.danceOfDeathCenterX + Math.cos(this.danceOfDeathAngle) * orbitR, 6, G.WORLD_W - 6);
+      this.y  = clamp(this.danceOfDeathCenterY + Math.sin(this.danceOfDeathAngle) * orbitR, 6, G.WORLD_H);
+      this.tx = this.x; this.ty = this.y;
+      this.facing = this.danceOfDeathAngle + Math.PI * 0.5;
+      const pullForce = 130 * dt;
       for (const e of state.enemies) {
         if (e.dead) continue;
         const dx = this.danceOfDeathCenterX - e.x;
@@ -438,6 +457,31 @@ export class Unit {
       }
     }
 
+    // White Powder of Hit stagger delay → fires the outbound blink after a random delay
+    if (this._wpHitPending) {
+      this._wpHitPending.delay -= dt;
+      if (this._wpHitPending.delay <= 0) {
+        const { bx, by, origX, origY, nearest, dmg } = this._wpHitPending;
+        this._wpHitPending = null;
+        if (nearest && !nearest.dead) {
+          this.x = bx; this.y = by; this.tx = bx; this.ty = by;
+          this.blinkFlash = 1;
+          this.immortalTimer = Math.max(this.immortalTimer || 0, 0.6);
+          playSfx('ability.blink');
+          nearest.hp -= dmg;
+          nearest.hurtFlash = 1;
+          playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default' });
+          playSfx('alien.hit.default');
+          pushDamageNumber(nearest.x, nearest.y - nearest.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
+          this._wpHitReturn = { timer: 0.3, x: origX, y: origY };
+          for (let _i = 0; _i < 8; _i++) {
+            const a = Math.random() * Math.PI * 2, v = 50 + Math.random() * 60;
+            state.particles.push({ x: bx, y: by, vx: Math.cos(a)*v, vy: Math.sin(a)*v, life: 0.25+Math.random()*0.25, maxLife: 0.5, color: _i%2?'#ffffff':'#ffe0ff', size: 1+Math.random()*2, realtime: true });
+          }
+        }
+      }
+    }
+
     // White Powder of Hit return
     if (this._wpHitReturn) {
       this._wpHitReturn.timer -= dt;
@@ -474,8 +518,8 @@ export class Unit {
           e.hurtFlash = 1;
           // SOUND POINT 3 — CHAIN STRIKE: blink whoosh + hero's weapon hit, every 0.25 s.
           playSfx('ability.blink');
-          playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
-          playSfx('alien.hit.default', { synthetic: 'hit' });
+          playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default' });
+          playSfx('alien.hit.default');
           pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [240, 220, 100] });
         }
         this._dominanceTimer = 0.25;
@@ -658,6 +702,11 @@ export class Unit {
     b.clubX = (1-t)*(1-t)*bsx + 2*(1-t)*t*ctrlX + t*t*bex;
     b.clubY = (1-t)*(1-t)*bsy + 2*(1-t)*t*ctrlY + t*t*bey;
 
+    // Update trail: push current position, cap at 18 points.
+    if (!b._trail) b._trail = [];
+    b._trail.push({ x: b.clubX, y: b.clubY });
+    if (b._trail.length > 18) b._trail.shift();
+
     const hitSet = b.phase === 'outbound' ? b.hitOut : b.hitRet;
     const dmg = Math.round((b.phase === 'outbound' ? 50 : 35) * (this.upgradeDmgMult || 1));
     for (const e of state.enemies) {
@@ -669,8 +718,8 @@ export class Unit {
         const ang = Math.atan2(e.y - b.clubY, e.x - b.clubX);
         e.knockX += Math.cos(ang) * 60;
         e.knockY += Math.sin(ang) * 60;
-        playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
-        playSfx('alien.hit.default', { synthetic: 'hit' });
+        playSfx(this._wDef.sfxAttack || 'weapon.attack.default', { fallback: this._wDef.sfxFallback || 'weapon.attack.default' });
+        playSfx('alien.hit.default');
         pushDamageNumber(e.x, e.y - e.r - 4, dmg, { rgb: [210, 185, 130] });
         for (let i = 0; i < 6; i++) {
           state.particles.push({ x: e.x + rand(-3,3), y: e.y + rand(-3,3), vx: rand(-70,70), vy: rand(-90,-10), life: rand(0.2,0.5), maxLife: 0.5, color: e.bloodColor, size: rand(1.2, 2.5), realtime: true });
@@ -823,7 +872,7 @@ export class Unit {
         state.pendingWeaponUpgrades.push(this.type);
       }
       state._levelUpFlash = 0.9;
-      playSfx('ui.levelup', { synthetic: 'loot' });
+      playSfx('ui.levelup');
     }
   }
 
@@ -874,8 +923,8 @@ export class Unit {
     if (this.z === 0) this.vz = 120;
     const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
     const kb = (stats.knockback ?? 80) * (this.rageTimer > 0 ? 1.75 : 1);
-    playSfx(stats.sfxAttack || 'weapon.attack.default', { fallback: stats.sfxFallback || 'weapon.attack.default', synthetic: 'hit' });
-    playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default', { synthetic: 'hit' });
+    playSfx(stats.sfxAttack || 'weapon.attack.default', { fallback: stats.sfxFallback || 'weapon.attack.default' });
+    playSfx(enemy.kind === 'bigboss' || enemy.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
     enemy.hp -= dmg;
     this._gainWeaponXp(dmg);
     this._applyWeaponEffect(enemy);
@@ -896,7 +945,7 @@ export class Unit {
   }
 
   _attackCleave(stats) {
-    playSfx(stats.sfxAttack || 'weapon.samurai.attack', { synthetic: 'hit' });
+    playSfx(stats.sfxAttack || 'weapon.samurai.attack');
     const halfArc = Math.PI * ((stats.cleaveArc ?? 60) / 180);
     const kb = stats.knockback ?? 120;
     let hit = 0;
@@ -922,7 +971,7 @@ export class Unit {
       pushDamageNumber(e.x, e.y - e.r - 4, dmg, { crit: true, rgb: [255, 240, 160] });
       hit++;
     }
-    if (hit > 0) playSfx('alien.hit.default', { synthetic: 'hit' });
+    if (hit > 0) playSfx('alien.hit.default');
     state.particles.push({ x: this.x + Math.cos(this.facing) * 24, y: this.y + Math.sin(this.facing) * 24, vx: 0, vy: 0, life: 0.18, maxLife: 0.18, color: 'rgba(255,245,200,1)', size: 16, realtime: true, additive: true });
     if (!state.settings.noShake) state.shake   = Math.max(state.shake,   hit > 1 ? 7    : 3.5);
     if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
@@ -939,7 +988,7 @@ export class Unit {
 
   _attackRanged(stats, enemy) {
     this.throwArm = 1;
-    playSfx(stats.sfxFire || 'weapon.throw.default', { synthetic: stats.sfxFallback || 'shoot' });
+    playSfx(stats.sfxFire || 'weapon.throw.default');
     const count  = stats.bulletCount ?? 1;
     const spread = stats.spread ?? 0;
     const baseDmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
@@ -1278,10 +1327,9 @@ export class Unit {
       this._drawWeapon(ctx);
     }
 
-    // Draw flying boomerang
-    if (this.boomerang !== null) {
-      this._drawFlyingBoomerang(ctx);
-    }
+    // Draw flying boomerang(s)
+    if (this.boomerang !== null)  this._drawFlyingBoomerang(ctx, this.boomerang);
+    if (this.boomerang2 !== null) this._drawFlyingBoomerang(ctx, this.boomerang2);
 
     // Flamethrower visual — dense fire particle spray
     if (this.flamethrowerTimer > 0) {
@@ -1352,6 +1400,25 @@ export class Unit {
       ctx.stroke();
     }
 
+    if (this.danceOfDeathTimer > 0) {
+      const t  = this.danceOfDeathTimer;
+      const cx = this.danceOfDeathCenterX;
+      const cy = this.danceOfDeathCenterY;
+      const pulse = 0.6 + 0.4 * Math.sin(state.time * 8);
+      ctx.strokeStyle = `rgba(255, 30, 0, ${Math.min(0.9, t * 0.28) * pulse})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.danceOfDeathPullR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 100, 30, ${Math.min(0.5, t * 0.18)})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 8]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.danceOfDeathPullR * 0.55, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     if (this.swing > 0.3 && this._displayWDef.type === 'melee' && !(this.type === 'dick' && this.boomerang !== null)) {
       const swingArc = this.swing > 0 ? Math.sin((1 - this.swing) * Math.PI) * 2.2 - 1.1 : 0;
       const clubBase = this.facing - 0.4 + swingArc;
@@ -1388,44 +1455,6 @@ export class Unit {
       ctx.fillText(`${icon} ${this.weaponTimer.toFixed(0)}s`, this.x, barY - 4);
       ctx.textAlign = 'left';
     }
-    ctx.restore();
-  }
-
-  _drawFlyingBoomerang(ctx) {
-    const b = this.boomerang;
-    if (!b) return;
-    const angle = state.time * 14;
-    ctx.save();
-    ctx.translate(b.clubX, b.clubY);
-    ctx.rotate(angle);
-    // Shaft
-    ctx.strokeStyle = '#5a3510';
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-20, 0);
-    ctx.lineTo(20, 0);
-    ctx.stroke();
-    ctx.strokeStyle = '#9a6530';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-20, 0);
-    ctx.lineTo(20, 0);
-    ctx.stroke();
-    // Blade at tip
-    ctx.strokeStyle = '#3a2010';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(16, 0);
-    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
-    ctx.stroke();
-    ctx.strokeStyle = '#7a4520';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(16, 0);
-    ctx.lineTo(16 + Math.cos(1.1) * 12, Math.sin(1.1) * 12);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
     ctx.restore();
   }
 
@@ -1780,10 +1809,38 @@ export class Unit {
     }
   }
 
-  _drawFlyingBoomerang(ctx) {
-    const b = this.boomerang;
+  _drawFlyingBoomerang(ctx, b) {
     if (!b) return;
     const angle = state.time * 18;
+
+    // Trail — fading golden circles from oldest to newest
+    const trail = b._trail;
+    if (trail && trail.length > 1) {
+      for (let i = 0; i < trail.length; i++) {
+        const p = trail[i];
+        const frac = (i + 1) / trail.length;
+        ctx.save();
+        ctx.globalAlpha = frac * 0.55;
+        ctx.fillStyle = i % 2 === 0 ? '#ff8c10' : '#ffd040';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2 + frac * 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Glow halo around boomerang
+    const glow = ctx.createRadialGradient(b.clubX, b.clubY, 0, b.clubX, b.clubY, 24);
+    glow.addColorStop(0,   'rgba(255, 210, 80, 0.75)');
+    glow.addColorStop(0.45,'rgba(255, 130, 20, 0.35)');
+    glow.addColorStop(1,   'rgba(255, 80,  0, 0)');
+    ctx.save();
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(b.clubX, b.clubY, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     drawWeaponSprite(ctx, 'boomerang', b.clubX, b.clubY, 1.4, angle);
   }
 }
