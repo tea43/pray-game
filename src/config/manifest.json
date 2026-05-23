@@ -78,27 +78,45 @@
       "src": "./assets/sprites/heroes/elliot.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":  { "row": 0, "frames": 4, "fps": 5  },
-        "walk":  { "row": 1, "frames": 6, "fps": 12 },
-        "death": { "row": 5, "frames": 6, "fps": 8  }
+        "idle_dr": { "row": 0, "frames": 4, "fps": 5  },
+        "idle_dl": { "row": 1, "frames": 4, "fps": 5  },
+        "idle_ur": { "row": 2, "frames": 4, "fps": 5  },
+        "idle_ul": { "row": 3, "frames": 4, "fps": 5  },
+        "walk_dr": { "row": 4, "frames": 6, "fps": 12 },
+        "walk_dl": { "row": 5, "frames": 6, "fps": 12 },
+        "walk_ur": { "row": 6, "frames": 6, "fps": 12 },
+        "walk_ul": { "row": 7, "frames": 6, "fps": 12 },
+        "death":   { "row": 8, "frames": 5, "fps": 8  }
       }
     },
     "dick": {
       "src": "./assets/sprites/heroes/dick.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":  { "row": 0, "frames": 4, "fps": 5  },
-        "walk":  { "row": 1, "frames": 6, "fps": 12 },
-        "death": { "row": 5, "frames": 6, "fps": 8  }
+        "idle_dr": { "row": 0, "frames": 4, "fps": 5  },
+        "idle_dl": { "row": 1, "frames": 4, "fps": 5  },
+        "idle_ur": { "row": 2, "frames": 4, "fps": 5  },
+        "idle_ul": { "row": 3, "frames": 4, "fps": 5  },
+        "walk_dr": { "row": 4, "frames": 6, "fps": 12 },
+        "walk_dl": { "row": 5, "frames": 6, "fps": 12 },
+        "walk_ur": { "row": 6, "frames": 6, "fps": 12 },
+        "walk_ul": { "row": 7, "frames": 6, "fps": 12 },
+        "death":   { "row": 8, "frames": 5, "fps": 8  }
       }
     },
     "habib": {
       "src": "./assets/sprites/heroes/habib.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":  { "row": 0, "frames": 4, "fps": 5  },
-        "walk":  { "row": 1, "frames": 6, "fps": 12 },
-        "death": { "row": 5, "frames": 6, "fps": 8  }
+        "idle_dr": { "row": 0, "frames": 4, "fps": 5  },
+        "idle_dl": { "row": 1, "frames": 4, "fps": 5  },
+        "idle_ur": { "row": 2, "frames": 4, "fps": 5  },
+        "idle_ul": { "row": 3, "frames": 4, "fps": 5  },
+        "walk_dr": { "row": 4, "frames": 6, "fps": 12 },
+        "walk_dl": { "row": 5, "frames": 6, "fps": 12 },
+        "walk_ur": { "row": 6, "frames": 6, "fps": 12 },
+        "walk_ul": { "row": 7, "frames": 6, "fps": 12 },
+        "death":   { "row": 8, "frames": 5, "fps": 8  }
       }
     }
   },

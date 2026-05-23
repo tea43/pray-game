@@ -116,6 +116,7 @@ export class GameScene extends Phaser.Scene {
       abilityXp: 0, abilityXpThreshold: ABILITY_XP_CONFIG.startThreshold, abilityXpPicks: 0, pendingAbilityPicks: 0, essenceSurplus: 0,
       heroReviveCounts: { eliott: 0, dick: 0, habib: 0 },
       groupAbility: null, cinematicSlowdown: 0,
+      nukeFlashAlpha: 0, nukeFlashDecay: 0, cameraZoom: 1, cameraZoomTarget: 1, cameraZoomSpeed: 0,
       devAbilityTest: !!diff.devAbilityTest,
     });
 
@@ -239,8 +240,14 @@ export class GameScene extends Phaser.Scene {
 
     state.time += realDt;
     updateDust(realDt);
-    if (state.shake > 0)      state.shake      = Math.max(0, state.shake      - realDt * 18);
-    if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - realDt * 3.2);
+    if (state.shake > 0)         state.shake         = Math.max(0, state.shake         - realDt * 18);
+    if (state.flashAlpha > 0)    state.flashAlpha    = Math.max(0, state.flashAlpha    - realDt * 3.2);
+    if (state.nukeFlashAlpha > 0) state.nukeFlashAlpha = Math.max(0, state.nukeFlashAlpha - realDt * (state.nukeFlashDecay || 0.6));
+    if (state.cameraZoom !== 1 && state.cameraZoomTarget === 1) {
+      const speed = state.cameraZoomSpeed || 1.5;
+      state.cameraZoom = state.cameraZoom + (1 - state.cameraZoom) * Math.min(1, realDt * speed);
+      if (Math.abs(state.cameraZoom - 1) < 0.002) state.cameraZoom = 1;
+    }
 
     // Embers drift in real time (atmosphere lives even when paused)
     for (const em of state.embers || []) {
@@ -678,6 +685,13 @@ export class GameScene extends Phaser.Scene {
     const { W, H, PLAY_BOTTOM } = G;
 
     ctx.save();
+    // Nuclear zoom — scale from screen center
+    if (state.cameraZoom !== 1) {
+      const zx = W / 2, zy = PLAY_BOTTOM / 2;
+      ctx.translate(zx, zy);
+      ctx.scale(state.cameraZoom, state.cameraZoom);
+      ctx.translate(-zx, -zy);
+    }
     if (state.shake > 0 && !state.settings.noShake) {
       ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
     }
@@ -769,6 +783,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     drawScreenFlash();
+    // Nuclear white-out overlay — sustained flash that decays slowly
+    if (state.nukeFlashAlpha > 0.005 && !state.settings.noLightning) {
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = Math.min(1, state.nukeFlashAlpha);
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
     drawCRTOverlay();
     this._drawHeliArrow(ctx);
     this._drawWaveAnnouncements(ctx);

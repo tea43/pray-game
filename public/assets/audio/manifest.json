@@ -575,10 +575,6 @@
       "fallback": "explosion.bomb",
       "volume": 1,
       "pitchJitter": 0.04
-    },
-    "misc.empty": {
-      "variants": ["./assets/audio/misc/empty_sound_placeholder.mp3"],
-      "volume": 0
     }
   }
 }

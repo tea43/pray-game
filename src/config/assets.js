@@ -25,7 +25,7 @@ export class SpriteSheet {
       ctx.drawImage(this.image, x, y, w, h);
       return;
     }
-    const anim = this.animations[animState?.name] || this.animations.idle || this.animations[Object.keys(this.animations)[0]];
+    const anim = this.animations[animState?.name] || this.animations.idle || this.animations.idle_dr || this.animations[Object.keys(this.animations)[0]];
     if (!anim) { ctx.drawImage(this.image, x, y, w, h); return; }
     const col = (animState?.frame ?? 0) % anim.frames;
     ctx.drawImage(

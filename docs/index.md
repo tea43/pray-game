@@ -35,6 +35,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `current/current_game_state.md`: Concise snapshot of the playable game: heroes, weapons, abilities, enemies, loot, waves, controls, and current architecture.
 - `current/implementation_notes.md`: Deeper technical reference for current modular `src/` behavior and code locations.
 - `current/sprites.md`: Sprite registry — manifest structure, categories, fallback chain, and how to add new art.
+- `current/hero_visuals/`: Seed-frame previews and concept references for hero appearance iteration before final animated spritesheets.
 - `current/bugs.md`: Active bug tracker. Statuses: TBD → IPG → VAL → DON. Take the first TBD bug, mark IPG, fix it, mark VAL, commit, remove entry.
 - `current/bugs/performance_improvements.md`: Log of completed performance optimisations (background cache, shadowBlur removal, DPR cap, particle throttle).
 - `current/smoke_checklist.md`: Manual verification checklist for gameplay/rendering patches.
@@ -46,6 +47,8 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `planning/future_development_plan.md`: Suggested development roadmap for gameplay, content, tooling, and eventual Steam readiness.
 - `planning/audio_plan.md`: Phase 6 implementation plan for music, sound effects, event naming, variant pools, and missing-asset fallbacks.
 - `planning/asset_injection_plan.md`: Proposed manifest/data structure for injectable heroes, enemies, weapons, loot, and comic assets.
+- `planning/hero_miniature_spec.md`: Exact chibi-miniature size, stance, and proportion system for hero sprite seed frames.
+- `planning/hero_visual_direction.md`: Movie-reference visual brief for Eliott, Habib, and Richard before final hero sprite production.
 - `planning/future_world_sprites.md`: Eastern European environment sprites — design spec and occlusion system.
 - `planning/reworked_upgrade_plan.md`: Reworked slot-machine upgrade selector — lore-correct upgrade pools (Dick→weapons, Habib→armor, Eliott→alchemy), hidden spin-credit banking mechanic, and `UpgradeTestScene` dev harness.
 - `planning/realistic_abilities_plan.md`: Lore-accurate ability rework — weapon reassignment, 3 new base abilities, passive/active upgrade pools with per-wave durability.
@@ -90,6 +93,8 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 | Balance change | `current/current_game_state.md`, then relevant code ranges |
 | Add ability, weapon, enemy, or loot | `current/current_game_state.md` + `current/implementation_notes.md` |
 | Asset/content pipeline | `planning/asset_injection_plan.md` + `lore/PRAY_the game.md` |
+| Hero appearance direction | `planning/hero_visual_direction.md` + `lore/PRAY_the game.md` |
+| Hero miniature proportions | `planning/hero_miniature_spec.md` + `planning/hero_visual_direction.md` |
 | Audio, music, or sound effects | `planning/audio_plan.md` + targeted event code |
 | Roadmap or feature sequencing | `planning/future_development_plan.md` |
 | Immediate build phase status | `planning/plan.md` |
