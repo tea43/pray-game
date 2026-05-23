@@ -78,33 +78,27 @@
       "src": "./assets/sprites/heroes/elliot.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":   { "row": 0, "frames": 4, "fps": 5 },
-        "walk":   { "row": 1, "frames": 6, "fps": 12 },
-        "attack": { "row": 2, "frames": 4, "fps": 18 },
-        "blink":  { "row": 3, "frames": 3, "fps": 20 },
-        "death":  { "row": 4, "frames": 6, "fps": 8 }
+        "idle":  { "row": 0, "frames": 4, "fps": 5  },
+        "walk":  { "row": 1, "frames": 6, "fps": 12 },
+        "death": { "row": 5, "frames": 6, "fps": 8  }
       }
     },
     "dick": {
       "src": "./assets/sprites/heroes/dick.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":   { "row": 0, "frames": 4, "fps": 5 },
-        "walk":   { "row": 1, "frames": 6, "fps": 12 },
-        "attack": { "row": 2, "frames": 4, "fps": 16 },
-        "rage":   { "row": 3, "frames": 4, "fps": 18 },
-        "death":  { "row": 4, "frames": 6, "fps": 8 }
+        "idle":  { "row": 0, "frames": 4, "fps": 5  },
+        "walk":  { "row": 1, "frames": 6, "fps": 12 },
+        "death": { "row": 5, "frames": 6, "fps": 8  }
       }
     },
     "habib": {
       "src": "./assets/sprites/heroes/habib.png",
       "frameW": 64, "frameH": 64,
       "animations": {
-        "idle":    { "row": 0, "frames": 4, "fps": 5 },
-        "walk":    { "row": 1, "frames": 6, "fps": 12 },
-        "attack":  { "row": 2, "frames": 5, "fps": 16 },
-        "casting": { "row": 3, "frames": 4, "fps": 14 },
-        "death":   { "row": 4, "frames": 6, "fps": 8 }
+        "idle":  { "row": 0, "frames": 4, "fps": 5  },
+        "walk":  { "row": 1, "frames": 6, "fps": 12 },
+        "death": { "row": 5, "frames": 6, "fps": 8  }
       }
     }
   },
