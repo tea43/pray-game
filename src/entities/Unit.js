@@ -192,6 +192,7 @@ export class Unit {
   get moving()   { return dist2(this.x, this.y, this.tx, this.ty) > 2.5; }
 
   update(dt) {
+    this._tickAnim(dt);
     if (this.dead) return;
 
     if (this.z > 0 || this.vz !== 0) {
@@ -670,7 +671,6 @@ export class Unit {
       }
     }
 
-    this._tickAnim(dt);
   }
 
   // which: 'primary' | 'secondary' — determines which field is nulled on completion
@@ -1192,6 +1192,16 @@ export class Unit {
     }
 
     return dmg;
+  }
+
+  drawCorpse(ctx) {
+    if (!this.dead || this.deathX === undefined) return;
+    const sprite = resolveAsset('heroes', this.type);
+    if (!sprite) return;
+    ctx.save();
+    ctx.translate(this.deathX, this.deathY);
+    sprite.draw(ctx, this._anim, -32, -40, 64, 64);
+    ctx.restore();
   }
 
   draw(ctx) {

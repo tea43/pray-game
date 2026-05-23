@@ -712,10 +712,23 @@ export class GameScene extends Phaser.Scene {
     ];
     drawables.sort((a, b) => a.y - b.y);
 
+    // Dead hero corpses — y-sorted among live entities by deathY
+    const deadHeroes = state.units.filter(u => u.dead && u.deathX !== undefined);
+    deadHeroes.sort((a, b) => a.deathY - b.deathY);
+
     for (const e of state.enemies) if (e.dead) e.draw(ctx);
     for (const l of state.loot) l.draw(ctx);
     this._drawHelicopter(ctx);
-    for (const ent of drawables) ent.draw(ctx);
+
+    // Interleave corpses with live entities by Y position
+    let ci = 0;
+    for (const ent of drawables) {
+      while (ci < deadHeroes.length && deadHeroes[ci].deathY <= ent.y) {
+        deadHeroes[ci++].drawCorpse(ctx);
+      }
+      ent.draw(ctx);
+    }
+    while (ci < deadHeroes.length) deadHeroes[ci++].drawCorpse(ctx);
     for (const pr of state.projectiles) pr.draw(ctx);
     renderGroupAbility(ctx);
 
