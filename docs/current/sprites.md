@@ -23,13 +23,13 @@ Animated spritesheet (rows = animations, columns = frames):
 }
 ```
 
-Loaded at boot via `loadAssets(manifest)` in `src/main.js`. Each entry becomes a `SpriteSheet` instance in `ASSET_REGISTRY[category][key]`. Failed loads are silently ignored — the primitive renderer activates.
+Loaded at boot via `loadAssets(...)` in `src/phaser/scenes/BootScene.js`. Each entry becomes a `SpriteSheet` instance in `ASSET_REGISTRY[category][key]`. Failed loads are ignored and the primitive renderer activates.
 
 ## Sprite sizes
 
 | Category | Frame size | Sheet example |
 |---|---|---|
-| Heroes | **64 × 64 px** | 384 × 320 (6 frames × 5 anims) |
+| Heroes | **64 × 64 px** | 384 × 384 (6 frames × 6 rows) |
 | Regular enemies | **48 × 48 px** | 288 × 192 (6 frames × 4 anims) |
 | Bosses (miniboss, bigboss) | **96 × 96 px** | 576 × 384 (6 frames × 4 anims) |
 | Loot | **32 × 32 px** | 96 × 32 (3 frames, 1 anim) |
@@ -39,7 +39,9 @@ Loaded at boot via `loadAssets(manifest)` in `src/main.js`. Each entry becomes a
 ## Animation states
 
 **Heroes** — driven by `Unit._animName()`:
-`idle` → `walk` → `attack` / `blink` (Elliot) / `rage` (Dick) / `casting` (Habib) → `death`
+`idle` → `walk` → `death`
+
+Hero sheets are 384 × 384 (6 rows × 6 cols). Row layout: 0 idle (4 frames), 1 walk_down, 2 walk_right, 3 walk_up, 4 walk_left, 5 death. The manifest exposes only `idle`, `walk` (→ row 1), and `death` (→ row 5); the engine rotates the sprite to face direction. Old per-hero specials (`attack`/`blink`/`rage`/`casting`) are removed and fall back to `idle` automatically.
 
 **Enemies** — driven by `Enemy._animName()`:
 `walk` → `attack` / `hurt` / `blink` (Blinker) / `slam` (Bigboss) → `death`
