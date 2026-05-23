@@ -92,18 +92,18 @@ The HUD and upgrade screen read this path directly — no manifest or registrati
 Sprite sheets go in:
 
 ```
-public/assets/sprites/heroes/<hero_type>/
+public/assets/sprites/heroes/<hero_type>.png
 ```
 
-**Recommended sheet size: 48 × 48 px per frame.** The figure should fill roughly a 33 × 40 px inner area, centred, with the pivot at the exact centre of the sheet. See `src/entities/Unit.js` — the sprite is drawn via:
+**Recommended sheet size for the current Phaser runtime: 64 × 64 px per frame.** The figure should fill roughly a 34 × 40 px inner area, centred, and drawn facing right so the renderer can rotate it toward movement/attack direction. See `src/entities/Unit.js` — the sprite is drawn via:
 
 ```js
 sprite.draw(ctx, anim, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
 ```
 
-This maps the sheet into a 33 × 33 px region (`r = 11`). Content occupying 69% of the sheet fills that region exactly.
+This maps the sheet into a 33 × 33 px region (`r = 11`). Leaving transparent padding around the silhouette prevents clipping when the whole frame is rotated.
 
-Register the sprite in the asset manifest and load it in `SplashScene`. The `draw()` call in `_drawEliott` / `_drawDick` / `_drawHabib` picks it up automatically once loaded.
+Register the sprite in `src/config/manifest.json`. `src/phaser/scenes/BootScene.js` loads the hero entries from that manifest, and the `draw()` call in `Unit.draw()` picks the sheet up automatically once it exists.
 
 ---
 

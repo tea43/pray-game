@@ -48,8 +48,17 @@ const COMBOS = {
     keys: ['1', '2', '3'],
     label: 'YOU SHOULD STAY IN THE GROUND',
     minDist: 100,
-    maxDist: 1000, 
+    maxDist: 1000,
     colors: { primary: '#ffe060', secondary: '#a060ff' },
+    // Nuclear explosion effect — fires when the shockwave ring starts expanding.
+    nukeFlash: {
+      enabled:       true,
+      flashDuration: 1.6,   // seconds for white-out to fully fade
+      shakeIntensity: 26,   // peak screen shake pixels
+      shakeDuration:  1.0,  // seconds until shake decays to 0
+      zoomPeak:      1.30,  // max zoom multiplier (1 = no zoom)
+      zoomDuration:  1.4,   // seconds for zoom to return to 1.0
+    },
   },
 };
 
@@ -615,11 +624,46 @@ function _updateTriangle(ga, gameDt, realDt) {
       ga.phase = 'nuke_expand';
       ga.phaseTimer = 0.85;
       ga.nukeR = 0;
+
+      // Nuclear explosion effect — configurable per combo def
+      const nf = ga.def?.nukeFlash;
+      if (nf?.enabled !== false) {
+        const dur  = nf?.flashDuration   ?? 1.6;
+        const shkI = nf?.shakeIntensity  ?? 22;
+        const shkD = nf?.shakeDuration   ?? 1.0;
+        const zp   = nf?.zoomPeak        ?? 1.25;
+        const zd   = nf?.zoomDuration    ?? 1.4;
+        if (!state.settings.noLightning) {
+          state.nukeFlashAlpha = 1.0;
+          state.nukeFlashDecay = 1.0 / dur;
+        }
+        if (!state.settings.noShake) {
+          state.shake = Math.max(state.shake, shkI);
+        }
+        // Zoom in, then smoothly return to 1.0 over zoomDuration
+        if (zp > 1) {
+          state.cameraZoom = zp;
+          state.cameraZoomTarget = 1;
+          state.cameraZoomSpeed  = 1.0 / (zd * 0.5); // lerp speed (faster = quicker return)
+        }
+        // Sustain the shake above normal decay for shakeDuration
+        ga._nukeShakerTimer = shkD;
+        ga._nukeShakeIntensity = shkI;
+      }
     }
     return;
   }
 
   if (ga.phase === 'nuke_expand') {
+    // Sustain screen shake while the shockwave expands
+    if (ga._nukeShakerTimer > 0) {
+      ga._nukeShakerTimer -= realDt;
+      if (!state.settings.noShake) {
+        const shakeFrac = Math.max(0, ga._nukeShakerTimer / (ga.def?.nukeFlash?.shakeDuration ?? 1.0));
+        state.shake = Math.max(state.shake, (ga._nukeShakeIntensity || 16) * shakeFrac);
+      }
+    }
+
     const progress = 1 - Math.max(0, ga.phaseTimer) / 0.85;
     ga.nukeR = progress * ga.nukeRadius;
     // Ring-edge sparks

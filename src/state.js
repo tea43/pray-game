@@ -29,6 +29,11 @@ export const state = {
   hitStop: 0,
   flashAlpha: 0,
   flashColor: '#ffe0a0',
+  nukeFlashAlpha: 0,    // sustained white-out for nuclear explosion effect
+  nukeFlashDecay: 0,    // alpha units/sec (set from nukeFlash config when triggered)
+  cameraZoom: 1.0,      // current zoom multiplier (1 = normal)
+  cameraZoomTarget: 1.0,// zoom lerps toward this each frame
+  cameraZoomSpeed: 0,   // lerp speed (set from config on trigger)
   kills: 0,
   wave: 1,
   waveTimer: 0,

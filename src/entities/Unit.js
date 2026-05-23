@@ -19,7 +19,7 @@ export class Unit {
     this.tx = x; this.ty = y;
     this.z = 0;
     this.vz = 0;
-    this.r = 11;
+    this.r = 13;
     this.speed = 78;
     this.hp = 100; this.maxHp = 100;
     this.selected = false;
@@ -810,21 +810,25 @@ export class Unit {
     return true;
   }
 
+  _getDir() {
+    const dx = Math.cos(this.facing);
+    const dy = Math.sin(this.facing);
+    if (dx >= 0) return dy >= 0 ? 'dr' : 'ur';
+    return dy >= 0 ? 'dl' : 'ul';
+  }
+
   _animName() {
-    if (this.dead)        return 'death';
-    if (this.swing > 0.5) return 'attack';
-    if (this.type === 'eliott' && this.blinkFlash > 0.5) return 'blink';
-    if (this.type === 'dick'   && this.rageTimer  > 0)   return 'rage';
-    if (this.throwArm > 0.5) return 'casting';
-    if (this.moving)      return 'walk';
-    return 'idle';
+    if (this.dead) return 'death';
+    const dir = this._getDir();
+    if (this.moving) return `walk_${dir}`;
+    return `idle_${dir}`;
   }
 
   _tickAnim(dt) {
     const sprite = resolveAsset('heroes', this.type);
     if (!sprite?.isAnimated) return;
     const name = this._animName();
-    const anim = sprite.animations[name] || sprite.animations.idle;
+    const anim = sprite.animations[name] || sprite.animations.idle_dr || sprite.animations.idle;
     if (!anim) return;
     if (this._anim.name !== name) {
       this._anim.name  = name;
@@ -1291,14 +1295,19 @@ export class Unit {
     const wobble = this.moving ? Math.sin(this.walkCycle) * 1.2 : 0;
     const flashBoost = this.hurtFlash > 0 ? this.hurtFlash : 0;
 
+    const facingUp = this._getDir().startsWith('u');
+    const canDrawWeapon = !(this.type === 'dick' && this.boomerang !== null);
+
+    // Facing up: weapon behind body — draw weapon first
+    if (facingUp && canDrawWeapon) this._drawWeapon(ctx);
+
     ctx.save();
     ctx.translate(this.x, this.y + wobble);
 
     const sprite = resolveAsset('heroes', this.type);
     if (sprite) {
-      ctx.rotate(this.facing);
       if (flashBoost > 0) { ctx.globalAlpha = 0.7 + flashBoost * 0.3; ctx.filter = 'brightness(2)'; }
-      sprite.draw(ctx, this._anim, -this.r * 1.5, -this.r * 1.5, this.r * 3, this.r * 3);
+      sprite.draw(ctx, this._anim, -32, -40, 64, 64);
       ctx.filter = 'none';
       ctx.globalAlpha = 1;
     } else if (this.type === 'eliott') {
@@ -1322,10 +1331,8 @@ export class Unit {
       ctx.stroke();
     }
 
-    // Only draw held weapon if not boomeranging
-    if (!(this.type === 'dick' && this.boomerang !== null)) {
-      this._drawWeapon(ctx);
-    }
+    // Facing down: weapon in front of body — draw weapon after
+    if (!facingUp && canDrawWeapon) this._drawWeapon(ctx);
 
     // Draw flying boomerang(s)
     if (this.boomerang !== null)  this._drawFlyingBoomerang(ctx, this.boomerang);
