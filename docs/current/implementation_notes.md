@@ -250,36 +250,50 @@ function resizeCanvas() {
 
 On window resize, `generateTerrain()` is re-called to re-scatter decorations at the new dimensions. The play area height is `H - PANEL_H - 24` (`PLAY_BOTTOM`), reserving space for the ability panel.
 
-### `generateTerrain()` (line ~2166)
+### `generateTerrain()` (`src/state.js`)
 
-Populates three arrays on `state`:
+Builds the tile grid and the world decoration sets:
 
-| Array | Count | Contents |
-|---|---|---|
-| `state.debris` | 90 | Objects with random `x, y, rot, size, shade` and `type 0–4` |
-| `state.cracks` | 18 | Arrays of 6 waypoints forming a winding polyline |
-| `state.dust` | 55 | Drifting ambient particles with slow `vx/vy` that respawn on boundary exit |
+| Field | Contents |
+|---|---|
+| `state.terrain` | `Uint8Array[COLS×ROWS]` — 0 ground, 1 water (passable, slow), 2 building footprint (impassable) |
+| `state.buildings` | Rectangular post-soviet buildings: `{x, y, w, h, baseY, style, extraUp, seed, alpha, litWindows, _cv}` |
+| `state.roads` | Two walkable asphalt strips (1 horizontal + 1 vertical), decoration only |
+| `state.waterTiles` | Water tile positions for the animated shimmer pass |
+| `state.cloudShadows` | 6 drifting soft shadow blobs (seeds only; positions derived from `state.time`) |
+| `state.debris` / `state.cracks` / `state.dust` / `state.grassTufts` / `state.embers` | Scatter decoration (counts scale with world area) |
 
-Debris types:
-- **0** — pebble/skull face (circle + eye rects + mouth rect)
-- **1** — tire track (two concentric circles stroked)
-- **2** — plank (wide rect with dark top edge)
-- **3** — bone (rect + two endpoint circles)
-- **4** — crate (rect with cross-shadow rects + highlight)
+Building placement: rectangular footprints 2–5 × 2–3 tiles, ~1.5 per screen of world area, rejected if within 2 tiles of water/another building, within 1 tile of a road, inside the 3-tile world edge band, or near the hero spawn circle. Footprint tiles are marked terrain type 2, so **all collision/pathfinding semantics are identical to the old "mountain" blobs** (`isWalkable`, flow field, `nearestWalkable` unchanged). Styles: `panelka` (concrete panel block, 42%), `brick` (khrushchyovka, 30%), `industrial` (hall with gates, 28%).
 
-### `drawBackground()` (line ~2613)
+Debris types (`src/render/background.js`): **0** skull, **1** car tire, **2** weathered plank, **3** concrete chunk with rebar, **4** rusty barrel lid.
 
-Drawing order (back to front):
+### `src/render/buildings.js` — post-soviet building renderer
 
-1. **Base fill** `#6b5335` — sandy post-apocalyptic ground.
-2. **Noise dots** — two passes of deterministic-position dots (index-derived offsets, not `Math.random()` per frame) in dark and light brown.
-3. **Soil variation ellipses** — 25 large semi-transparent dark ellipses at fixed pseudo-random positions.
-4. **Cracks** — drawn as thin (`0.8 px`) dark polylines.
-5. **Blood stains** — ellipses accumulated from unit/enemy deaths (max 40, oldest dropped). Persist across waves.
-6. **Debris** — each item drawn with `save/translate/rotate/scale/restore`.
-7. **Dust particles** — 55 tiny semi-transparent squares drifting slowly; each respawns at a random edge when it leaves the play area.
-8. **Vignette** — radial gradient from transparent center to near-black edges.
-9. **Warm tint** — `rgba(140, 80, 30, 0.05)` full-screen rect for colour grading.
+- Each building's facade is rendered **once** into an offscreen canvas (lazy, `mulberry32(seed)` → deterministic), at up to 2× scale for DPR crispness. Per-frame cost is one `drawImage`.
+- Facade = footprint height + `extraUp` px rising above the footprint top, plus a trapezoid roof (tar patches, vents, TV antenna). Windows are a grid of intact/lit/broken/boarded panes; panelki get accent-coloured balconies; bricks get plaster-loss patches and courses; industrial gets corrugated ribs, a high window strip, and rusted X-braced gates. Weathering (damp streaks, grime band, graffiti, cracks) and directional volume shading are overlaid.
+- **Occlusion**: buildings are pushed into GameScene's painter Y-sort with `y = baseY`, so entities above the base edge draw first and are hidden behind the facade. `updateBuildingOcclusion()` fades a building to ~42% alpha when a living hero is inside the occluded band (smooth lerp, `realDt * 8`).
+- Lit windows store world-space centres and get a flickering additive glow at draw time (skipped while faded).
+- Ground shadows (`drawBuildingShadows`) are cast bottom-right and drawn at the end of `drawBackground()`, under all entities.
+
+### `drawBackground()` (`src/render/background.js`)
+
+All world-space, viewport-culled. Order (back to front):
+
+1. **Ground gradient** — cold concrete-dust palette (`#45443a` → `#2a2922`).
+2. **World-anchored tile detail** — per-tile hash decides mottling specks, oil/scorch stains, concrete rubble, and rare manhole covers; anchored to tile indices so it stays put as the camera moves.
+3. **Roads** — asphalt body, worn edges, faded centre dashes, hash-anchored potholes and tar patches.
+4. **Water** — murky flood pools with animated oily shimmer + sky glints.
+5. **Cracks**, **blood stains**, **P-RAY grass tufts** (swaying), **dust**.
+6. **Cloud shadows** — large radial blobs drifting across the ground (positions are stateless functions of `state.time`).
+7. **Building ground shadows**.
+8. **Bioluminescent grass glow** (additive).
+
+### `drawScreenAtmosphere()` (screen-space, called from `GameScene._draw` after the camera block)
+
+1. **Embers** — additive drifting sparks (updated in `GameScene._updateWorld`).
+2. **Rolling fog** — 5 wide soft blobs drifting horizontally at different heights.
+3. **Vignette** — cold radial darkening toward corners.
+4. **Colour cast** — cold steel tint plus a faint warm band at the horizon.
 
 ### Wave & enemy spawning
 

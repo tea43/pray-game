@@ -2,6 +2,8 @@
 
 Planned feature: replace the procedural Canvas 2D terrain with authored sprite-based world objects — buildings, walls, barricades, cover objects — with occlusion transparency and collision surfaces.
 
+> **Status update (2026-06):** An interim **procedural** version of goals 2–3 now ships inside the Canvas 2D bridge: `src/render/buildings.js` renders post-soviet buildings (panelka/brick/industrial) on rectangular impassable footprints, with painter-sort occlusion and hero-triggered alpha fade — no WebGL migration required. The occlusion-fade pseudocode below is implemented nearly verbatim (`updateBuildingOcclusion`). This doc remains the plan for the eventual *authored-sprite* version (goals 1 and 4: PNG assets and cover mechanics).
+
 ---
 
 ## Goals

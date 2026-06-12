@@ -19,6 +19,9 @@ export const state = {
   floatingTexts: [],
   terrain: new Uint8Array(0),
   waterTiles: [],
+  roads: [],
+  buildings: [],
+  cloudShadows: [],
   flowField: null,
   selected: [],
   mouse: { x: 0, y: 0, down: false, downX: 0, downY: 0, startedOnUnit: false, clickedPortrait: false },
@@ -103,21 +106,15 @@ export function generateTerrain() {
     return c * 0.72 + f * 0.28;
   }
 
-  // Target ~5% obstacle coverage. noiseAt returns a non-uniform blend in [-1, 1].
-  // Thresholds of 0.76 / 0.82 yield ~3.5% mountain + ~2% water before cleanup,
-  // settling at ~4-5% total after isolated-tile removal.
+  // ── Water (flooded craters / basements) — passable but slow ───────────────
   const grid = new Uint8Array(COLS * ROWS);
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const m = noiseAt(c, r, 0);
-      const w = noiseAt(c, r, 37);
-      if (m > 0.76) grid[r * COLS + c] = 2;       // mountain
-      else if (w > 0.82) grid[r * COLS + c] = 1;  // water
+      if (noiseAt(c, r, 37) > 0.82) grid[r * COLS + c] = 1;
     }
   }
 
-  // Cleanup pass: remove isolated single-tile obstacles (no same-type neighbour).
-  // At sparse density the old majority-vote rule grew nothing and this is more useful.
+  // Cleanup pass: remove isolated single-tile water (no same-type neighbour).
   const next = new Uint8Array(COLS * ROWS);
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -136,22 +133,6 @@ export function generateTerrain() {
     }
   }
   grid.set(next);
-
-  // Diagonal-separation pass: if an obstacle tile has a diagonal obstacle neighbour
-  // (checked in top-left → bottom-right scan order so each pair is evaluated once),
-  // remove the later tile. Guarantees no two obstacles share only a corner — prevents
-  // the pinch points that trap enemies and heroes.
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (grid[r * COLS + c] === 0) continue;
-      if (
-        (r > 0 && c > 0      && grid[(r - 1) * COLS + (c - 1)] !== 0) ||
-        (r > 0 && c < COLS-1 && grid[(r - 1) * COLS + (c + 1)] !== 0)
-      ) {
-        grid[r * COLS + c] = 0;
-      }
-    }
-  }
 
   // Clear world edges (enemies spawn off-screen and walk in; obstacles at the edge look wrong)
   const EDGE = 3;
@@ -173,6 +154,68 @@ export function generateTerrain() {
       const r = spawnRow + dr, c = spawnCol + dc;
       if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r * COLS + c] = 0;
     }
+  }
+
+  // ── Roads (walkable asphalt strips, decoration only) ──────────────────────
+  const roadW = Math.round(TILE * 1.7);
+  state.roads = [
+    { x: 0, y: Math.round(WH * rand(0.2, 0.36)), w: WW, h: roadW, vertical: false, seed: randInt(1, 0x7fffffff) },
+    { x: Math.round(WW * rand(0.62, 0.78)), y: 0, w: roadW, h: WH, vertical: true, seed: randInt(1, 0x7fffffff) },
+  ];
+
+  // ── Buildings — post-soviet blocks on impassable (type 2) tiles ───────────
+  // Rectangular footprints; collision semantics identical to the old mountains
+  // (terrain type 2). Visuals live in src/render/buildings.js.
+  state.buildings = [];
+  const screens = (WW * WH) / Math.max(1, G.W * G.PLAY_BOTTOM);
+  const targetBuildings = Math.max(6, Math.round(screens * 1.5));
+  let attempts = 0;
+  while (state.buildings.length < targetBuildings && attempts++ < 500) {
+    const cols = randInt(2, 5);
+    const rows = randInt(2, 3);
+    const c0 = randInt(EDGE + 1, COLS - EDGE - cols - 1);
+    const r0 = randInt(EDGE + 1, ROWS - EDGE - rows - 1);
+    if (c0 < EDGE + 1 || r0 < EDGE + 1) continue;
+
+    // Keep clear of the hero spawn circle
+    const nc = Math.max(c0, Math.min(spawnCol, c0 + cols - 1));
+    const nr = Math.max(r0, Math.min(spawnRow, r0 + rows - 1));
+    const dc = nc - spawnCol, dr = nr - spawnRow;
+    if (dc * dc + dr * dr <= (clearR + 2) * (clearR + 2)) continue;
+
+    // 2-tile buffer must be free of water and other buildings (no pinch points)
+    let blocked = false;
+    for (let r = r0 - 2; r <= r0 + rows + 1 && !blocked; r++) {
+      for (let c = c0 - 2; c <= c0 + cols + 1 && !blocked; c++) {
+        if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
+        if (grid[r * COLS + c] !== 0) blocked = true;
+      }
+    }
+    if (blocked) continue;
+
+    // Stay off the roads (1-tile margin)
+    const px = c0 * TILE, py = r0 * TILE, pw = cols * TILE, ph = rows * TILE;
+    const m = TILE;
+    if (state.roads.some(rd =>
+      px - m < rd.x + rd.w && px + pw + m > rd.x &&
+      py - m < rd.y + rd.h && py + ph + m > rd.y)) continue;
+
+    for (let r = r0; r < r0 + rows; r++) {
+      for (let c = c0; c < c0 + cols; c++) grid[r * COLS + c] = 2;
+    }
+
+    const styleRoll = Math.random();
+    const style = styleRoll < 0.42 ? 'panelka' : styleRoll < 0.72 ? 'brick' : 'industrial';
+    state.buildings.push({
+      x: px, y: py, w: pw, h: ph, baseY: py + ph,
+      style,
+      // Facade height above the footprint top — squat industrial halls vs tall blocks
+      extraUp: style === 'industrial' ? randInt(14, 44) : randInt(50, 130),
+      seed: randInt(1, 0x7fffffff),
+      alpha: 1,          // occlusion fade, updated each frame
+      litWindows: null,  // filled when the facade cache is built
+      _cv: null,         // offscreen facade cache (lazy)
+    });
   }
 
   state.terrain = grid;
@@ -236,6 +279,19 @@ export function generateTerrain() {
       phase: rand(0, Math.PI * 2),
       hue: rand(150, 178),
       glow: rand(0.45, 1),
+    });
+  }
+
+  // Cloud shadows — huge soft blobs drifting across the ground (world-space).
+  // Positions are derived statelessly from state.time at draw, so only seeds live here.
+  state.cloudShadows = [];
+  for (let i = 0; i < 6; i++) {
+    state.cloudShadows.push({
+      x0: rand(0, WW), y0: rand(0, WH),
+      r: rand(420, 820),
+      vx: rand(5, 12) * (Math.random() < 0.5 ? -1 : 1),
+      vy: rand(2, 5),
+      a: rand(0.05, 0.09),
     });
   }
 
