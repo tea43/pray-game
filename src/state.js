@@ -220,11 +220,17 @@ export function generateTerrain() {
 
   state.terrain = grid;
 
-  // Collect water tile positions for animation
+  // Collect water tile positions with neighbour flags — the renderer rounds
+  // only the exposed corners so connected tiles merge into organic pools.
   state.waterTiles = [];
+  const isWater = (rr, cc) => rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS && grid[rr * COLS + cc] === 1;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      if (grid[r * COLS + c] === 1) state.waterTiles.push({ tx: c * TILE, ty: r * TILE });
+      if (grid[r * COLS + c] !== 1) continue;
+      state.waterTiles.push({
+        tx: c * TILE, ty: r * TILE,
+        n: isWater(r - 1, c), e: isWater(r, c + 1), s: isWater(r + 1, c), w: isWater(r, c - 1),
+      });
     }
   }
 

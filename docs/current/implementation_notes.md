@@ -282,7 +282,7 @@ All world-space, viewport-culled. Order (back to front):
 1. **Ground gradient** — cold concrete-dust palette (`#45443a` → `#2a2922`).
 2. **World-anchored tile detail** — per-tile hash decides mottling specks, oil/scorch stains, concrete rubble, and rare manhole covers; anchored to tile indices so it stays put as the camera moves.
 3. **Roads** — asphalt body, worn edges, faded centre dashes, hash-anchored potholes and tar patches.
-4. **Water** — murky flood pools with animated oily shimmer + sky glints.
+4. **Water** — murky flood pools. Tiles carry neighbour flags (`state.waterTiles[i].n/e/s/w`); `_waterTilePath()` rounds only exposed corners and overlaps connected sides, so adjacent tiles merge into one organic blob (muddy bank ring → water body → deep-centre shading → per-tile oily shimmer → waterline rim + swaying reeds on exposed edges). Single-path nonzero-winding fills keep the unions seamless.
 5. **Cracks**, **blood stains**, **P-RAY grass tufts** (swaying), **dust**.
 6. **Cloud shadows** — large radial blobs drifting across the ground (positions are stateless functions of `state.time`).
 7. **Building ground shadows**.
