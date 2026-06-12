@@ -267,8 +267,11 @@ export function drawCRTOverlay() {
   ctx.fillStyle = crtPattern;
   ctx.fillRect(0, 0, W, PLAY_BOTTOM);
 
-  if (state.shake > 3) {
-    const shift = Math.min(state.shake * 0.4, 6);
+  // Chromatic-aberration flash — reserved for heavy events (bombs, combos,
+  // boss slams at shake 7+). Routine attacks set shake 1.5–4 and must never
+  // strobe the screen; ramps from 0 at the threshold to avoid popping.
+  if (state.shake > 6) {
+    const shift = Math.min((state.shake - 6) * 0.6, 6);
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = 'rgba(255, 0, 0, 0.06)';
     ctx.fillRect(shift, 0, W, PLAY_BOTTOM);

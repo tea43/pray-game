@@ -976,8 +976,8 @@ export class Unit {
       hit++;
     }
     if (hit > 0) playSfx('alien.hit.default');
-    state.particles.push({ x: this.x + Math.cos(this.facing) * 24, y: this.y + Math.sin(this.facing) * 24, vx: 0, vy: 0, life: 0.18, maxLife: 0.18, color: 'rgba(255,245,200,1)', size: 16, realtime: true, additive: true });
-    if (!state.settings.noShake) state.shake   = Math.max(state.shake,   hit > 1 ? 7    : 3.5);
+    state.particles.push({ x: this.x + Math.cos(this.facing) * 24, y: this.y + Math.sin(this.facing) * 24, vx: 0, vy: 0, life: 0.18, maxLife: 0.18, color: 'rgba(255,245,200,0.8)', size: 9, realtime: true, additive: true });
+    if (!state.settings.noShake) state.shake   = Math.max(state.shake,   hit > 1 ? 4    : 2.5);
     if (hit > 0 && !state.settings.noShake) state.hitStop = Math.max(state.hitStop, hit > 2 ? 0.06 : 0.03);
   }
 
