@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Wispy smoke lines -->
+  <path d="M12 50 Q16 38 12 26 Q8 14 14 8" stroke="#c8b890" stroke-width="2" stroke-linecap="round"/>
+  <path d="M26 52 Q32 40 28 28 Q24 16 30 10" stroke="#c8b890" stroke-width="2" stroke-linecap="round"/>
+  <path d="M40 50 Q44 38 40 26 Q36 14 42 8" stroke="#c8b890" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52 52 Q56 42 52 32 Q48 20 54 14" stroke="#c8b890" stroke-width="2" stroke-linecap="round"/>
+  <!-- Fade suggestion at bottom -->
+  <ellipse cx="32" cy="54" rx="22" ry="4" stroke="#c8b890" stroke-width="1.5" opacity="0.5"/>
+</svg>

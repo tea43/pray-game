@@ -1,0 +1,81 @@
+[
+  {
+    "id": "chain_lightning",
+    "name": "Chain Lightning",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Fires a bolt chaining to 5 enemies within 200px. Each hit deals 28 damage and stuns for 1.5s. CD: 8s."
+  },
+  {
+    "id": "flamethrower",
+    "name": "Flamethrower",
+    "rarity": "Epic",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Vents flame in a 90° cone (180px) for 3s: 12 dmg per 0.25s + fire DoT 6 dmg/s for 4s. CD: 12s."
+  },
+  {
+    "id": "acid_gun",
+    "name": "Acid Gun",
+    "rarity": "Rare",
+    "upgradeClass": "active",
+    "baseDurability": 3,
+    "effectType": "active_skill",
+    "description": "Fires a slow acid projectile. On impact: 60px splash, 35 damage, 50% slow for 3s. CD: 10s."
+  },
+  {
+    "id": "backdoor_armor_fire",
+    "name": "Backdoor Armor — Fire",
+    "rarity": "Rare",
+    "effectType": "backdoor_armor_fire",
+    "description": "When any hero is hit, the attacker takes 8 fire damage and is briefly ignited."
+  },
+  {
+    "id": "backdoor_armor_lightning",
+    "name": "Backdoor Armor — Lightning",
+    "rarity": "Rare",
+    "effectType": "backdoor_armor_lightning",
+    "description": "When any hero is hit, the attacker is stunned 0.6s and jolted for 10 damage."
+  },
+  {
+    "id": "backdoor_armor_spikes",
+    "name": "Backdoor Armor — Spikes",
+    "rarity": "Common",
+    "effectType": "backdoor_armor_spikes",
+    "description": "When any hero is hit, the attacker takes 12 physical spike damage."
+  },
+  {
+    "id": "dense_plating",
+    "name": "Dense Plating",
+    "rarity": "Epic",
+    "effectType": "dense_plating",
+    "description": "All heroes always take 10% reduced damage (stacks with Backdoor Blockade)."
+  },
+  {
+    "id": "reinforced_frame",
+    "name": "Reinforced Frame",
+    "rarity": "Common",
+    "effectType": "hp_max_bonus",
+    "effectValue": 30,
+    "description": "Habib's max HP increased by 30."
+  },
+  {
+    "id": "engineers_efficiency",
+    "name": "Engineer's Efficiency",
+    "rarity": "Rare",
+    "effectType": "ability_cd_mult",
+    "effectValue": 0.75,
+    "description": "Habib's active ability cooldowns reduced by 25%."
+  },
+  {
+    "id": "weighted_swing",
+    "name": "Weighted Swing",
+    "rarity": "Common",
+    "effectType": "base_dmg_mult",
+    "effectValue": 1.20,
+    "description": "Habib's melee damage increased by 20% and knockback increased by 30%."
+  }
+]

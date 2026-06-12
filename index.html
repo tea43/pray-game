@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P-RAY: The Game</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html {
+    width: 100%; height: 100%;
+    background: #0a0604;   /* dark fallback when video is off */
+  }
+  body {
+    width: 100%; height: 100%;
+    background: transparent;  /* let video show through from behind */
+    overflow: hidden;
+  }
+  /* video sits in the negative z-index layer (behind body, above html bg) */
+  #menuVideo, #victoryBg {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+  }
+  #menuVideo   { filter: brightness(0.35) saturate(0.55); }
+  #victoryBg   { filter: brightness(0.45) saturate(0.70); }
+  /* canvas stays in normal document flow — Phaser Scale Manager owns its sizing */
+  canvas {
+    display: block;
+    cursor: crosshair;
+    background: transparent;
+  }
+</style>
+  <script src="./assets/index-xx3zrCwR.js"></script>
+</head>
+<body>
+<video id="menuVideo" loop muted playsinline></video>
+<video id="victoryBg" loop muted playsinline></video>
+<script>
+  window.addEventListener('beforeunload', e => {
+    if (window.__prayInGame) { e.preventDefault(); e.returnValue = ''; }
+  });
+</script>
+</body>
+</html>
