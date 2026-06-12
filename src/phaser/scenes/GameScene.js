@@ -10,7 +10,8 @@ import { applyLoot } from '../../systems/loot.js';
 import { rand, dist2, clamp } from '../../utils/math.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { playMusic, playSfx } from '../../systems/audio.js';
-import { drawBackground, clearBackgroundCache } from '../../render/background.js';
+import { drawBackground, clearBackgroundCache, drawScreenAtmosphere } from '../../render/background.js';
+import { drawBuilding, updateBuildingOcclusion, visualTop } from '../../render/buildings.js';
 import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay, drawPickupRings } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
@@ -240,6 +241,7 @@ export class GameScene extends Phaser.Scene {
 
     state.time += realDt;
     updateDust(realDt);
+    updateBuildingOcclusion(realDt);
     if (state.shake > 0)         state.shake         = Math.max(0, state.shake         - realDt * 18);
     if (state.flashAlpha > 0)    state.flashAlpha    = Math.max(0, state.flashAlpha    - realDt * 3.2);
     if (state.nukeFlashAlpha > 0) state.nukeFlashAlpha = Math.max(0, state.nukeFlashAlpha - realDt * (state.nukeFlashDecay || 0.6));
@@ -710,6 +712,16 @@ export class GameScene extends Phaser.Scene {
       ...state.units.filter(u => !u.dead && !u.boarded),
       ...state.enemies.filter(e => !e.dead),
     ];
+
+    // Buildings join the painter sort at their base edge — entities above the
+    // base are drawn first and end up hidden behind the facade.
+    const bx0 = G.camera.x - 60, bx1 = G.camera.x + W + 60;
+    const by0 = G.camera.y - 60, by1 = G.camera.y + PLAY_BOTTOM + 60;
+    for (const b of state.buildings || []) {
+      if (b.x + b.w < bx0 || b.x > bx1 || b.baseY < by0 || visualTop(b) > by1) continue;
+      drawables.push({ y: b.baseY, _building: b });
+    }
+
     drawables.sort((a, b) => a.y - b.y);
 
     // Dead hero corpses — y-sorted among live entities by deathY
@@ -726,7 +738,8 @@ export class GameScene extends Phaser.Scene {
       while (ci < deadHeroes.length && deadHeroes[ci].deathY <= ent.y) {
         deadHeroes[ci++].drawCorpse(ctx);
       }
-      ent.draw(ctx);
+      if (ent._building) drawBuilding(ctx, ent._building);
+      else ent.draw(ctx);
     }
     while (ci < deadHeroes.length) deadHeroes[ci++].drawCorpse(ctx);
     for (const pr of state.projectiles) pr.draw(ctx);
@@ -772,6 +785,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     ctx.restore();
+
+    // Embers, rolling fog, vignette — screen-space atmosphere
+    drawScreenAtmosphere();
 
     // Time-freeze tint
     if (state.timeFlow < 1) {

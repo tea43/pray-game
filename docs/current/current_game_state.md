@@ -260,10 +260,13 @@ All Phaser scene text uses **Georgia serif** as the primary typeface (replaced C
 
 ## World And Rendering
 
-- Static screen-space arena, no camera and no world-coordinate layer yet.
+- 3×3-screen world with centroid-tracking camera (see Game Identity above).
 - Canvas size is approximately 97% of the browser window.
 - Bottom HUD panel reserves 96 px plus padding (expanded to fit active skill slot rows).
-- Terrain is procedural decoration: debris, cracks, dust, soil variation, blood stains, vignette, and warm tint.
+- **Setting: post-soviet wasteland.** The ground is a cold concrete-dust palette with world-anchored detail (mottling, oil stains, rubble, manhole covers), two cracked asphalt roads with faded markings and potholes, murky flood-water pools, urban debris (tires, planks, rebar chunks, barrel lids, skulls), and swaying bioluminescent P-RAY grass tufts.
+- **Impassable areas are post-soviet buildings** (`state.buildings`, rendered by `src/render/buildings.js`): procedurally generated panelka apartment blocks, brick khrushchyovkas, and industrial halls with rusted gates. Pseudo-3D facades with window grids (some lit and flickering, some broken or boarded), balconies, graffiti, weathering streaks, roof clutter (vents, antennas, tar patches). Footprints are rectangular clusters of terrain type-2 tiles — collision and pathfinding semantics are identical to the old mountain blobs.
+- **Building occlusion**: buildings join the painter Y-sort at their base edge, so units/enemies walking above the base are hidden behind the facade; when a hero is occluded the building fades to ~42% alpha so the hero stays visible. Facades render once to cached offscreen canvases (one `drawImage` per building per frame).
+- **Atmosphere & depth**: drifting cloud shadows over the ground, screen-space rolling fog, additive ember motes, cold vignette and colour grading (`drawScreenAtmosphere`, re-wired into the draw loop — it previously existed but was never called).
 - Characters, enemies, loot, weapons, particles, telegraphs, and HUD are all Canvas 2D primitives.
 - **Pseudo-3D / 2.5D System**: Entities feature a `z` (height) axis and pseudo-gravity. They draw a decoupled ground shadow at `y`, and their main sprite is drawn at `y - z` to give them verticality. Worms use radial gradients to give segments a tubular, 3D appearance.
 - Asset injection is planned but not implemented yet. See `asset_injection_plan.md`.
