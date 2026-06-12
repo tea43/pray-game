@@ -14,6 +14,33 @@ function hash2(c, r, seed) {
   return ((n ^ (n >>> 13)) >>> 0) / 4294967296;
 }
 
+// Adds one water tile's outline to the current path. Exposed sides (no water
+// neighbour) shift by `e` (outward when positive) and get rounded corners;
+// connected sides overlap `ov` px into the neighbour so same-path fills merge
+// into one seamless pool (nonzero winding paints the union once).
+function _waterTilePath(ctx, wt, TILE, e, ov = 2) {
+  const x0 = wt.tx + (wt.w ? -ov : -e);
+  const x1 = wt.tx + TILE + (wt.e ? ov : e);
+  const y0 = wt.ty + (wt.n ? -ov : -e);
+  const y1 = wt.ty + TILE + (wt.s ? ov : e);
+  if (x1 - x0 < 4 || y1 - y0 < 4) return;
+  const R = Math.max(0, Math.min(Math.min(x1 - x0, y1 - y0) * 0.45, 16 + e));
+  const rtl = (!wt.n && !wt.w) ? R : 0;
+  const rtr = (!wt.n && !wt.e) ? R : 0;
+  const rbr = (!wt.s && !wt.e) ? R : 0;
+  const rbl = (!wt.s && !wt.w) ? R : 0;
+  ctx.moveTo(x0 + rtl, y0);
+  ctx.lineTo(x1 - rtr, y0);
+  ctx.quadraticCurveTo(x1, y0, x1, y0 + rtr);
+  ctx.lineTo(x1, y1 - rbr);
+  ctx.quadraticCurveTo(x1, y1, x1 - rbr, y1);
+  ctx.lineTo(x0 + rbl, y1);
+  ctx.quadraticCurveTo(x0, y1, x0, y1 - rbl);
+  ctx.lineTo(x0, y0 + rtl);
+  ctx.quadraticCurveTo(x0, y0, x0 + rtl, y0);
+  ctx.closePath();
+}
+
 // Called inside the camera transform — all positions are world-space.
 export function drawBackground() {
   const { ctx, camera, W, PLAY_BOTTOM, TILE, COLS, ROWS } = G;
@@ -133,29 +160,62 @@ export function drawBackground() {
   }
 
   // ── Water — murky flood pools (passable but slow) ────────────────────────
-  if (state.terrain && state.terrain.length > 0 && COLS > 0) {
-    for (let r = startRow; r <= endRow; r++) {
-      for (let c = startCol; c <= endCol; c++) {
-        if (state.terrain[r * COLS + c] !== 1) continue;
-        const tx = c * TILE, ty = r * TILE;
-        ctx.fillStyle = '#1d2a22';
-        ctx.fillRect(tx, ty, TILE, TILE);
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
-        ctx.fillRect(tx + TILE - 3, ty, 3, TILE);
-        ctx.fillRect(tx, ty + TILE - 3, TILE, 3);
-      }
-    }
-  }
-
-  // Oily shimmer over water (animated, visible tiles only)
+  // Connected tiles merge into organic blobs: corners are rounded only where
+  // exposed (no water neighbour), so pool interiors stay seamless.
+  const visWater = [];
   for (const wt of state.waterTiles) {
     if (wt.tx > vx1 || wt.tx + TILE < vx0 || wt.ty > vy1 || wt.ty + TILE < vy0) continue;
-    const shimmer = 0.14 + 0.10 * Math.sin(t * 1.6 + wt.tx * 0.008 + wt.ty * 0.006);
-    ctx.fillStyle = `rgba(95, 125, 80, ${shimmer})`;
-    ctx.fillRect(wt.tx, wt.ty, TILE, TILE);
-    const glint = 0.08 + 0.08 * Math.sin(t * 2.3 + wt.ty * 0.011 + wt.tx * 0.004);
-    ctx.fillStyle = `rgba(140, 160, 165, ${Math.max(0, glint)})`;
-    ctx.fillRect(wt.tx + TILE * 0.2, wt.ty + TILE * 0.35, TILE * 0.5, 2);
+    visWater.push(wt);
+  }
+  if (visWater.length) {
+    // Muddy bank ring (widest), then the water body over it
+    ctx.fillStyle = '#2f2c20';
+    ctx.beginPath();
+    for (const wt of visWater) _waterTilePath(ctx, wt, TILE, 6);
+    ctx.fill();
+    ctx.fillStyle = '#1f2d24';
+    ctx.beginPath();
+    for (const wt of visWater) _waterTilePath(ctx, wt, TILE, 0);
+    ctx.fill();
+    // Deep centre shading
+    ctx.fillStyle = 'rgba(8, 14, 11, 0.45)';
+    ctx.beginPath();
+    for (const wt of visWater) _waterTilePath(ctx, wt, TILE, -11);
+    ctx.fill();
+
+    for (const wt of visWater) {
+      // Oily shimmer, kept inside the pool outline
+      const shimmer = 0.12 + 0.09 * Math.sin(t * 1.6 + wt.tx * 0.008 + wt.ty * 0.006);
+      ctx.fillStyle = `rgba(95, 125, 80, ${shimmer})`;
+      ctx.beginPath();
+      _waterTilePath(ctx, wt, TILE, -3, 0); // ov=0: translucent per-tile fill must not double-paint seams
+      ctx.fill();
+      // Sky glint streak
+      const glint = 0.07 + 0.08 * Math.sin(t * 2.3 + wt.ty * 0.011 + wt.tx * 0.004);
+      if (glint > 0.02) {
+        ctx.fillStyle = `rgba(140, 160, 165, ${glint})`;
+        ctx.fillRect(wt.tx + TILE * 0.22, wt.ty + TILE * 0.4, TILE * 0.45, 2);
+      }
+      // Light waterline rim on the exposed top bank + reeds on exposed edges
+      if (!wt.n) {
+        ctx.fillStyle = 'rgba(165, 175, 150, 0.18)';
+        ctx.fillRect(wt.tx + 8, wt.ty + 1.5, TILE - 16, 1.5);
+      }
+      const hr = hash2(wt.tx / TILE, wt.ty / TILE, 7);
+      if ((!wt.s || !wt.w) && hr < 0.55) {
+        const rx = wt.tx + 4 + hr * (TILE - 10);
+        const ry = !wt.s ? wt.ty + TILE + 3 : wt.ty + hr * TILE;
+        const sway = Math.sin(t * 1.3 + rx * 0.05) * 1.4;
+        ctx.strokeStyle = 'rgba(60, 75, 45, 0.85)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.quadraticCurveTo(rx + sway * 0.4, ry - 6, rx + sway, ry - 11);
+        ctx.moveTo(rx + 3, ry);
+        ctx.quadraticCurveTo(rx + 3 + sway * 0.4, ry - 4, rx + 3 + sway, ry - 8);
+        ctx.stroke();
+      }
+    }
   }
 
   // ── Cracks (viewport-culled) ─────────────────────────────────────────────
