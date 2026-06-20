@@ -12,7 +12,7 @@ import { InputSystem } from '../systems/InputSystem.js';
 import { playMusic, playSfx } from '../../systems/audio.js';
 import { drawBackground, clearBackgroundCache, drawScreenAtmosphere } from '../../render/background.js';
 import { drawBuilding, updateBuildingOcclusion, visualTop } from '../../render/buildings.js';
-import { drawBolts, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay, drawPickupRings } from '../../render/effects.js';
+import { drawBolts, drawBeams, drawSlashes, drawExplosions, drawShockwaves, drawParticles, drawFloatingTexts, drawScreenFlash, drawCRTOverlay, drawPickupRings, pushDamageNumber } from '../../render/effects.js';
 import { drawAbilityPanel, updateDust } from '../../render/hud.js';
 import { removeWaveUpgrades, applyWaveUpgrades, tickActiveSkillDurability } from '../../systems/upgrades.js';
 import { buildFlowField } from '../../utils/terrain.js';
@@ -101,7 +101,8 @@ export class GameScene extends Phaser.Scene {
     const diff = DIFFICULTY_DEFS[this._difficulty] || DIFFICULTY_DEFS['brood-hunter'];
 
     Object.assign(state, {
-      units: [], enemies: [], particles: [], bolts: [], projectiles: [], acidShots: [],
+      units: [], enemies: [], particles: [], bolts: [], beams: [], projectiles: [], acidShots: [],
+      slashes: [], zones: [],
       loot: [], explosions: [], shockwaves: [], bloodStains: [], floatingTexts: [],
       hitStop: 0, flashAlpha: 0, selected: [], moveMarkers: [],
       time: 0, kills: 0, wave: 1, waveTimer: 0, spawnTimer: 1.5,
@@ -286,6 +287,15 @@ export class GameScene extends Phaser.Scene {
     state.moveMarkers = state.moveMarkers.filter(m => m.life > 0);
     for (const b of state.bolts) b.life -= realDt;
     state.bolts = state.bolts.filter(b => b.life > 0);
+
+    for (const b of state.beams) b.life -= realDt;
+    state.beams = state.beams.filter(b => b.life > 0);
+    
+    if (state.slashes) {
+      for (const s of state.slashes) s.life -= realDt;
+      state.slashes = state.slashes.filter(s => s.life > 0);
+    }
+
     for (const l of state.loot) l.update(realDt);
 
     for (const p of state.particles) {
@@ -441,6 +451,32 @@ export class GameScene extends Phaser.Scene {
         }
       }
       state.loot = state.loot.filter(l => !l.picked);
+
+      if (state.zones) {
+        for (let i = state.zones.length - 1; i >= 0; i--) {
+          const z = state.zones[i];
+          z.life += gameDt;
+          z.nextTick -= gameDt;
+          if (z.life >= z.duration) {
+            state.zones.splice(i, 1);
+            continue;
+          }
+          if (z.nextTick <= 0) {
+            z.nextTick = z.tickInterval;
+            for (const e of state.enemies) {
+              if (e.dead) continue;
+              if (dist2(z.x, z.y, e.x, e.y) < z.radius + e.r) {
+                e.hp -= z.dmg; e.hurtFlash = 1;
+                if (z.owner && !z.owner.dead) {
+                  z.owner._gainWeaponXp(z.dmg);
+                  z.owner._applyWeaponEffect(e);
+                }
+                pushDamageNumber(e.x, e.y - e.r - 4, z.dmg);
+              }
+            }
+          }
+        }
+      }
 
       for (const ex of state.explosions) {
         ex.life -= gameDt;
@@ -763,7 +799,21 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    if (state.zones) {
+      for (const z of state.zones) {
+        ctx.beginPath();
+        ctx.ellipse(z.x, z.y, z.radius, z.radius * 0.7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(100, 255, 100, 0.2)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(100, 255, 100, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
     drawBolts();
+    drawBeams();
+    drawSlashes();
     drawExplosions();
     if (!state.settings.noLightning) drawShockwaves();
     drawParticles();
@@ -841,7 +891,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const ent of shadowEntities) {
       const isLoot = ent.spawnTime !== undefined;
-      const isProj = ent.speed !== undefined && ent.maxRange !== undefined;
+      const isProj = ent.isProjectile || (ent.speed !== undefined && ent.maxRange !== undefined);
       
       let baseR = ent.r;
       let shadowY = ent.y;

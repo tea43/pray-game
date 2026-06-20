@@ -59,3 +59,16 @@ Use this after gameplay or rendering edits. Keep it manual until an automated br
 - Confirm bigboss appears on wave 9.
 - Confirm defeat overlay appears when all survivors die.
 - Confirm victory overlay appears after wave 21.
+
+## Weapons & Visuals (Rework 4)
+
+- Launch via `npm run dev`.
+- **Fence Bow / Slingshot / Arbalest:** Confirm bullets travel across the map and do not vanish at spawn.
+- **Frozen Cutlet:** Confirm projectile ricochets off the outer world borders (3x viewport size), not the 1/3 viewport border.
+- **Toilet Lid / Bus Stop Pole:** Confirm objects arc/bounce against the world ground line, not the mid-screen.
+- **Catapult:** Confirm explosion rings are visible on detonation.
+- **Pickle Jar:** Confirm puddle zones are spawned on direct enemy hits.
+- **Whips / Multi-slash:** Whips should lash horizontal rects (Shower Hose) or 270-degree arc sweeps (Extension Cord) fading out. Multi-slash (Car Antenna) should show diagonal blue slashes.
+- **Megaphone / Railgun:** Megaphone should pulse continuous auras. Railgun should charge and beam towards nearest enemy, not in a random direction.
+- **Projectile Shadows:** Confirm bouncing projectiles get small projectile-style shadows.
+

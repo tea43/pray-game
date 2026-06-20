@@ -146,11 +146,19 @@ draw(ctx)
 
 ## 3. Fight System
 
-### Unit auto-attack (`Unit.update()`, line ~265)
+### Unit auto-attack & Targeting
 
-Each frame (per `gameDt`):
-1. If the unit has an `aggroTarget` set (from a player right-click on an enemy) and it is within `atkRange + 40`, keep it. Otherwise auto-scan all enemies for the nearest one within `atkRange`.
-2. If a target is within `atkRange` and `atkCd <= 0` → call `attack(target)`.
+Each frame (per `gameDt`), units scan for auto-attacks independently:
+1. Targetless weapons (behaviors: `whip`, `orbit`, `directional`) bypass enemy range scanning and fire on cooldown without a target.
+2. Target-seeking weapons use `_acquireTarget(stats)`. If the weapon's targeting is `'random'`, it selects a random living enemy within `atkRange`. Otherwise, it falls back to `_findTarget(range)`, which checks `aggroTarget` (player right-click) or the nearest living enemy within range.
+3. If a valid target is found (or if targetless) and `atkCd <= 0`, `attack(target, stats)` is called.
+
+### Projectile Boundaries & Coordinate System
+
+All units, enemies, and projectiles exist in world-space coordinates. Viewport translation is applied at render time.
+- **Projectiles:** Projectiles like `ShotgunBullet`, `Projectile`, and `BouncingProjectile` carry an `isProjectile = true` property. Their boundaries are checked against the world dimensions (`G.WORLD_W` / `G.WORLD_H`) rather than screen dimensions.
+- **Explosions:** Explosions pushed to `state.explosions` must start with `life = maxLife` (e.g., `life: 0.3, maxLife: 0.3`) so they are visible and correctly decay over time.
+- **Slashes & Visuals:** Short-lived visual slashes (box lashes for Shower Hose, crescent arcs for Extension Cord, and blue diagonal cross-slashes for Car Antenna) are pushed to `state.slashes` and drawn inside the camera-translated drawing loop.
 
 ### `attack(enemy)` dispatch (line ~314)
 

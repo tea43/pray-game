@@ -78,7 +78,9 @@ Priority order (highest first):
 
 Each hero owns **3 weapon slots** (`weaponSlots[3]`). Slot 0 starts filled with the hero's starting weapon at level 1; slots 1 and 2 start empty (`null`). Every filled slot fires independently on its own cooldown — heroes with multiple weapons auto-attack with all of them simultaneously, Vampire-Survivors style.
 
-**Weapon levels (1–5):** Each weapon has a `levels[]` array in `WEAPON_DEFS` with per-level stat overrides (`atkDmg`, `atkRate`, `knockback`, `bulletCount`, `piercing`, etc.). Stats are resolved via `resolveWeaponStats(slot)` which merges the base def with the level entry.
+**Weapon levels (1–5):** Each weapon has a `levels[]` array in `WEAPON_DEFS` with per-level stat overrides (`atkDmg`, `atkRate`, `knockback`, `bulletCount`, `piercing`, `auraRadius`, `maxBounces`, etc.). Stats are resolved via `resolveWeaponStats(slot)` which merges the base def with the level entry.
+
+**Weapon Behaviors:** Weapons are driven by `behavior` fields (e.g. `bolt`, `whip`, `orbit`, `aura`, `bounce`, `multiSlash`) rather than simple types. The `Unit` auto-attack loop delegates to specific attack patterns depending on this behavior. The vestigial `type` field (`melee` | `ranged` | `thrown`) is retained strictly for HUD color tinting.
 
 **Level-up picker:** When `_levelUp()` fires, `state.pendingLevelUps` is incremented. Before each entity tick, `GameScene` checks `pendingLevelUps > 0 && !state.isLevelUpScreen && !state.isUpgradeScreen` and launches `WeaponLevelUpScene`, pausing the game. The scene presents **3 cards**:
 - **↑ UPGRADE** (blue badge): upgrade an existing weapon slot (level N → N+1), showing stat delta.
@@ -89,20 +91,20 @@ Offers are weighted by rarity (Common=1, Rare=2, Epic=3, Legendary=4). Dead hero
 
 **HUD weapon strip:** Below each hero card in the bottom panel, a row of 3 cells shows the equipped weapons: a coloured background tinted by weapon type (melee = amber, ranged = blue), a 2–4 character abbreviation, and 5 level pips (filled up to current level). Empty slots display a dim box with `+`.
 
-**Hero weapon visuals:** Heroes draw the weapon held in their **highest-index filled slot** (`_displaySlot` getter on `Unit`) — i.e. the most recently equipped weapon. All weapons are now rendered as **16x16 retro pixel art sprites** drawn via Canvas `fillRect` (`src/render/weaponSprites.js`). Melee attacks show bright, sweeping crescent slash trails during the swing animation. Ranged and thrown weapons render the pixel art sprite for the projectile (or boomerang) in flight.
+**Hero weapon visuals:** Heroes draw the weapon held in their **highest-index filled slot** (`_displaySlot` getter on `Unit`) — i.e. the most recently equipped weapon. All weapons are now rendered as **24x24 retro pixel art sprites** using a centralized scaling config (`WEAPON_RENDER_SCALE`) drawn via Canvas `fillRect` (`src/render/weaponSprites.js`). Melee attacks show bright, sweeping crescent slash trails during the swing animation. Whip attacks display either twin horizontal lash boxes (Shower Hose) or a 270° crescent sweep (Extension Cord) fading out. Multi-slash attacks (Car Antenna) trigger bright blue diagonal cross-slash overlays at each target. Projectiles (bolts, shurikens, bouncing objects) fly and bounce relative to the world coordinates (`G.WORLD_W` / `G.WORLD_H`) rather than screen bounds. Direct hits with Pickle Jars spawn lingering puddle damage zones immediately. Targetless weapons (whips, orbiters, directional arrows) only fire and play sound when at least one living enemy is in the vicinity to avoid empty-field noise and bullet spam.
 
 **Hero weapon pools:**
-- Eliott: `short_hockey_club`, `throwing_stone`, `bow`, `crossbow`, `samurai_sword`
-- Dick: `hockey_club`, `long_club`, `dual_clubs`, `thrown_club`, `boomerang`, `samurai_sword`
-- Habib: `hockey_club`, `shotgun`, `crossbow`, `bow`, `samurai_sword`
+- Eliott: `frozen_cutlet`, `pickle_jar`, `bottle_cap_shuriken`, `fence_wire_bow`, `bike_spoke_slingshot`, `car_antenna`
+- Dick: `car_antenna`, `bus_stop_pole`, `toilet_lid`, `chain_with_padlock`, `contraceptive_catapult`, `richards_megaphone`
+- Habib: `extension_cord`, `shower_hose`, `bike_spoke_slingshot`, `bed_spring_arbalest`, `courtyard_railgun`, `chain_with_padlock`
 
 **State fields:** `state.isLevelUpScreen` (bool, mirrors `isUpgradeScreen`), `state.pendingLevelUps` (int queue). Both reset to `false`/`0` on new-game.
 
 ## Base Weapons
 
-- Eliott: `short_hockey_club` (slot 0, level 1); fast short-range melee with moderate knockback.
-- Dick: `hockey_club` (slot 0, level 1); dual alternating melee swings with high knockback.
-- Habib: `hockey_club` (slot 0, level 1); melee swings (no projectile).
+- Eliott: `frozen_cutlet` (slot 0, level 1); fast kitchen projectile.
+- Dick: `car_antenna` (slot 0, level 1); multi-slash weapon.
+- Habib: `extension_cord` (slot 0, level 1); balanced mid-range whip.
 
 ## Abilities
 

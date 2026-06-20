@@ -2,6 +2,31 @@ import { G } from '../globals.js';
 import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 
+export function drawBeams() {
+  const { ctx } = G;
+  if (!state.beams || !state.beams.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const beam of state.beams) {
+    const intensity = beam.life / beam.maxLife;
+    ctx.strokeStyle = beam.color || '#ffbbaa';
+    ctx.lineWidth = beam.width * intensity;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(beam.x, beam.y);
+    ctx.lineTo(beam.targetX, beam.targetY);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = (beam.width * 0.4) * intensity;
+    ctx.beginPath();
+    ctx.moveTo(beam.x, beam.y);
+    ctx.lineTo(beam.targetX, beam.targetY);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export function drawBolts() {
   const { ctx } = G;
   if (!state.bolts.length) return;
@@ -277,6 +302,62 @@ export function drawCRTOverlay() {
     ctx.fillRect(shift, 0, W, PLAY_BOTTOM);
     ctx.fillStyle = 'rgba(0, 255, 255, 0.06)';
     ctx.fillRect(-shift, 0, W, PLAY_BOTTOM);
+  }
+  ctx.restore();
+}
+
+export function drawSlashes() {
+  const { ctx } = G;
+  if (!state.slashes || !state.slashes.length) return;
+  ctx.save();
+  for (const s of state.slashes) {
+    const alpha = s.life / s.maxLife;
+    if (s.type === 'box') {
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.75})`;
+      ctx.fillRect(s.x + s.r, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+      ctx.fillRect(s.x - s.r - s.length, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+
+      ctx.strokeStyle = `rgba(180, 230, 255, ${alpha})`;
+      ctx.lineWidth = 2.0;
+      ctx.strokeRect(s.x + s.r, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+      ctx.strokeRect(s.x - s.r - s.length, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+    } else if (s.type === 'arc') {
+      ctx.strokeStyle = `rgba(200, 220, 255, ${alpha * 0.8})`;
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, s.facing - s.halfArc, s.facing + s.halfArc);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, s.facing - s.halfArc, s.facing + s.halfArc);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    } else if (s.type === 'diagonal') {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle || 0);
+      const size = s.r * 1.5 + 10;
+
+      ctx.strokeStyle = `rgba(80, 180, 255, ${alpha * 0.95})`;
+      ctx.lineWidth = 4.0;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-size, 0);
+      ctx.lineTo(size, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.8, 0);
+      ctx.lineTo(size * 0.8, 0);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.restore();
+    }
   }
   ctx.restore();
 }

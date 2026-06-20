@@ -5,7 +5,7 @@ import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 
 export class ShotgunBullet {
-  constructor(x, y, angle, dmg, wDef = {}) {
+  constructor(x, y, angle, dmg, owner = null, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
     const speed = wDef.projectileSpeed ?? 480;
@@ -15,6 +15,8 @@ export class ShotgunBullet {
     this.dmg = dmg;
     this.dead = false;
     this.r = 3;
+    this.owner = owner;
+    this.isProjectile = true;
   }
 
   update(dt) {
@@ -22,13 +24,17 @@ export class ShotgunBullet {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     if (Math.hypot(this.x - this.startX, this.y - this.startY) > this.maxRange) { this.dead = true; return; }
-    if (this.x < -10 || this.x > G.W + 10 || this.y < -10 || this.y > G.PLAY_BOTTOM + 10) { this.dead = true; return; }
+    if (this.x < -40 || this.x > G.WORLD_W + 40 || this.y < -40 || this.y > G.WORLD_H + 40) { this.dead = true; return; }
     for (const e of state.enemies) {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
         playSfx('weapon.impact.default');
         playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
         e.hp -= this.dmg;
+        if (this.owner && !this.owner.dead) {
+          this.owner._gainWeaponXp(this.dmg);
+          this.owner._applyWeaponEffect(e);
+        }
         e.hurtFlash = 1;
         e.knockX += this.vx * 0.18;
         e.knockY += this.vy * 0.18;

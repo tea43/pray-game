@@ -6,7 +6,7 @@ import { GameData } from '../systems/upgrades.js';
 import { ABILITY_DEFS, HERO_ABILITY_TREES } from '../config/abilities.js';
 import { HERO_DEFS } from '../config/heroes.js';
 import { WEAPON_DEFS } from '../config/weapons.js';
-import { drawWeaponSprite } from './weaponSprites.js';
+import { drawWeaponSprite, getWeaponRender, WEAPON_RENDER_SCALE } from './weaponSprites.js';
 
 // Key bindings per hero: [basic, active slot 0, active slot 1]
 const HERO_KEYS = {
@@ -328,20 +328,19 @@ function _drawWeaponSlots(ctx, unit, sx, rowY, panelY) {
       ctx.textAlign = 'left';
     } else {
       const wDef = WEAPON_DEFS[slot.key];
-      const typeColor = wDef?.type === 'ranged' ? 'rgba(255,154,48,0.25)' :
-                        wDef?.type === 'thrown'  ? 'rgba(100,200,255,0.22)' :
-                                                   'rgba(200,180,100,0.22)';
+      const isRanged = wDef?.type === 'ranged' || wDef?.type === 'thrown';
+      const typeColor = isRanged ? 'rgba(100,200,255,0.22)' : 'rgba(200,180,100,0.22)';
       // Highlight slot on hover
       const hovered = mx >= cx && mx <= cx + CELL && my >= rowY && my <= rowY + CELL + 6;
-      ctx.fillStyle = hovered ? (wDef?.type === 'ranged' ? 'rgba(255,154,48,0.45)' :
-                                  wDef?.type === 'thrown'  ? 'rgba(100,200,255,0.40)' :
-                                                             'rgba(200,180,100,0.40)') : typeColor;
+      ctx.fillStyle = hovered ? (isRanged ? 'rgba(100,200,255,0.40)' : 'rgba(200,180,100,0.40)') : typeColor;
       ctx.fillRect(cx, rowY, CELL, CELL);
       ctx.strokeStyle = hovered ? '#ffcc60' : slot.level >= 5 ? '#ffaa18' : 'rgba(160,130,60,0.7)';
       ctx.lineWidth = hovered ? 1.5 : slot.level >= 5 ? 1.5 : 0.8;
       ctx.strokeRect(cx, rowY, CELL, CELL);
 
-      drawWeaponSprite(ctx, slot.key, cx + CELL / 2, rowY + CELL / 2, 0.9, Math.PI / 4);
+      const renderConfig = getWeaponRender(slot.key);
+      const scale = renderConfig.scale * WEAPON_RENDER_SCALE * 0.6; // Scale down for HUD
+      drawWeaponSprite(ctx, slot.key, cx + CELL / 2, rowY + CELL / 2, scale, Math.PI / 4);
 
       const pipR = 1.8;
       const pipGap = 5;

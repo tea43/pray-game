@@ -73,6 +73,13 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `executed/bwaves_feature_dev_plan.md`: Between-wave upgrade system implementation plan (all phases complete).
 - `executed/group_abilities.md`: Friendship-power superboost system — all 4 combos implemented (Chocho Train, High Five My Bro, Vietnam Memories, You Should Stay In The Ground).
 - `executed/wasteland_survivors_feature_plan.md`: Historical feature ledger for the v4 single-file prototype.
+- `executed/weapons-rework.md`: Rework plan defining 16 new post-soviet trash weapons.
+- `executed/weapon_reword_2.md`: Weapon sprite visibility rework (24x24 upscale and renderer refactor) — complete.
+- `executed/weapor_rework_3.md`: Unique per-weapon Vampire-Survivors behaviours via a `behavior` registry (bounce, orbit, ground zone, aura, charge-beam, whip, multi-slash, arc-down). Deprecated `radiator_rib` + `plastic_chair`, added `richards_megaphone` — implemented (visual fixes tracked in `executed/weapor_rework_4.md`).
+- `executed/weapor_rework_4.md`: Visual and projectile behavior fixes (projectiles bounds check, invisible explosions, missing whips/slash visual overlays, targetless/direction logic) — implemented.
+- `executed/weapon_rework_fix_plan_1.md`: Post-implementation review fixes of commit `d2d0319` (gravity-bounce ground line, idle-fire SFX gating, `state.beams` declaration, beam range cap, random slash angles) — implemented.
+
+
 
 ## rejected/ — Abandoned Approaches
 

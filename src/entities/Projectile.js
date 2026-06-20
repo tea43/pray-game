@@ -3,7 +3,7 @@ import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
-import { drawWeaponSprite, WEAPON_SPRITES } from '../render/weaponSprites.js';
+import { drawWeaponSprite, WEAPON_SPRITES, WEAPON_RENDER_SCALE, getWeaponRender } from '../render/weaponSprites.js';
 
 export class Projectile {
   constructor(x, y, target, dmg, facing, owner = null, wDef = {}) {
@@ -12,6 +12,7 @@ export class Projectile {
     this.z = 12;
     this.owner = owner;
     this.target = target;
+    this.wDef = wDef;
     this.targetX = target.x;
     this.targetY = target.y;
     this.speed = wDef.projectileSpeed ?? 430;
@@ -34,6 +35,7 @@ export class Projectile {
     const sfxThrow = wDef.sfxThrow || 'weapon.thrownClub.throw';
     this.flightSound = playSfx(sfxThrow);
     this._sfxImpact = wDef.sfxImpact || 'weapon.thrownClub.impact';
+    this.isProjectile = true;
   }
 
   update(dt) {
@@ -63,7 +65,11 @@ export class Projectile {
 
     const traveled = Math.hypot(this.x - this.startX, this.y - this.startY);
     if (traveled > this.maxRange || d < 8) {
-      this.returns ? this.beginReturn() : this.cleanup();
+      if (this.aoeRadius > 0 && !this.returns) {
+        this.explode();
+      } else {
+        this.returns ? this.beginReturn() : this.cleanup();
+      }
       return;
     }
 
@@ -72,7 +78,24 @@ export class Projectile {
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
         this.hitEnemy(e);
         if (!this.piercing) {
-          this.returns ? this.beginReturn() : this.cleanup();
+          if (this.returns) {
+            this.beginReturn();
+          } else {
+            if (this.wDef && this.wDef.zone) {
+              state.zones = state.zones || [];
+              state.zones.push({
+                x: this.x, y: this.y,
+                radius: this.wDef.zone.radius,
+                duration: this.wDef.zone.duration,
+                tickInterval: this.wDef.zone.tickInterval,
+                dmg: this.dmg * 0.4,
+                life: 0,
+                nextTick: 0,
+                owner: this.owner
+              });
+            }
+            this.cleanup();
+          }
           return;
         }
       }
@@ -109,17 +132,27 @@ export class Projectile {
     playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
 
     if (this.aoeRadius > 0) {
+      if (!state.explosions) state.explosions = [];
+      state.explosions.push({ x: this.x, y: this.y, r: 0, maxR: this.aoeRadius, life: 0.3, maxLife: 0.3 });
       for (const ae of state.enemies) {
         if (ae.dead || this._hitSet.has(ae)) continue;
         if (dist2(this.x, this.y, ae.x, ae.y) < this.aoeRadius) {
           ae.hp -= this.dmg * 0.6;
           ae.hurtFlash = 1;
           this._hitSet.add(ae);
+          if (this.owner && !this.owner.dead) {
+            this.owner._gainWeaponXp(this.dmg * 0.6);
+            this.owner._applyWeaponEffect(ae);
+          }
         }
       }
     }
 
     e.hp -= this.dmg;
+    if (this.owner && !this.owner.dead) {
+      this.owner._gainWeaponXp(this.dmg);
+      this.owner._applyWeaponEffect(e);
+    }
     e.knockX += Math.cos(this.facing) * this.speed * 0.32;
     e.knockY += Math.sin(this.facing) * this.speed * 0.32;
     e.hurtFlash = 1;
@@ -146,6 +179,40 @@ export class Projectile {
       this.flightSound.stop(0.06);
       this.flightSound = null;
     }
+  }
+
+  explode() {
+    if (this.aoeRadius > 0) {
+      if (!state.explosions) state.explosions = [];
+      state.explosions.push({ x: this.x, y: this.y, r: 0, maxR: this.aoeRadius, life: 0.3, maxLife: 0.3 });
+      for (const ae of state.enemies) {
+        if (ae.dead || (this._hitSet && this._hitSet.has(ae))) continue;
+        if (dist2(this.x, this.y, ae.x, ae.y) < this.aoeRadius) {
+          ae.hp -= this.dmg * 0.6;
+          ae.hurtFlash = 1;
+          if (this.owner && !this.owner.dead) {
+            this.owner._gainWeaponXp(this.dmg * 0.6);
+            this.owner._applyWeaponEffect(ae);
+          }
+        }
+      }
+    }
+    
+    if (this.wDef && this.wDef.zone) {
+      state.zones = state.zones || [];
+      state.zones.push({
+        x: this.x, y: this.y,
+        radius: this.wDef.zone.radius,
+        duration: this.wDef.zone.duration,
+        tickInterval: this.wDef.zone.tickInterval,
+        dmg: this.dmg * 0.4,
+        life: 0,
+        nextTick: 0,
+        owner: this.owner
+      });
+    }
+    
+    this.cleanup();
   }
 
   cleanup() {
@@ -182,7 +249,9 @@ export class Projectile {
       ctx.lineTo(4, 3);
       ctx.stroke();
     } else if (this.key && WEAPON_SPRITES[this.key]) {
-      drawWeaponSprite(ctx, this.key, 0, 0, 1.4, Math.PI / 4);
+      const renderConfig = getWeaponRender(this.key);
+      const scale = renderConfig.scale * WEAPON_RENDER_SCALE;
+      drawWeaponSprite(ctx, this.key, 0, 0, scale, Math.PI / 4);
     } else {
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
       ctx.beginPath();
