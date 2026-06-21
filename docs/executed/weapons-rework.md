@@ -1,16 +1,11 @@
-// ── Weapon definitions ────────────────────────────────────────────────────────
-// Each entry fully describes a weapon's stats, behaviour, audio, and sprite.
-// Heroes reference a key here via startingWeapon and weaponPool.
-//
-// type:
-//   melee   — close-range swing; hits the single closest target in arc
-//   cleave  — melee with arc hit on all enemies in a cone
-//   thrown  — homing projectile that (optionally) returns to the thrower
-//   ranged  — straight-line projectile(s), no return
-//
-// rarity: Common | Rare | Epic | Legendary — used by WeaponLevelUpScene card UI
-// levels: 5-entry array of per-level stat overrides (added in commit 2)
+# Weapons Rework Plan
 
+This document details the exact code changes to replace the 11 generic placeholder weapons with the 16 new thematic post-soviet weapons.
+
+## 1. `src/config/weapons.js`
+The `WEAPON_DEFS` object will be entirely replaced with the following code. Attack rates (`atkRate`) are scaled down by ~5-10% per level to keep upgrades feeling impactful alongside the x1 to x3 damage scaling.
+
+```javascript
 export const WEAPON_DEFS = {
 
   // ── Melee ──────────────────────────────────────────────────────────────────
@@ -18,13 +13,11 @@ export const WEAPON_DEFS = {
   car_antenna: {
     displayName:   'Car Antenna',
     type:          'melee',
-    behavior:      'multiSlash',
     rarity:        'Common',
-    atkRange:      150,
+    atkRange:      55,
     atkDmg:        40,
     atkRate:       0.55,
     knockback:     40,
-    slash:         { count: 3, stagger: 0.06 },
     swingArc:      1.5,
     swingOffset:   1.0,
     sfxAttack:     'weapon.attack.default',
@@ -43,7 +36,6 @@ export const WEAPON_DEFS = {
   toilet_lid: {
     displayName:   'Toilet Lid',
     type:          'melee',
-    behavior:      'bounce',
     rarity:        'Rare',
     cleave:        true,
     cleaveArc:     55,
@@ -51,7 +43,6 @@ export const WEAPON_DEFS = {
     atkDmg:        95,
     atkRate:       1.3,
     knockback:     160,
-    bounce:        { maxBounces: 3, pierce: false, lifetime: 5.0, offBounds: false, gravity: 800 },
     sfxAttack:     'weapon.attack.default',
     sfxFallback:   'weapon.attack.default',
     sprite:        'toilet_lid',
@@ -68,13 +59,11 @@ export const WEAPON_DEFS = {
   bus_stop_pole: {
     displayName:   'Bus Stop Pole',
     type:          'melee',
-    behavior:      'arcDown',
     rarity:        'Epic',
     atkRange:      80,
     atkDmg:        150,
     atkRate:       2.0,
     knockback:     200,
-    arc:           { upSpeed: 400, drift: 100, gravity: 800, pierce: true },
     swingArc:      2.4,
     swingOffset:   1.2,
     sfxAttack:     'weapon.attack.default',
@@ -90,11 +79,55 @@ export const WEAPON_DEFS = {
     ],
   },
 
+  radiator_rib: {
+    displayName:   'Radiator Rib',
+    type:          'melee',
+    rarity:        'Legendary',
+    atkRange:      50,
+    atkDmg:        190,
+    atkRate:       2.2,
+    knockback:     250,
+    swingArc:      2.0,
+    swingOffset:   1.0,
+    sfxAttack:     'weapon.attack.default',
+    sfxFallback:   'weapon.attack.default',
+    sprite:        'radiator_rib',
+    lootDuration:  null,
+    levels: [
+      { atkDmg: 190, atkRate: 2.2 },
+      { atkDmg: 285, atkRate: 2.1 },
+      { atkDmg: 380, atkRate: 2.0 },
+      { atkDmg: 475, atkRate: 1.9 },
+      { atkDmg: 570, atkRate: 1.8 },
+    ],
+  },
+
+  plastic_chair: {
+    displayName:   'Plastic Chair',
+    type:          'melee',
+    rarity:        'Common',
+    atkRange:      45,
+    atkDmg:        65,
+    atkRate:       0.7,
+    knockback:     100,
+    swingArc:      2.2,
+    swingOffset:   1.1,
+    sfxAttack:     'weapon.attack.default',
+    sfxFallback:   'weapon.attack.default',
+    sprite:        'plastic_chair',
+    lootDuration:  null,
+    levels: [
+      { atkDmg: 65, atkRate: 0.70 },
+      { atkDmg: 97.5, atkRate: 0.66 },
+      { atkDmg: 130, atkRate: 0.62 },
+      { atkDmg: 162.5, atkRate: 0.58 },
+      { atkDmg: 195, atkRate: 0.54 },
+    ],
+  },
 
   shower_hose: {
     displayName:   'Shower Hose',
     type:          'melee',
-    behavior:      'whip',
     rarity:        'Rare',
     cleave:        true,
     cleaveArc:     45,
@@ -102,8 +135,7 @@ export const WEAPON_DEFS = {
     atkDmg:        80,
     atkRate:       1.2,
     knockback:     70,
-    whip:          { shape: 'lash', length: 100, halfHeight: 22, sides: 1, pattern: 'wave', amplitude: 28, waves: 1, color: '#ffffff' },
-    sfxAttack:     'weapon.whip.crack',
+    sfxAttack:     'weapon.attack.default',
     sfxFallback:   'weapon.attack.default',
     sprite:        'shower_hose',
     lootDuration:  null,
@@ -119,7 +151,6 @@ export const WEAPON_DEFS = {
   chain_with_padlock: {
     displayName:   'Doggo Chain',
     type:          'melee',
-    behavior:      'orbit',
     rarity:        'Epic',
     cleave:        true,
     cleaveArc:     60,
@@ -127,7 +158,6 @@ export const WEAPON_DEFS = {
     atkDmg:        110,
     atkRate:       1.6,
     knockback:     180,
-    orbit:         { count: 2, radius: 64, angularSpeed: 2.6, duration: 2.0, tickInterval: 0.25 },
     sfxAttack:     'weapon.attack.default',
     sfxFallback:   'weapon.attack.default',
     sprite:        'chain_with_padlock',
@@ -144,7 +174,6 @@ export const WEAPON_DEFS = {
   extension_cord: {
     displayName:   'Extension Cord',
     type:          'melee',
-    behavior:      'whip',
     rarity:        'Common',
     cleave:        true,
     cleaveArc:     50,
@@ -152,8 +181,7 @@ export const WEAPON_DEFS = {
     atkDmg:        70,
     atkRate:       1.0,
     knockback:     60,
-    whip:          { shape: 'lash', length: 110, halfHeight: 18, sides: 1, pattern: 'zigzag', amplitude: 22, waves: 3, color: '#ffe04a' },
-    sfxAttack:     'weapon.whip.crack',
+    sfxAttack:     'weapon.attack.default',
     sfxFallback:   'weapon.attack.default',
     sprite:        'extension_cord',
     lootDuration:  null,
@@ -166,42 +194,17 @@ export const WEAPON_DEFS = {
     ],
   },
 
-  richards_megaphone: {
-    displayName:   'Megaphone',
-    type:          'melee',
-    behavior:      'aura',
-    rarity:        'Epic',
-    atkRange:      100,
-    atkDmg:        15,
-    atkRate:       1.0,
-    knockback:     20,
-    aura:          { radius: 100, tickInterval: 0.5, knockback: 20 },
-    sfxAttack:     'weapon.attack.default',
-    sfxFallback:   'weapon.attack.default',
-    sprite:        'richards_megaphone',
-    lootDuration:  null,
-    levels: [
-      { atkDmg: 15, auraRadius: 100 },
-      { atkDmg: 20, auraRadius: 110 },
-      { atkDmg: 25, auraRadius: 120 },
-      { atkDmg: 30, auraRadius: 130 },
-      { atkDmg: 35, auraRadius: 140 },
-    ],
-  },
-
   // ── Thrown ─────────────────────────────────────────────────────────────────
 
   frozen_cutlet: {
     displayName:       'Frozen Cutlet',
     type:              'thrown',
-    behavior:          'bounce',
     rarity:            'Common',
     atkRange:          220,
     atkDmg:            40,
     atkRate:           0.8,
     returns:           false,
     piercing:          false,
-    bounce:            { maxBounces: 4, pierce: true, lifetime: 3.0, offBounds: true },
     projectileSpeed:   450,
     projectileMaxRange:240,
     sfxThrow:          'shoot',
@@ -210,20 +213,18 @@ export const WEAPON_DEFS = {
     sfxFallbackImpact: 'hit',
     sprite:            'frozen_cutlet',
     lootDuration:      null,
-    maxProjectiles:    4,
     levels: [
-      { atkDmg: 40, atkRate: 0.80, maxProjectiles: 4 },
-      { atkDmg: 60, atkRate: 0.76, maxProjectiles: 5 },
-      { atkDmg: 80, atkRate: 0.72, maxProjectiles: 6 },
-      { atkDmg: 100, atkRate: 0.68, maxProjectiles: 7 },
-      { atkDmg: 120, atkRate: 0.64, maxProjectiles: 8 },
+      { atkDmg: 40, atkRate: 0.80 },
+      { atkDmg: 60, atkRate: 0.76 },
+      { atkDmg: 80, atkRate: 0.72 },
+      { atkDmg: 100, atkRate: 0.68 },
+      { atkDmg: 120, atkRate: 0.64 },
     ],
   },
 
   pickle_jar: {
     displayName:       'Pickle Jar',
     type:              'thrown',
-    behavior:          'groundZone',
     rarity:            'Epic',
     atkRange:          200,
     atkDmg:            105,
@@ -231,7 +232,6 @@ export const WEAPON_DEFS = {
     returns:           false,
     piercing:          false,
     aoeRadius:         40,
-    zone:              { radius: 48, duration: 3.0, tickInterval: 0.4 },
     projectileSpeed:   400,
     projectileMaxRange:220,
     sfxThrow:          'shoot',
@@ -240,26 +240,24 @@ export const WEAPON_DEFS = {
     sfxFallbackImpact: 'hit',
     sprite:            'pickle_jar',
     lootDuration:      null,
-    maxProjectiles:    2,
     levels: [
-      { atkDmg: 105, atkRate: 1.50, maxProjectiles: 2 },
-      { atkDmg: 157.5, atkRate: 1.42, maxProjectiles: 2 },
-      { atkDmg: 210, atkRate: 1.34, maxProjectiles: 3 },
-      { atkDmg: 262.5, atkRate: 1.26, maxProjectiles: 3 },
-      { atkDmg: 315, atkRate: 1.18, aoeRadius: 50, maxProjectiles: 4 },
+      { atkDmg: 105, atkRate: 1.50 },
+      { atkDmg: 157.5, atkRate: 1.42 },
+      { atkDmg: 210, atkRate: 1.34 },
+      { atkDmg: 262.5, atkRate: 1.26 },
+      { atkDmg: 315, atkRate: 1.18, aoeRadius: 50 },
     ],
   },
 
   bottle_cap_shuriken: {
     displayName:       'Cap Shuriken',
     type:              'thrown',
-    behavior:          'boomerang',
     rarity:            'Common',
     atkRange:          260,
     atkDmg:            25,
     atkRate:           0.35,
-    returns:           true,
-    piercing:          true,
+    returns:           false,
+    piercing:          false,
     projectileSpeed:   600,
     projectileMaxRange:280,
     sfxThrow:          'shoot',
@@ -268,13 +266,12 @@ export const WEAPON_DEFS = {
     sfxFallbackImpact: 'hit',
     sprite:            'bottle_cap_shuriken',
     lootDuration:      null,
-    maxProjectiles:    3,
     levels: [
-      { atkDmg: 25, atkRate: 0.35, maxProjectiles: 3 },
-      { atkDmg: 37.5, atkRate: 0.33, maxProjectiles: 4 },
-      { atkDmg: 50, atkRate: 0.31, maxProjectiles: 5 },
-      { atkDmg: 62.5, atkRate: 0.29, maxProjectiles: 6 },
-      { atkDmg: 75, atkRate: 0.27, maxProjectiles: 7 },
+      { atkDmg: 25, atkRate: 0.35 },
+      { atkDmg: 37.5, atkRate: 0.33 },
+      { atkDmg: 50, atkRate: 0.31 },
+      { atkDmg: 62.5, atkRate: 0.29 },
+      { atkDmg: 75, atkRate: 0.27 },
     ],
   },
 
@@ -283,8 +280,6 @@ export const WEAPON_DEFS = {
   bed_spring_arbalest: {
     displayName:       'Spring Arbalest',
     type:              'ranged',
-    behavior:          'bolt',
-    targeting:         'random',
     rarity:            'Epic',
     atkRange:          420,
     atkDmg:            110,
@@ -295,23 +290,19 @@ export const WEAPON_DEFS = {
     sfxFire:           'shoot',
     sfxFallback:       'shoot',
     sprite:            'bed_spring_arbalest',
-    projectileSprite:  'spring_bolt',
     lootDuration:      null,
-    maxProjectiles:    4,
     levels: [
-      { atkDmg: 110, atkRate: 2.0, maxProjectiles: 4 },
-      { atkDmg: 165, atkRate: 1.9, maxProjectiles: 5 },
-      { atkDmg: 220, atkRate: 1.8, maxProjectiles: 6 },
-      { atkDmg: 275, atkRate: 1.7, maxProjectiles: 7 },
-      { atkDmg: 330, atkRate: 1.6, maxProjectiles: 8 },
+      { atkDmg: 110, atkRate: 2.0 },
+      { atkDmg: 165, atkRate: 1.9 },
+      { atkDmg: 220, atkRate: 1.8 },
+      { atkDmg: 275, atkRate: 1.7 },
+      { atkDmg: 330, atkRate: 1.6 },
     ],
   },
 
   bike_spoke_slingshot: {
     displayName:       'Spoke Slingshot',
     type:              'ranged',
-    behavior:          'bolt',
-    targeting:         'nearest',
     rarity:            'Common',
     atkRange:          350,
     atkDmg:            57,
@@ -322,27 +313,23 @@ export const WEAPON_DEFS = {
     sfxFire:           'shoot',
     sfxFallback:       'shoot',
     sprite:            'bike_spoke_slingshot',
-    projectileSprite:  'spoke_ball',
     lootDuration:      null,
-    maxProjectiles:    5,
     levels: [
-      { atkDmg: 57, atkRate: 0.90, maxProjectiles: 5 },
-      { atkDmg: 85.5, atkRate: 0.85, maxProjectiles: 6 },
-      { atkDmg: 114, atkRate: 0.80, maxProjectiles: 7 },
-      { atkDmg: 142.5, atkRate: 0.75, maxProjectiles: 8 },
-      { atkDmg: 171, atkRate: 0.70, maxProjectiles: 9 },
+      { atkDmg: 57, atkRate: 0.90 },
+      { atkDmg: 85.5, atkRate: 0.85 },
+      { atkDmg: 114, atkRate: 0.80 },
+      { atkDmg: 142.5, atkRate: 0.75 },
+      { atkDmg: 171, atkRate: 0.70 },
     ],
   },
 
   courtyard_railgun: {
     displayName:       'Railgun',
     type:              'ranged',
-    behavior:          'chargeBeam',
     rarity:            'Legendary',
     atkRange:          500,
     atkDmg:            130,
     atkRate:           2.0,
-    beam:              { chargeTime: 1.0, length: 600, halfWidth: 16 },
     bulletCount:       1,
     spread:            0,
     projectileSpeed:   1200,
@@ -362,7 +349,6 @@ export const WEAPON_DEFS = {
   contraceptive_catapult: {
     displayName:       'Catapult',
     type:              'ranged',
-    behavior:          'lobExplode',
     rarity:            'Rare',
     atkRange:          380,
     atkDmg:            75,
@@ -370,31 +356,22 @@ export const WEAPON_DEFS = {
     bulletCount:       1,
     spread:            0.1,
     projectileSpeed:   500,
-    returns:           false,
-    piercing:          false,
-    aoeRadius:         70,
-    projectileMaxRange:400,
-    sfxThrow:          'shoot',
-    sfxImpact:         'explosion',
     sfxFire:           'shoot',
     sfxFallback:       'shoot',
     sprite:            'contraceptive_catapult',
-    projectileSprite:  'catapult_pouch',
     lootDuration:      null,
-    maxProjectiles:    3,
     levels: [
-      { atkDmg: 75, atkRate: 1.10, maxProjectiles: 3 },
-      { atkDmg: 112.5, atkRate: 1.04, maxProjectiles: 4 },
-      { atkDmg: 150, atkRate: 0.98, maxProjectiles: 5 },
-      { atkDmg: 187.5, atkRate: 0.92, maxProjectiles: 6 },
-      { atkDmg: 225, atkRate: 0.86, maxProjectiles: 7 },
+      { atkDmg: 75, atkRate: 1.10 },
+      { atkDmg: 112.5, atkRate: 1.04 },
+      { atkDmg: 150, atkRate: 0.98 },
+      { atkDmg: 187.5, atkRate: 0.92 },
+      { atkDmg: 225, atkRate: 0.86 },
     ],
   },
 
   fence_wire_bow: {
     displayName:       'Fence Bow',
     type:              'ranged',
-    behavior:          'directional',
     rarity:            'Common',
     atkRange:          360,
     atkDmg:            65,
@@ -405,24 +382,86 @@ export const WEAPON_DEFS = {
     sfxFire:           'shoot',
     sfxFallback:       'shoot',
     sprite:            'fence_wire_bow',
-    projectileSprite:  'wire_arrow',
     lootDuration:      null,
-    maxProjectiles:    4,
     levels: [
-      { atkDmg: 65, atkRate: 0.90, maxProjectiles: 4 },
-      { atkDmg: 97.5, atkRate: 0.85, maxProjectiles: 5 },
-      { atkDmg: 130, atkRate: 0.80, maxProjectiles: 6 },
-      { atkDmg: 162.5, atkRate: 0.75, maxProjectiles: 7 },
-      { atkDmg: 195, atkRate: 0.70, maxProjectiles: 8 },
+      { atkDmg: 65, atkRate: 0.90 },
+      { atkDmg: 97.5, atkRate: 0.85 },
+      { atkDmg: 130, atkRate: 0.80 },
+      { atkDmg: 162.5, atkRate: 0.75 },
+      { atkDmg: 195, atkRate: 0.70 },
     ],
   },
 };
+```
 
-// Returns weapon stats merged with the per-level overrides for slot.level.
-// When def.levels is absent (or level 1 baseline), returns the def unchanged.
-export function resolveWeaponStats(slot) {
-  const def = WEAPON_DEFS[slot?.key];
-  if (!def) return {};
-  const lvl = def.levels?.[slot.level - 1] ?? {};
-  return { key: slot.key, ...def, ...lvl };
-}
+## 2. `src/config/heroes.js`
+The hero loadouts will be modified in `HERO_DEFS` as follows. This gives each hero a distinct post-apocalyptic identity and a custom starting weapon that fits their playstyle.
+
+**For Eliott:**
+```javascript
+  eliott: {
+    // ... stats and colors ...
+    startingWeapon: 'frozen_cutlet',
+    weaponPool: ['frozen_cutlet', 'pickle_jar', 'bottle_cap_shuriken', 'fence_wire_bow', 'plastic_chair', 'extension_cord'],
+    // ...
+  },
+```
+
+**For Dick:**
+```javascript
+  dick: {
+    // ... stats and colors ...
+    startingWeapon: 'plastic_chair',
+    weaponPool: ['plastic_chair', 'bus_stop_pole', 'radiator_rib', 'toilet_lid', 'chain_with_padlock', 'car_antenna'],
+    // ...
+  },
+```
+
+**For Habib:**
+```javascript
+  habib: {
+    // ... stats and colors ...
+    startingWeapon: 'extension_cord',
+    weaponPool: ['extension_cord', 'shower_hose', 'bike_spoke_slingshot', 'bed_spring_arbalest', 'contraceptive_catapult', 'courtyard_railgun'],
+    // ...
+  },
+```
+
+## 3. `src/render/weaponSprites.js`
+All old sprites will be deleted from `WEAPON_SPRITES` and `WEAPON_IMAGE_DEFS` (if applicable) and replaced with simple 16x16 placeholder block definitions for the 16 new keys to prevent rendering errors. For example:
+
+```javascript
+export const WEAPON_SPRITES = {
+  frozen_cutlet: [
+    "                ",
+    "      1111      ",
+    "     155551     ",
+    "    15555551    ",
+    "    15555551    ",
+    "    15555551    ",
+    "     155551     ",
+    "      1111      ",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "                "
+  ],
+  // ... (15 more simple placeholder boxes generated with standard colors)
+};
+```
+
+## 4. `docs/current/current_game_state.md`
+The Base Weapons section will be updated:
+
+```markdown
+## Base Weapons
+
+- Eliott: `frozen_cutlet` (slot 0, level 1); fast kitchen projectile.
+- Dick: `plastic_chair` (slot 0, level 1); slap-and-smash fast weapon.
+- Habib: `extension_cord` (slot 0, level 1); balanced mid-range whip.
+```
+And the Hero weapon pools text will match the `heroes.js` logic above.

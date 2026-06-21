@@ -38,14 +38,14 @@ This scans all audio folders and writes `public/assets/audio/manifest.json`. No 
 
 ### Step 3 — Register a new event (only for brand-new event keys)
 
-If you're adding a completely new event key (e.g. `ability.my_new_ability`), add an entry to `public/assets/audio/catalog.json`:
+If you're adding a completely new event key (e.g. `ability.my_new_ability` or `weapon.whip.crack`), add an entry to `public/assets/audio/catalog.json`:
 
 ```json
-"ability.my_new_ability": {
-  "dir": "characters/abilities/my_new_ability",
-  "fallback": "synthetic.ability",
-  "volume": 0.75,
-  "pitchJitter": 0.05
+"weapon.whip.crack": {
+  "dir": "weapons/attack/whip",
+  "fallback": "weapon.attack.default",
+  "volume": 0.55,
+  "pitchJitter": 0.08
 }
 ```
 

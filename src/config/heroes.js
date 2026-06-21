@@ -1,4 +1,5 @@
 export const DEFAULT_PICKUP_R = 60;
+export const UNIT_RENDER_SCALE = 1.35; // Controls the visual size of heroes
 
 export const HERO_DEFS = {
   eliott: {
@@ -9,8 +10,8 @@ export const HERO_DEFS = {
     abilityDescription: 'Teleports Eliott up to 240px toward cursor. Allies within 120px are pulled to destination.',
     abilityMaxCd: 9,
     abilityColor: '#80c8ff',
-    startingWeapon: 'short_hockey_club',
-    weaponPool: ['short_hockey_club', 'throwing_stone', 'bow', 'crossbow', 'samurai_sword'],
+    startingWeapon: 'frozen_cutlet',
+    weaponPool: ['frozen_cutlet', 'pickle_jar', 'bottle_cap_shuriken', 'fence_wire_bow', 'bike_spoke_slingshot', 'car_antenna'],
     maxHp: 100,
     fallbackRenderer: 'eliott',
     pickupR: DEFAULT_PICKUP_R,
@@ -28,8 +29,8 @@ export const HERO_DEFS = {
     abilityDescription: 'Throws hockey club in an oval arc at the heaviest enemy (300px). 40 dmg outbound, 25 dmg return. Dick is unarmed during flight.',
     abilityMaxCd: 10,
     abilityColor: '#ff6040',
-    startingWeapon: 'hockey_club',
-    weaponPool: ['hockey_club', 'long_club', 'dual_clubs', 'thrown_club', 'boomerang', 'samurai_sword'],
+    startingWeapon: 'car_antenna',
+    weaponPool: ['car_antenna', 'bus_stop_pole', 'toilet_lid', 'chain_with_padlock', 'contraceptive_catapult', 'richards_megaphone'],
     maxHp: 120,
     fallbackRenderer: 'dick',
     pickupR: DEFAULT_PICKUP_R,
@@ -46,8 +47,8 @@ export const HERO_DEFS = {
     abilityDescription: 'Active Survival Shield (A.S.S) exoshell enablement. All heroes within 150px take 50% reduced damage for 6s.',
     abilityMaxCd: 14,
     abilityColor: '#c8a0ff',
-    startingWeapon: 'hockey_club',
-    weaponPool: ['hockey_club', 'shotgun', 'crossbow', 'bow', 'samurai_sword'],
+    startingWeapon: 'extension_cord',
+    weaponPool: ['extension_cord', 'shower_hose', 'bike_spoke_slingshot', 'bed_spring_arbalest', 'courtyard_railgun', 'chain_with_padlock'],
     maxHp: 100,
     fallbackRenderer: 'habib',
     pickupR: DEFAULT_PICKUP_R,

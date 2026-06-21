@@ -3,9 +3,10 @@ import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
+import { drawWeaponSprite, WEAPON_SPRITES, WEAPON_RENDER_SCALE, getWeaponRender } from '../render/weaponSprites.js';
 
 export class ShotgunBullet {
-  constructor(x, y, angle, dmg, wDef = {}) {
+  constructor(x, y, angle, dmg, owner = null, wDef = {}) {
     this.x = x; this.y = y;
     this.startX = x; this.startY = y;
     const speed = wDef.projectileSpeed ?? 480;
@@ -15,6 +16,10 @@ export class ShotgunBullet {
     this.dmg = dmg;
     this.dead = false;
     this.r = 3;
+    this.owner = owner;
+    this.isProjectile = true;
+    this.key = wDef.key;
+    this.projectileSprite = wDef.projectileSprite || null;
   }
 
   update(dt) {
@@ -22,13 +27,17 @@ export class ShotgunBullet {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     if (Math.hypot(this.x - this.startX, this.y - this.startY) > this.maxRange) { this.dead = true; return; }
-    if (this.x < -10 || this.x > G.W + 10 || this.y < -10 || this.y > G.PLAY_BOTTOM + 10) { this.dead = true; return; }
+    if (this.x < -40 || this.x > G.WORLD_W + 40 || this.y < -40 || this.y > G.WORLD_H + 40) { this.dead = true; return; }
     for (const e of state.enemies) {
       if (e.dead) continue;
       if (dist2(this.x, this.y, e.x, e.y) < e.r + this.r) {
         playSfx('weapon.impact.default');
         playSfx(e.kind === 'bigboss' || e.kind === 'miniboss' ? 'boss.hit.default' : 'alien.hit.default');
         e.hp -= this.dmg;
+        if (this.owner && !this.owner.dead) {
+          this.owner._gainWeaponXp(this.dmg);
+          this.owner._applyWeaponEffect(e);
+        }
         e.hurtFlash = 1;
         e.knockX += this.vx * 0.18;
         e.knockY += this.vy * 0.18;
@@ -69,6 +78,17 @@ export class ShotgunBullet {
     ctx.lineTo(this.x, this.y);
     ctx.stroke();
     ctx.lineCap = 'butt';
+    ctx.restore();
+
+    if (this.projectileSprite && WEAPON_SPRITES[this.projectileSprite]) {
+      const scale = getWeaponRender(this.projectileSprite).scale * WEAPON_RENDER_SCALE;
+      const ang = Math.atan2(this.vy, this.vx);
+      drawWeaponSprite(ctx, this.projectileSprite, this.x, this.y, scale, ang);
+      return;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
     const r = 5;
     const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
     grd.addColorStop(0, 'rgba(255, 250, 220, 1)');

@@ -15,11 +15,13 @@ export const PALETTE = {
   "d": "#b0b8c0"
 };
 
-export const WEAPON_RENDER_SCALE = 1.25;
+export const WEAPON_RENDER_SCALE = 1.0;
 export const WEAPON_RENDER = {
   car_antenna:           { scale: 1.0 },
   toilet_lid:            { scale: 1.0 },
   bus_stop_pole:         { scale: 1.0 },
+  radiator_rib:          { scale: 1.0 },
+  plastic_chair:         { scale: 1.0 },
   shower_hose:           { scale: 1.0 },
   chain_with_padlock:    { scale: 1.0 },
   extension_cord:        { scale: 1.0 },
@@ -30,12 +32,7 @@ export const WEAPON_RENDER = {
   bike_spoke_slingshot:  { scale: 1.0 },
   courtyard_railgun:     { scale: 1.0 },
   contraceptive_catapult:{ scale: 1.0 },
-  catapult_pouch:        { scale: 1.0 },
   fence_wire_bow:        { scale: 1.0 },
-  richards_megaphone:    { scale: 1.0 },
-  spring_bolt:           { scale: 1.0 },
-  spoke_ball:            { scale: 0.9 },
-  wire_arrow:            { scale: 1.0 },
 };
 
 export function getWeaponRender(key) {
@@ -120,29 +117,55 @@ export const WEAPON_SPRITES = {
     "                        ",
     "                        "
   ],
-  richards_megaphone: [
+  radiator_rib: [
     "                        ",
     "                        ",
-    "         1111           ",
-    "        118811          ",
-    "       1188881          ",
-    "      118888811111      ",
-    "     11888888888811     ",
-    "    118888888888881     ",
-    "   1188888888888881     ",
-    "   1188888888888881     ",
-    "  11888888888888881     ",
-    "  11888888888888881     ",
-    "   1188888888888881     ",
-    "   1188888888888881     ",
-    "    118888888888881     ",
-    "     11888888888811     ",
-    "      118888811111      ",
-    "       1188881  111     ",
-    "        118811  111     ",
-    "         1111   111     ",
+    "         111111         ",
+    "         111111         ",
+    "       115555551        ",
+    "       115555551        ",
+    "       115511151        ",
+    "       115555551        ",
+    "       115555551        ",
+    "       115511151        ",
+    "       115555551        ",
+    "       115555551        ",
+    "       115511151        ",
+    "       115555551        ",
+    "       115555551        ",
+    "       115511151        ",
+    "       115555551        ",
+    "       115555551        ",
+    "       115511151        ",
+    "       115555551        ",
+    "       115555551        ",
+    "         111111         ",
+    "                        ",
+    "                        "
+  ],
+  plastic_chair: [
     "                        ",
     "                        ",
+    "      111111            ",
+    "      111111            ",
+    "      111411            ",
+    "      111411            ",
+    "      111411            ",
+    "      111411            ",
+    "      111411            ",
+    "      111411            ",
+    "      111411111111      ",
+    "      111411111111      ",
+    "      111499949991      ",
+    "      111111111141      ",
+    "      111111111141      ",
+    "      111411   141      ",
+    "      111411   141      ",
+    "      111411   141      ",
+    "      111411   141      ",
+    "      111411   141      ",
+    "      111b11   141      ",
+    "      111111   111      ",
     "                        ",
     "                        "
   ],
@@ -175,26 +198,26 @@ export const WEAPON_SPRITES = {
   chain_with_padlock: [
     "                        ",
     "                        ",
-    "                        ",
-    "         111111         ",
-    "        15555551        ",
-    "        155  551        ",
-    "        155  551        ",
-    "        155  551        ",
-    "     11111111111111     ",
-    "     18888888888881     ",
-    "     18899888888881     ",
-    "     18888888888881     ",
-    "     18888811888881     ",
-    "     18888811888881     ",
-    "     18888811888881     ",
-    "     18888888888881     ",
-    "     18888888888881     ",
-    "     18888888888881     ",
-    "     11111111111111     ",
-    "                        ",
-    "                        ",
-    "                        ",
+    "      111               ",
+    "      111               ",
+    "    11551               ",
+    "    11551               ",
+    "      111               ",
+    "        1111            ",
+    "        1551            ",
+    "         111            ",
+    "           1111         ",
+    "           1551         ",
+    "            111         ",
+    "            11511       ",
+    "            11511       ",
+    "              111       ",
+    "               111      ",
+    "               111      ",
+    "              18881     ",
+    "              18881     ",
+    "              18881     ",
+    "              11111     ",
     "                        ",
     "                        "
   ],
@@ -406,32 +429,6 @@ export const WEAPON_SPRITES = {
     "                        ",
     "                        "
   ],
-  catapult_pouch: [
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "           11           ",
-    "          1441          ",
-    "         144441         ",
-    "        14999941        ",
-    "        49999994        ",
-    "       1499999941       ",
-    "       1499999941       ",
-    "        49999994        ",
-    "        14999941        ",
-    "         144441         ",
-    "          1441          ",
-    "           11           ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        "
-  ],
   fence_wire_bow: [
     "                        ",
     "                        ",
@@ -458,187 +455,4 @@ export const WEAPON_SPRITES = {
     "                        ",
     "                        "
   ],
-  spring_bolt: [
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "   6           14       ",
-    "   66          1444     ",
-    "   666333333333149444   ",
-    "   666333333333149444   ",
-    "   66          1444     ",
-    "   6           14       ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-  ],
-  spoke_ball: [
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "         115511         ",
-    "        15555551        ",
-    "        15955551        ",
-    "        55555555        ",
-    "        55555555        ",
-    "        15555551        ",
-    "        15555551        ",
-    "         115511         ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-  ],
-  wire_arrow: [
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "             55         ",
-    "               55       ",
-    "                 55     ",
-    "    555655555555   54   ",
-    "    555555655555   54   ",
-    "                 55     ",
-    "               55       ",
-    "             55         ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-    "                        ",
-  ],
 };
-
-// ── Real sprite definitions ───────────────────────────────────────────────────
-//
-const WEAPON_IMAGE_DEFS = {};
-
-const _weaponImages = {};
-
-// Scale factor for the working bitmap — 4× the max in-game render size gives
-// plenty of resolution even on HiDPI displays without keeping the full master.
-const BITMAP_SCALE = 4;
-
-// Call once from GameScene.create() — safe to call multiple times (idempotent).
-export function preloadWeaponImages() {
-  for (const [key, def] of Object.entries(WEAPON_IMAGE_DEFS)) {
-    if (_weaponImages[key]) continue;
-
-    const entry = { img: null, drawW: def.drawW, drawH: def.drawH };
-    _weaponImages[key] = entry;
-
-    const raw = new Image();
-    raw.onload = () => {
-      // Downscale to a working bitmap; the full master is then GC-eligible.
-      createImageBitmap(raw, {
-        resizeWidth:   Math.round(def.drawW * BITMAP_SCALE),
-        resizeHeight:  Math.round(def.drawH * BITMAP_SCALE),
-        resizeQuality: 'high',
-      }).then(bmp => { entry.img = bmp; });
-    };
-    raw.src = def.src;
-  }
-}
-
-export function drawWeaponSprite(ctx, key, x, y, scale = 1, rotation = 0) {
-  // ── Real sprite path ───────────────────────────────────────────────────────
-  const entry = _weaponImages[key];
-  if (entry && entry.img) {  // img is null until createImageBitmap resolves
-    const w = entry.drawW * scale;
-    const h = entry.drawH * scale;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rotation);
-    ctx.drawImage(entry.img, -w / 2, -h / 2, w, h);
-    ctx.restore();
-    return;
-  }
-
-  // ── Pixel-art fallback ─────────────────────────────────────────────────────
-  const sprite = WEAPON_SPRITES[key];
-  if (!sprite) return;
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rotation);
-  ctx.scale(scale, scale);
-  const rows = sprite.length;
-  const cols = sprite[0].length;
-  ctx.translate(-cols / 2, -rows / 2);
-
-  for (let r = 0; r < rows; r++) {
-    const row = sprite[r];
-    for (let c = 0; c < cols; c++) {
-      const char = row[c];
-      if (char !== ' ') {
-        ctx.fillStyle = PALETTE[char];
-        ctx.fillRect(c, r, 1, 1);
-      }
-    }
-  }
-
-  ctx.restore();
-}
-
-export function generateWeaponTextures(scene) {
-  for (const [key, sprite] of Object.entries(WEAPON_SPRITES)) {
-    if (scene.textures.exists('weapon_' + key)) continue;
-
-    const canvas = document.createElement('canvas');
-    const rows = sprite.length;
-    const cols = sprite[0].length;
-    canvas.width = cols;
-    canvas.height = rows;
-    const ctx = canvas.getContext('2d');
-
-    // Use real image thumbnail when loaded, pixel art otherwise.
-    const entry = _weaponImages[key];
-    if (entry && entry.img) {
-      // Fit into 16×16 preserving aspect ratio, centred.
-      const aspect = entry.drawW / entry.drawH;
-      const tw = aspect >= 1 ? 16 : Math.round(16 * aspect);
-      const th = aspect >= 1 ? Math.round(16 / aspect) : 16;
-      ctx.drawImage(entry.img, (16 - tw) / 2, (16 - th) / 2, tw, th);
-    } else {
-      for (let r = 0; r < rows; r++) {
-        const row = sprite[r];
-        for (let c = 0; c < cols; c++) {
-          const char = row[c];
-          if (char !== ' ') {
-            ctx.fillStyle = PALETTE[char];
-            ctx.fillRect(c, r, 1, 1);
-          }
-        }
-      }
-    }
-
-    scene.textures.addImage('weapon_' + key, canvas);
-  }
-}

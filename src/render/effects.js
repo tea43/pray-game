@@ -2,6 +2,37 @@ import { G } from '../globals.js';
 import { rand } from '../utils/math.js';
 import { state } from '../state.js';
 
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+export function drawBeams() {
+  const { ctx } = G;
+  if (!state.beams || !state.beams.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const beam of state.beams) {
+    const intensity = beam.life / beam.maxLife;
+    ctx.strokeStyle = beam.color || '#ffbbaa';
+    ctx.lineWidth = beam.width * intensity;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(beam.x, beam.y);
+    ctx.lineTo(beam.targetX, beam.targetY);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = (beam.width * 0.4) * intensity;
+    ctx.beginPath();
+    ctx.moveTo(beam.x, beam.y);
+    ctx.lineTo(beam.targetX, beam.targetY);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export function drawBolts() {
   const { ctx } = G;
   if (!state.bolts.length) return;
@@ -67,19 +98,46 @@ export function drawExplosions() {
   const { ctx } = G;
   if (!state.explosions.length) return;
 
-  // Expanding smoke/dust ring — no additive blend, no bright core.
   for (const ex of state.explosions) {
     const alpha = ex.life / ex.maxLife;
-    ctx.strokeStyle = `rgba(40, 25, 18, ${alpha * 0.55})`;
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.r * 0.95, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = `rgba(160, 80, 30, ${alpha * 0.5})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
-    ctx.stroke();
+    
+    if (ex.isFire) {
+      // Glowing additive fire explosion
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      
+      const grd = ctx.createRadialGradient(ex.x, ex.y, ex.r * 0.1, ex.x, ex.y, ex.r);
+      grd.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      grd.addColorStop(0.2, `rgba(255, 220, 80, ${alpha * 0.9})`);
+      grd.addColorStop(0.5, `rgba(255, 100, 30, ${alpha * 0.7})`);
+      grd.addColorStop(0.9, `rgba(180, 40, 10, ${alpha * 0.4})`);
+      grd.addColorStop(1, 'rgba(180, 40, 10, 0)');
+      
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.strokeStyle = `rgba(255, 120, 30, ${alpha * 0.3})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.restore();
+    } else {
+      // Expanding smoke/dust ring — no additive blend, no bright core.
+      ctx.strokeStyle = `rgba(40, 25, 18, ${alpha * 0.55})`;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(ex.x, ex.y, ex.r * 0.95, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(160, 80, 30, ${alpha * 0.5})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 }
 
@@ -277,6 +335,125 @@ export function drawCRTOverlay() {
     ctx.fillRect(shift, 0, W, PLAY_BOTTOM);
     ctx.fillStyle = 'rgba(0, 255, 255, 0.06)';
     ctx.fillRect(-shift, 0, W, PLAY_BOTTOM);
+  }
+  ctx.restore();
+}
+
+export function drawSlashes() {
+  const { ctx } = G;
+  if (!state.slashes || !state.slashes.length) return;
+  ctx.save();
+  for (const s of state.slashes) {
+    const alpha = s.life / s.maxLife;
+    if (s.type === 'box') {
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.75})`;
+      ctx.fillRect(s.x + s.r, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+      ctx.fillRect(s.x - s.r - s.length, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+
+      ctx.strokeStyle = `rgba(180, 230, 255, ${alpha})`;
+      ctx.lineWidth = 2.0;
+      ctx.strokeRect(s.x + s.r, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+      ctx.strokeRect(s.x - s.r - s.length, s.y - s.halfHeight, s.length, s.halfHeight * 2);
+    } else if (s.type === 'arc') {
+      ctx.strokeStyle = `rgba(200, 220, 255, ${alpha * 0.8})`;
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, s.facing - s.halfArc, s.facing + s.halfArc);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, s.facing - s.halfArc, s.facing + s.halfArc);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    } else if (s.type === 'whip') {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.ang);
+
+      const progress  = 1 - alpha;                 // 0 → 1 over the lash's life
+      const amp       = s.amplitude ?? 0;
+      const waves     = s.waves ?? 1;
+      const pattern   = s.pattern || 'wave';
+      const cord      = s.color || '#b4dcff';
+      const reach     = s.length * (0.35 + 0.65 * Math.min(1, progress / 0.5)); // unfurl
+      const steps     = 18;
+
+      // triangle wave in [-1,1] for the electric zigzag
+      const tri = (p) => 2 * Math.abs(2 * (p - Math.floor(p + 0.5))) - 1;
+
+      const pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const t   = i / steps;
+        const env = Math.min(1, t / 0.18) * (1 - 0.25 * t);   // 0 at hand, taper at tip
+        const ph  = t * waves - progress;                     // phase travels outward
+        const off = amp * env * (pattern === 'zigzag'
+                      ? tri(ph)
+                      : Math.sin(ph * Math.PI * 2));
+        pts.push({ x: t * reach, y: off });
+      }
+
+      // cord body (tapered) + inner highlight, segment by segment
+      ctx.lineCap = 'round';
+      for (let i = 1; i < pts.length; i++) {
+        const t = i / steps;
+        ctx.strokeStyle = cord;
+        ctx.globalAlpha = alpha * 0.85;
+        ctx.lineWidth   = 4 * (1 - t * 0.7);
+        ctx.beginPath();
+        ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+        ctx.lineTo(pts[i].x,     pts[i].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth   = 1.5 * (1 - t * 0.8);
+        ctx.beginPath();
+        ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+        ctx.lineTo(pts[i].x,     pts[i].y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // additive tip flash at the snapping end
+      const tip = pts[pts.length - 1];
+      ctx.globalCompositeOperation = 'lighter';
+      const [fr, fg, fb] = hexToRgb(cord);
+      const g = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, 5);
+      g.addColorStop(0,   `rgba(255,255,255,${alpha})`);
+      g.addColorStop(0.4, `rgba(${fr},${fg},${fb},${alpha * 0.8})`);
+      g.addColorStop(1,   `rgba(${fr},${fg},${fb},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    } else if (s.type === 'diagonal') {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle || 0);
+      const size = s.r * 1.5 + 10;
+
+      ctx.strokeStyle = `rgba(80, 180, 255, ${alpha * 0.95})`;
+      ctx.lineWidth = 4.0;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-size, 0);
+      ctx.lineTo(size, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.8, 0);
+      ctx.lineTo(size * 0.8, 0);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.restore();
+    }
   }
   ctx.restore();
 }
