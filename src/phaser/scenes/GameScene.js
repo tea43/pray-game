@@ -20,6 +20,7 @@ import { applyDeathPenalties, saveHighScore } from '../../systems/score.js';
 import { preloadWeaponImages } from '../../render/weaponSprites.js';
 import { updateGroupAbility, renderGroupAbility } from '../../systems/groupAbilities.js';
 import { ABILITY_XP_CONFIG, WEAPON_XP_CONFIG } from '../../config/abilities.js';
+import { PROJECTILE_TIME_SCALE, ATTACK_ANIM_SCALE } from '../../config/combatTuning.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -343,7 +344,7 @@ export class GameScene extends Phaser.Scene {
       const _living = state.units.filter(u => !u.dead);
       if (_living.length > 0) state.flowField = buildFlowField(_living);
       for (const e of state.enemies)  e.update(gameDt);
-      for (const pr of state.projectiles) pr.update(gameDt);
+      for (const pr of state.projectiles) pr.update(gameDt * PROJECTILE_TIME_SCALE);
       state.projectiles = state.projectiles.filter(pr => !pr.dead);
 
       // Update acid shots
@@ -480,7 +481,7 @@ export class GameScene extends Phaser.Scene {
 
       for (const ex of state.explosions) {
         ex.life -= gameDt;
-        ex.r += (ex.maxR - ex.r) * Math.min(1, gameDt * 8);
+        ex.r += (ex.maxR - ex.r) * Math.min(1, gameDt * 8 * ATTACK_ANIM_SCALE);
       }
       state.explosions = state.explosions.filter(ex => ex.life > 0);
 

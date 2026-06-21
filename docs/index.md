@@ -59,6 +59,7 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `planning/pr-pickup-range.md`: Per-hero essence pickup radius — adds `pickupR` to `HERO_DEFS`, expands the essence pickup check, optional ground-ring visual.
 - `planning/abilities_rework_progress.md`: Implementation tracker for the abilities rework (two XP tracks, ability trees, slot machine rework, combo system, revive minigame). Phases 1–3 complete.
 
+
 ## planned/ — Brainstorms
 
 - `planned/ability_progression_brainstorm.md`: Session notes on sustainable ability progression, several system options, and draft per-hero upgrade ladders.
@@ -78,6 +79,11 @@ See `docs/current/implementation_notes.md` → Architecture section for the full
 - `executed/weapor_rework_3.md`: Unique per-weapon Vampire-Survivors behaviours via a `behavior` registry (bounce, orbit, ground zone, aura, charge-beam, whip, multi-slash, arc-down). Deprecated `radiator_rib` + `plastic_chair`, added `richards_megaphone` — implemented (visual fixes tracked in `executed/weapor_rework_4.md`).
 - `executed/weapor_rework_4.md`: Visual and projectile behavior fixes (projectiles bounds check, invisible explosions, missing whips/slash visual overlays, targetless/direction logic) — implemented.
 - `executed/weapon_rework_fix_plan_1.md`: Post-implementation review fixes of commit `d2d0319` (gravity-bounce ground line, idle-fire SFX gating, `state.beams` declaration, beam range cap, random slash angles) — implemented.
+- `executed/weapon_rework_5.md`: Phase 5 plan — slow projectile travel and attack animations to ~10% so the reworked weapons are visible, via two tunable constants in a new `src/config/combatTuning.js` — implemented.
+- `executed/weapon_rework_6.md`: Phase 6 plan — fix 6 broken weapon animations (Megaphone aura, Extension Cord & Shower Hose whips, Car Antenna range, Doggo Chain orbit, Catapult lob+explode) — implemented.
+- `executed/weapon_rework_7.md`: Phase 7 plan — fix post-`40ae671` regressions: shrink/shorten Extension Cord & Shower Hose whips, give the Catapult a dedicated projectile sprite, add a per-level `maxProjectiles` cap, and redraw the Doggo Chain as a padlock — implemented.
+- `executed/weapon_rework_8.md`: Whip pattern rework — aim Extension Cord & Shower Hose lashes at the nearest enemy and render distinctive crack shapes (electric zigzag / smooth S-curve) matching the reference art — implemented.
+- `executed/weapon_rework_9.md`: Unique ranged projectile sprites (`spring_bolt` arrow / `spoke_ball` / `wire_arrow` for Arbalest, Slingshot, Fence Bow via a sprite-drawing `ShotgunBullet`) and distinct whip colors (Extension Cord yellow, Shower Hose white) — implemented.
 
 
 

@@ -192,6 +192,12 @@
       "volume": 0.6,
       "pitchJitter": 0.06
     },
+    "weapon.whip.crack": {
+      "variants": [],
+      "fallback": "weapon.attack.default",
+      "volume": 0.55,
+      "pitchJitter": 0.08
+    },
     "boss.walk.default": {
       "variants": [],
       "volume": 0.5,

@@ -14,6 +14,7 @@ import { ABILITY_DEFS, WEAPON_XP_CONFIG, HERO_ABILITY_TREES, ACID_CONFIG, TINKER
 import { isWalkable, nearestWalkable, terrainSpeedMult } from '../utils/terrain.js';
 import { drawWeaponSprite, getWeaponRender, WEAPON_RENDER_SCALE } from '../render/weaponSprites.js';
 import { UNIT_RENDER_SCALE } from '../config/heroes.js';
+import { ATTACK_ANIM_SCALE, ANIM_DURATION_MULT } from '../config/combatTuning.js';
 
 export class Unit {
   constructor(x, y, type) {
@@ -612,19 +613,76 @@ export class Unit {
               e.knockY += Math.sin(Math.atan2(e.y - this.y, e.x - this.x)) * 20;
             }
           }
+          // Optional polish: emit a few faint outward particles on each tick
+          for (let i = 0; i < 8; i++) {
+            const ang = (i / 8) * Math.PI * 2;
+            state.particles.push({
+              x: this.x, y: this.y,
+              vx: Math.cos(ang) * 50,
+              vy: Math.sin(ang) * 50,
+              life: 0.3, maxLife: 0.3,
+              color: 'rgba(50, 240, 240, 0.4)',
+              size: 2,
+              realtime: true
+            });
+          }
         }
       }
+
+      if (stats.behavior === 'orbit') {
+        const p = stats.orbit || { count: 2, radius: 64, angularSpeed: 2.6, duration: 2.0, tickInterval: 0.25 };
+        const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
+        if (!this.orbiters || this.orbiters.length === 0 || this.orbiters[0].key !== stats.key) {
+          this.orbiters = [];
+          for (let i = 0; i < p.count; i++) {
+            this.orbiters.push({
+              angle: (i / p.count) * Math.PI * 2,
+              angularSpeed: p.angularSpeed,
+              radius: p.radius,
+              key: stats.key,
+              dmg: dmg,
+              hitCooldowns: new Map()
+            });
+          }
+        } else {
+          for (let i = 0; i < this.orbiters.length; i++) {
+            this.orbiters[i].dmg = dmg;
+            this.orbiters[i].radius = p.radius;
+            this.orbiters[i].angularSpeed = p.angularSpeed;
+          }
+          if (this.orbiters.length !== p.count) {
+            this.orbiters = [];
+            for (let i = 0; i < p.count; i++) {
+              this.orbiters.push({
+                angle: (i / p.count) * Math.PI * 2,
+                angularSpeed: p.angularSpeed,
+                radius: p.radius,
+                key: stats.key,
+                dmg: dmg,
+                hitCooldowns: new Map()
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Check if orbit is still equipped
+    let hasOrbit = false;
+    for (const slot of this.weaponSlots) {
+      if (slot && resolveWeaponStats(slot).behavior === 'orbit') {
+        hasOrbit = true;
+        break;
+      }
+    }
+    if (!hasOrbit) {
+      this.orbiters = null;
     }
 
     // Orbiters
     if (this.orbiters) {
       for (let i = this.orbiters.length - 1; i >= 0; i--) {
         const o = this.orbiters[i];
-        o.life -= dt;
-        if (o.life <= 0) {
-          this.orbiters.splice(i, 1);
-          continue;
-        }
         o.angle += o.angularSpeed * dt;
         const ox = this.x + Math.cos(o.angle) * o.radius;
         const oy = this.y + Math.sin(o.angle) * o.radius;
@@ -642,7 +700,7 @@ export class Unit {
             this._applyWeaponEffect(e);
             pushDamageNumber(e.x, e.y - e.r - 4, o.dmg);
             playSfx('weapon.impact.default');
-            o.hitCooldowns.set(e, 0.5);
+            o.hitCooldowns.set(e, 0.5 * ANIM_DURATION_MULT);
           }
         }
       }
@@ -720,9 +778,9 @@ export class Unit {
     if (this._speedDmgCd) this._speedDmgCd = Math.max(0, this._speedDmgCd - dt);
 
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 5);
-    this.swing = Math.max(0, this.swing - dt * 6);
+    this.swing = Math.max(0, this.swing - dt * 6 * ATTACK_ANIM_SCALE);
     this.blinkFlash = Math.max(0, this.blinkFlash - dt * 2.5);
-    this.throwArm = Math.max(0, this.throwArm - dt * 4);
+    this.throwArm = Math.max(0, this.throwArm - dt * 4 * ATTACK_ANIM_SCALE);
 
     // Dick boomerang update
     if (this.type === 'dick' && this.boomerang !== null) {
@@ -739,12 +797,12 @@ export class Unit {
         if (!slot) continue;
         
         const stats = resolveWeaponStats(slot);
-        if (stats.behavior === 'chargeBeam' || stats.behavior === 'aura') continue;
+        if (stats.behavior === 'chargeBeam' || stats.behavior === 'aura' || stats.behavior === 'orbit') continue;
 
         slot.atkCd -= dt;
         if (slot.atkCd > 0) continue;
 
-        const isTargetless = (stats.behavior === 'whip' || stats.behavior === 'orbit' || stats.behavior === 'directional');
+        const isTargetless = (stats.behavior === 'whip' || stats.behavior === 'directional');
         let target = null;
         if (!isTargetless) {
           target = this._acquireTarget(stats);
@@ -760,6 +818,14 @@ export class Unit {
             }
           }
           if (!enemyNearby) continue;
+        }
+
+        if (stats.maxProjectiles) {
+          let alive = 0;
+          for (const p of state.projectiles) {
+            if (!p.dead && p.owner === this && p.key === stats.key) alive++;
+          }
+          if (alive >= stats.maxProjectiles) continue;
         }
 
         this.attack(target, stats);
@@ -951,9 +1017,11 @@ export class Unit {
     }
     this.swing = 1;
 
-    if (stats.type === 'ranged') {
+    if (stats.behavior === 'lobExplode') {
+      this._attackThrown(stats, enemy);
+    } else if (stats.type === 'ranged') {
       this._attackRanged(stats, enemy);
-    } else if (stats.behavior === 'boomerang' || stats.behavior === 'lobExplode' || stats.behavior === 'groundZone') {
+    } else if (stats.behavior === 'boomerang' || stats.behavior === 'groundZone') {
       this._attackThrown(stats, enemy);
     } else if (stats.behavior === 'bounce') {
       this._attackBounce(stats, enemy);
@@ -1134,69 +1202,80 @@ export class Unit {
 
   _attackWhip(stats, enemy) {
     this.throwArm = 1;
-    playSfx('weapon.throw.default');
+    playSfx(stats.sfxAttack || 'weapon.whip.crack', { fallback: stats.sfxFallback || 'weapon.attack.default' });
     const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
-    const p = stats.whip || { shape: 'box', length: 120, halfHeight: 20 };
+    const p = stats.whip || { shape: 'lash', length: 120, halfHeight: 22, sides: 1 };
 
-    if (p.shape === 'box') {
-      const boxes = [
-        { cx: this.x + p.length/2 + this.r, cy: this.y, hw: p.length/2, hh: p.halfHeight },
-        { cx: this.x - p.length/2 - this.r, cy: this.y, hw: p.length/2, hh: p.halfHeight }
-      ];
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        for (const b of boxes) {
-          if (Math.abs(e.x - b.cx) < b.hw + e.r && Math.abs(e.y - b.cy) < b.hh + e.r) {
-            e.hp -= dmg; e.hurtFlash = 1;
+    // Whip is targetless (Unit.js:805) so this.facing is the hero's last movement
+    // direction. Re-aim at the nearest living enemy so the crack points at what it hits.
+    let _nearest = null, _nd = Infinity;
+    for (const e of state.enemies) {
+      if (e.dead) continue;
+      const d = dist2(this.x, this.y, e.x, e.y);
+      if (d < _nd) { _nd = d; _nearest = e; }
+    }
+    if (_nearest) this.facing = Math.atan2(_nearest.y - this.y, _nearest.x - this.x);
+
+    if (p.shape === 'lash') {
+      const sides = p.sides ?? 1;
+      const length = p.length ?? 120;
+      const halfHeight = p.halfHeight ?? 20;
+      const kb = stats.knockback ?? 70;
+      
+      // Scale with the slow-mo presentation (ANIM_DURATION_MULT) like every other
+      // overlay, but keep it the shortest of them so it still reads as a fast whip
+      // crack. A bare 0.12s blinks ~20x faster than beams/slashes and looks broken;
+      // the thin tapering cord (see drawSlashes 'whip') prevents the old blob.
+      const lashLife = 0.06 * ANIM_DURATION_MULT;
+      state.slashes = state.slashes || [];
+
+      for (let k = 0; k < sides; k++) {
+        const ang = this.facing + k * Math.PI;
+        
+        for (const e of state.enemies) {
+          if (e.dead) continue;
+          
+          const dx = e.x - this.x;
+          const dy = e.y - this.y;
+          const localX = dx * Math.cos(-ang) - dy * Math.sin(-ang);
+          const localY = dx * Math.sin(-ang) + dy * Math.cos(-ang);
+          
+          if (localX >= 0 && localX <= length + e.r && Math.abs(localY) <= halfHeight + e.r) {
+            e.hp -= dmg;
+            e.hurtFlash = 1;
             this._gainWeaponXp(dmg);
             this._applyWeaponEffect(e);
             pushDamageNumber(e.x, e.y - e.r - 4, dmg);
-            break;
+            e.knockX += Math.cos(ang) * kb;
+            e.knockY += Math.sin(ang) * kb;
+            
+            state.particles.push({
+              x: e.x, y: e.y,
+              vx: Math.cos(ang) * 40 + rand(-15, 15),
+              vy: Math.sin(ang) * 40 - rand(10, 30),
+              life: rand(0.2, 0.4), maxLife: 0.4,
+              color: e.bloodColor,
+              size: rand(1.2, 2.5),
+              realtime: true
+            });
           }
         }
+
+        state.slashes.push({
+          type: 'whip',
+          x: this.x,
+          y: this.y,
+          ang: ang,
+          length: length,
+          halfHeight: halfHeight,
+          pattern:   p.pattern   || 'wave',
+          amplitude: p.amplitude ?? 0,     // 0 → straight cord (legacy look)
+          waves:     p.waves     ?? 1,
+          color:     p.color     || '#b4dcff',
+          life: lashLife,
+          maxLife: lashLife
+        });
       }
-      state.particles.push({ x: this.x + this.r + p.length/2, y: this.y, vx: 0, vy: 0, life: 0.15, maxLife: 0.15, size: p.halfHeight, color: 'rgba(255,255,255,0.8)' });
-      state.particles.push({ x: this.x - this.r - p.length/2, y: this.y, vx: 0, vy: 0, life: 0.15, maxLife: 0.15, size: p.halfHeight, color: 'rgba(255,255,255,0.8)' });
-      state.slashes = state.slashes || [];
-      state.slashes.push({
-        type: 'box',
-        x: this.x, y: this.y,
-        r: this.r,
-        length: p.length,
-        halfHeight: p.halfHeight,
-        life: 0.15,
-        maxLife: 0.15
-      });
-    } else {
-      const radius = p.radius ?? 150;
-      const arcDeg = p.arcDeg ?? 270;
-      const halfArc = (arcDeg / 2) * (Math.PI / 180);
-      for (const e of state.enemies) {
-        if (e.dead) continue;
-        if (dist2(this.x, this.y, e.x, e.y) > radius + e.r) continue;
-        let da = Math.atan2(e.y - this.y, e.x - this.x) - this.facing;
-        while (da > Math.PI) da -= Math.PI * 2;
-        while (da < -Math.PI) da += Math.PI * 2;
-        if (Math.abs(da) < halfArc) {
-          e.hp -= dmg; e.hurtFlash = 1;
-          this._gainWeaponXp(dmg);
-          this._applyWeaponEffect(e);
-          pushDamageNumber(e.x, e.y - e.r - 4, dmg);
-          e.knockX += Math.cos(da + this.facing) * 50;
-          e.knockY += Math.sin(da + this.facing) * 50;
-        }
-      }
-      state.particles.push({ x: this.x, y: this.y, vx: 0, vy: 0, life: 0.2, maxLife: 0.2, size: radius, color: 'rgba(200,200,255,0.2)' });
-      state.slashes = state.slashes || [];
-      state.slashes.push({
-        type: 'arc',
-        x: this.x, y: this.y,
-        radius,
-        facing: this.facing,
-        halfArc,
-        life: 0.2,
-        maxLife: 0.2
-      });
     }
   }
 
@@ -1208,9 +1287,9 @@ export class Unit {
     for (let i = 0; i < p.count; i++) {
       this.orbiters.push({
         angle: (i / p.count) * Math.PI * 2,
-        angularSpeed: p.angularSpeed,
+        angularSpeed: p.angularSpeed * ATTACK_ANIM_SCALE,
         radius: p.radius,
-        life: p.duration,
+        life: p.duration * ANIM_DURATION_MULT,
         key: stats.key,
         dmg: Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1)),
         hitCooldowns: new Map()
@@ -1243,14 +1322,14 @@ export class Unit {
       this._gainWeaponXp(dmg);
       this._applyWeaponEffect(e);
       pushDamageNumber(e.x, e.y - e.r - 4, dmg);
-      state.particles.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 0.25, maxLife: 0.25, size: 20, color: 'rgba(100,200,255,0.8)' });
+      const MULTI_SLASH_LIFE = 0.25 * ANIM_DURATION_MULT;
       state.slashes = state.slashes || [];
       state.slashes.push({
         type: 'diagonal',
         x: e.x, y: e.y,
         r: e.r,
-        life: 0.25,
-        maxLife: 0.25,
+        life: MULTI_SLASH_LIFE,
+        maxLife: MULTI_SLASH_LIFE,
         angle: Math.random() * Math.PI * 2
       });
     }
@@ -1280,8 +1359,11 @@ export class Unit {
     const ey = sy + Math.sin(ang) * p.length;
     const dmg = Math.round((stats.atkDmg ?? 24) * (this.rageTimer > 0 ? 2 : 1) * (this.upgradeDmgMult || 1));
 
+    const BEAM_LIFE = 0.25 * ANIM_DURATION_MULT;
     state.beams = state.beams || [];
-    state.beams.push({ x: sx, y: sy, targetX: ex, targetY: ey, life: 0.25, maxLife: 0.25, width: p.halfWidth * 2, color: '#ffbbaa' });
+    // Visual width is 25% of the old beam thickness; the hit test below still uses
+    // the full p.halfWidth so the railgun connects exactly as before.
+    state.beams.push({ x: sx, y: sy, targetX: ex, targetY: ey, life: BEAM_LIFE, maxLife: BEAM_LIFE, width: p.halfWidth * 2 * 0.25, color: '#ffbbaa' });
 
     for (const e of state.enemies) {
       if (e.dead) continue;
@@ -1647,6 +1729,45 @@ export class Unit {
     ctx.save();
     ctx.translate(0, -this.z);
 
+    // Draw megaphone aura (Garlic)
+    for (const slot of this.weaponSlots) {
+      if (!slot) continue;
+      const stats = resolveWeaponStats(slot);
+      if (stats.behavior === 'aura') {
+        const radius = stats.auraRadius ?? 100;
+        const pulse = 0.5 + Math.sin(state.time * 6) * 0.5;
+        const tickProgress = slot.auraT ? (slot.auraT / (stats.aura?.tickInterval ?? 0.5)) % 1.0 : 0;
+        
+        ctx.save();
+        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius);
+        grad.addColorStop(0, 'rgba(255, 230, 100, 0.03)');
+        grad.addColorStop(0.7, 'rgba(255, 200, 50, 0.08)');
+        grad.addColorStop(0.9, `rgba(50, 240, 240, ${(0.12 + pulse * 0.08)})`);
+        grad.addColorStop(1, 'rgba(50, 240, 240, 0)');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.strokeStyle = `rgba(255, 220, 50, ${(0.15 + pulse * 0.1)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const rippleR = radius * tickProgress;
+        const rippleAlpha = (1 - tickProgress) * 0.35;
+        ctx.strokeStyle = `rgba(50, 255, 255, ${rippleAlpha})`;
+        ctx.lineWidth = 1.0 + (1 - tickProgress) * 2.0;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, rippleR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
     if (this.blinkFlash > 0) {
       ctx.strokeStyle = `rgba(128, 200, 255, ${this.blinkFlash})`;
       ctx.lineWidth = 2;
@@ -1885,6 +2006,35 @@ export class Unit {
       ctx.beginPath();
       ctx.arc(this.x, this.y, 22, clubBase - 1.4, clubBase + 0.4);
       ctx.stroke();
+    }
+
+    // Draw Orbiters (Doggo Chain padlocks and chains)
+    if (this.orbiters && this.orbiters.length > 0) {
+      for (const o of this.orbiters) {
+        const ox = this.x + Math.cos(o.angle) * o.radius;
+        const oy = this.y + Math.sin(o.angle) * o.radius;
+
+        // Draw chain
+        ctx.save();
+        ctx.strokeStyle = '#8c8c8c';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(ox, oy);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw padlock
+        const renderConfig = getWeaponRender(o.key);
+        const scale = (renderConfig?.scale ?? 1) * WEAPON_RENDER_SCALE;
+        
+        ctx.save();
+        ctx.translate(ox, oy);
+        ctx.rotate(o.angle + Math.PI / 2);
+        drawWeaponSprite(ctx, o.key, 0, 0, scale, 0);
+        ctx.restore();
+      }
     }
 
     const barW = 24, barH = 3.5;

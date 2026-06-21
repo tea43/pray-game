@@ -15,6 +15,7 @@ export class BouncingProjectile {
     this.dead = false;
     this.hasHit = false;
     this.key = wDef.key;
+    this.wDef = wDef;
     
     const bParams = wDef.bounce || {};
     this.bouncesLeft = bParams.maxBounces ?? 0;
@@ -129,10 +130,11 @@ export class BouncingProjectile {
     ctx.translate(this.x, this.y - this.z);
     ctx.rotate(this.rot);
     
-    if (this.key && WEAPON_SPRITES[this.key]) {
-      const renderConfig = getWeaponRender(this.key);
+    const spriteKey = this.wDef?.projectileSprite || this.key;
+    if (spriteKey && WEAPON_SPRITES[spriteKey]) {
+      const renderConfig = getWeaponRender(spriteKey);
       const scale = renderConfig.scale * WEAPON_RENDER_SCALE;
-      drawWeaponSprite(ctx, this.key, 0, 0, scale, 0);
+      drawWeaponSprite(ctx, spriteKey, 0, 0, scale, 0);
     } else {
       ctx.fillStyle = '#eee';
       ctx.beginPath();

@@ -49,6 +49,7 @@ Definition tables live in `src/config/`:
 - `src/config/enemies.js` — `ENEMY_DEFS`
 - `src/config/loot.js` — `LOOT_DEFS`
 - `src/config/waves.js` — `WAVE_DEFS`
+- `src/config/combatTuning.js` — Slow-motion presentation factors (`PROJECTILE_TIME_SCALE`, `ATTACK_ANIM_SCALE`)
 
 Run `node scripts/check-game-data.js` after changing those definitions. It validates the core hero, enemy, loot, and wave configuration.
 
@@ -149,16 +150,16 @@ draw(ctx)
 ### Unit auto-attack & Targeting
 
 Each frame (per `gameDt`), units scan for auto-attacks independently:
-1. Targetless weapons (behaviors: `whip`, `orbit`, `directional`) bypass enemy range scanning and fire on cooldown without a target.
+1. Targetless weapons (behaviors: `whip`, `directional`) bypass enemy range scanning and fire on cooldown without a target. `orbit` behavior is persistent/always-on and is ticked in the update loop rather than running on the auto-attack cooldown.
 2. Target-seeking weapons use `_acquireTarget(stats)`. If the weapon's targeting is `'random'`, it selects a random living enemy within `atkRange`. Otherwise, it falls back to `_findTarget(range)`, which checks `aggroTarget` (player right-click) or the nearest living enemy within range.
-3. If a valid target is found (or if targetless) and `atkCd <= 0`, `attack(target, stats)` is called.
+3. If a valid target is found (or if targetless) and `atkCd <= 0`, the weapon checks `stats.maxProjectiles`. If the count of active projectiles matching this weapon key owned by this unit is at or above the cap, firing is skipped. Otherwise, `attack(target, stats)` is called.
 
 ### Projectile Boundaries & Coordinate System
 
 All units, enemies, and projectiles exist in world-space coordinates. Viewport translation is applied at render time.
 - **Projectiles:** Projectiles like `ShotgunBullet`, `Projectile`, and `BouncingProjectile` carry an `isProjectile = true` property. Their boundaries are checked against the world dimensions (`G.WORLD_W` / `G.WORLD_H`) rather than screen dimensions.
 - **Explosions:** Explosions pushed to `state.explosions` must start with `life = maxLife` (e.g., `life: 0.3, maxLife: 0.3`) so they are visible and correctly decay over time.
-- **Slashes & Visuals:** Short-lived visual slashes (box lashes for Shower Hose, crescent arcs for Extension Cord, and blue diagonal cross-slashes for Car Antenna) are pushed to `state.slashes` and drawn inside the camera-translated drawing loop.
+- **Slashes & Visuals:** Short-lived visual slashes (thin, tapered whip lashes with a fast 0.12s lifetime for Extension Cord/Shower Hose, drawn with custom zigzag or serpentine wave shapes based on their config, and blue diagonal cross-slashes for Car Antenna) are pushed to `state.slashes` and drawn inside the camera-translated drawing loop.
 
 ### `attack(enemy)` dispatch (line ~314)
 

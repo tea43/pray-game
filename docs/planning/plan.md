@@ -2,7 +2,7 @@
 
 > **This file is the immediate action plan** — phases with clear scope, implementation steps, and commit targets.
 > For larger design questions, open-ended ideas, and long-horizon discussions see [`backlog.md`](backlog.md).
-> Phases 0–5 complete. Phase 6 (Audio) in progress. Between-wave upgrades complete (executed separately, see `docs/executed/bwaves_feature_dev_plan.md`). Realistic abilities rework complete (see `docs/executed/realistic_abilities_plan.md`). Weapon behaviors rework complete (see `docs/executed/weapor_rework_3.md`). Weapon visuals and projectile fixes complete (see `docs/executed/weapor_rework_4.md`).
+> Phases 0–5 complete. Phase 6 (Audio) in progress. Weapon Rework Phase 6 (Animation & Behaviour Fixes) complete (see [weapon_rework_6.md](file:///C:/Users/rkzub/IdeaProjects/pray/pray-game/docs/executed/weapon_rework_6.md)). Between-wave upgrades complete (executed separately, see [bwaves_feature_dev_plan.md](file:///C:/Users/rkzub/IdeaProjects/pray/pray-game/docs/executed/bwaves_feature_dev_plan.md)). Realistic abilities rework complete (see [realistic_abilities_plan.md](file:///C:/Users/rkzub/IdeaProjects/pray/pray-game/docs/executed/realistic_abilities_plan.md)). Weapon behaviors rework complete (see [weapor_rework_3.md](file:///C:/Users/rkzub/IdeaProjects/pray/pray-game/docs/executed/weapor_rework_3.md)). Weapon visuals and projectile fixes complete (see [weapor_rework_4.md](file:///C:/Users/rkzub/IdeaProjects/pray/pray-game/docs/executed/weapor_rework_4.md)).
 
 Ultimate goals:
 

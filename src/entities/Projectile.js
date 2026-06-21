@@ -4,6 +4,7 @@ import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
 import { drawWeaponSprite, WEAPON_SPRITES, WEAPON_RENDER_SCALE, getWeaponRender } from '../render/weaponSprites.js';
+import { ANIM_DURATION_MULT } from '../config/combatTuning.js';
 
 export class Projectile {
   constructor(x, y, target, dmg, facing, owner = null, wDef = {}) {
@@ -133,7 +134,35 @@ export class Projectile {
 
     if (this.aoeRadius > 0) {
       if (!state.explosions) state.explosions = [];
-      state.explosions.push({ x: this.x, y: this.y, r: 0, maxR: this.aoeRadius, life: 0.3, maxLife: 0.3 });
+      const EXPLOSION_LIFE = 0.3 * ANIM_DURATION_MULT;
+      state.explosions.push({
+        x: this.x,
+        y: this.y,
+        r: 0,
+        maxR: this.aoeRadius,
+        life: EXPLOSION_LIFE,
+        maxLife: EXPLOSION_LIFE,
+        isFire: this.key === 'contraceptive_catapult'
+      });
+
+      // Spawn a burst of fire particles if it's the catapult
+      if (this.key === 'contraceptive_catapult') {
+        for (let i = 0; i < 15; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = rand(40, 160);
+          state.particles.push({
+            x: this.x, y: this.y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - rand(10, 40),
+            life: rand(0.2, 0.5), maxLife: 0.5,
+            color: Math.random() > 0.4 ? 'rgba(255, 120, 0, 0.8)' : 'rgba(255, 200, 0, 0.9)',
+            size: rand(2.0, 5.0),
+            realtime: true,
+            additive: true
+          });
+        }
+      }
+
       for (const ae of state.enemies) {
         if (ae.dead || this._hitSet.has(ae)) continue;
         if (dist2(this.x, this.y, ae.x, ae.y) < this.aoeRadius) {
@@ -184,7 +213,35 @@ export class Projectile {
   explode() {
     if (this.aoeRadius > 0) {
       if (!state.explosions) state.explosions = [];
-      state.explosions.push({ x: this.x, y: this.y, r: 0, maxR: this.aoeRadius, life: 0.3, maxLife: 0.3 });
+      const EXPLOSION_LIFE = 0.3 * ANIM_DURATION_MULT;
+      state.explosions.push({
+        x: this.x,
+        y: this.y,
+        r: 0,
+        maxR: this.aoeRadius,
+        life: EXPLOSION_LIFE,
+        maxLife: EXPLOSION_LIFE,
+        isFire: this.key === 'contraceptive_catapult'
+      });
+
+      // Spawn a burst of fire particles if it's the catapult
+      if (this.key === 'contraceptive_catapult') {
+        for (let i = 0; i < 15; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = rand(40, 160);
+          state.particles.push({
+            x: this.x, y: this.y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - rand(10, 40),
+            life: rand(0.2, 0.5), maxLife: 0.5,
+            color: Math.random() > 0.4 ? 'rgba(255, 120, 0, 0.8)' : 'rgba(255, 200, 0, 0.9)',
+            size: rand(2.0, 5.0),
+            realtime: true,
+            additive: true
+          });
+        }
+      }
+
       for (const ae of state.enemies) {
         if (ae.dead || (this._hitSet && this._hitSet.has(ae))) continue;
         if (dist2(this.x, this.y, ae.x, ae.y) < this.aoeRadius) {
@@ -248,42 +305,45 @@ export class Projectile {
       ctx.lineTo(9, 0);
       ctx.lineTo(4, 3);
       ctx.stroke();
-    } else if (this.key && WEAPON_SPRITES[this.key]) {
-      const renderConfig = getWeaponRender(this.key);
-      const scale = renderConfig.scale * WEAPON_RENDER_SCALE;
-      drawWeaponSprite(ctx, this.key, 0, 0, scale, Math.PI / 4);
     } else {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.beginPath();
-      ctx.ellipse(0, 6, 6, 1.6, 0, 0, Math.PI * 2);
-      ctx.fill();
+      const spriteKey = this.wDef?.projectileSprite || this.key;
+      if (spriteKey && WEAPON_SPRITES[spriteKey]) {
+        const renderConfig = getWeaponRender(spriteKey);
+        const scale = renderConfig.scale * WEAPON_RENDER_SCALE;
+        drawWeaponSprite(ctx, spriteKey, 0, 0, scale, Math.PI / 4);
+      } else {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(0, 6, 6, 1.6, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-      ctx.strokeStyle = '#3a2510';
-      ctx.lineWidth = 2.4;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-7, 0);
-      ctx.lineTo(5, 0);
-      ctx.stroke();
-      ctx.strokeStyle = '#6b4a20';
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(-7, 0);
-      ctx.lineTo(5, 0);
-      ctx.stroke();
-      ctx.strokeStyle = '#1a0f06';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(-7, 0);
-      ctx.lineTo(-3, 0);
-      ctx.stroke();
-      ctx.strokeStyle = '#2a1a08';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(5, 0);
-      ctx.lineTo(8, 4);
-      ctx.stroke();
-      ctx.lineCap = 'butt';
+        ctx.strokeStyle = '#3a2510';
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.lineTo(5, 0);
+        ctx.stroke();
+        ctx.strokeStyle = '#6b4a20';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.lineTo(5, 0);
+        ctx.stroke();
+        ctx.strokeStyle = '#1a0f06';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.lineTo(-3, 0);
+        ctx.stroke();
+        ctx.strokeStyle = '#2a1a08';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(5, 0);
+        ctx.lineTo(8, 4);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+      }
     }
     ctx.restore();
   }

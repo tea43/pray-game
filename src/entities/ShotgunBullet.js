@@ -3,6 +3,7 @@ import { rand, dist2 } from '../utils/math.js';
 import { state } from '../state.js';
 import { pushDamageNumber } from '../render/effects.js';
 import { playSfx } from '../systems/audio.js';
+import { drawWeaponSprite, WEAPON_SPRITES, WEAPON_RENDER_SCALE, getWeaponRender } from '../render/weaponSprites.js';
 
 export class ShotgunBullet {
   constructor(x, y, angle, dmg, owner = null, wDef = {}) {
@@ -17,6 +18,8 @@ export class ShotgunBullet {
     this.r = 3;
     this.owner = owner;
     this.isProjectile = true;
+    this.key = wDef.key;
+    this.projectileSprite = wDef.projectileSprite || null;
   }
 
   update(dt) {
@@ -75,6 +78,17 @@ export class ShotgunBullet {
     ctx.lineTo(this.x, this.y);
     ctx.stroke();
     ctx.lineCap = 'butt';
+    ctx.restore();
+
+    if (this.projectileSprite && WEAPON_SPRITES[this.projectileSprite]) {
+      const scale = getWeaponRender(this.projectileSprite).scale * WEAPON_RENDER_SCALE;
+      const ang = Math.atan2(this.vy, this.vx);
+      drawWeaponSprite(ctx, this.projectileSprite, this.x, this.y, scale, ang);
+      return;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
     const r = 5;
     const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
     grd.addColorStop(0, 'rgba(255, 250, 220, 1)');
